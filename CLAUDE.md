@@ -325,3 +325,4 @@ Puis attends `GO PHASE 0`.
 - 2026-08-26 — Jeu de référence phase 0 : BEIR/SciFact. NQ retiré, τ-bench remplacé par tau2-bench, BIRD via Mini-Dev (ADR 001).
 - 2026-08-26 — Langfuse et modules cloud AWS reportés en phase 1 ; en phase 0, bootstrap Terraform seul : bucket d'état + budget 55 USD (~50 €) avec alertes (ADR 002).
 - 2026-08-26 — CI hors ligne sans secret : tests avec fixtures, notebooks nbmake en mode échantillon (`LLM_TESTBENCH_SAMPLE=1`) ; les chiffres publiés viennent d'exécutions complètes manuelles (ADR 003).
+- 2026-08-26 — Pédagogie des notebooks : niveau débutant sur les notions LLM/IR. Problématique d'abord, chaque terme défini à sa première apparition, exemple jouet avant toute abstraction, progression pas à pas, lexique final. Ne jamais supposer le vocabulaire retrieval/évaluation acquis (le DevOps/K8s/SQL, si).

@@ -53,3 +53,22 @@ les deux modes, contrôle automatique des volumes contre le papier BEIR (5 183 d
 
 **Suite** : relecture de la PR phase 0 ; `make bootstrap-apply` quand le compte AWS
 existe ; `GO PHASE 1`.
+
+## 2026-08-26 — Notebook 0 réécrit après retour : « je suis totalement largué »
+
+**Contexte** : première version du notebook 0 rejetée à la relecture — elle exposait le
+code de `src/` en supposant acquis tout le vocabulaire IR/LLM (retrieval, qrels, splits,
+BM25, nDCG), alors que ce vocabulaire est précisément ce que le projet doit enseigner.
+
+**Fait** : réécriture complète en 38 cellules, progression imposée : problématique
+concrète → notions sur un exemple jouet de cinq lignes → données réelles explorées →
+seulement ensuite le code de `src/` lu bloc par bloc → tour du banc → expérimentations →
+lexique de 22 termes. Chaque terme est défini à sa première apparition. Règle gravée
+dans `CLAUDE.md` §8 pour tous les notebooks à venir.
+
+**Incidents / surprises** : le contrat du brief (« lecture guidée du code réel ») était
+respecté à la lettre mais raté sur le fond : montrer le vrai code ne dispense pas de
+construire les concepts avant. Le bon ordre s'est révélé être : voir les données
+d'abord, lire le code ensuite — l'inverse de la v1.
+
+**Suite** : relecture de la nouvelle version du notebook.
