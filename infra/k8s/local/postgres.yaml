@@ -1,0 +1,93 @@
+# Postgres + pgvector pour le dev LOCAL uniquement.
+# Le mot de passe en clair est assumé ici : cluster k3d jetable, aucune donnée sensible.
+# En cloud (phase 1), RDS + External Secrets + AWS Secrets Manager.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+type: Opaque
+stringData:
+  POSTGRES_USER: testbench
+  POSTGRES_PASSWORD: testbench-local-only
+  POSTGRES_DB: testbench
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+data:
+  # Exécuté au premier démarrage : l'extension doit exister avant la première migration.
+  01-pgvector.sql: |
+    CREATE EXTENSION IF NOT EXISTS vector;
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          # Image multi-arch (arm64 natif sur Apple Silicon).
+          image: pgvector/pgvector:pg16
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 1Gi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "testbench"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "testbench"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+      volumes:
+        - name: init
+          configMap:
+            name: postgres-init
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Données : jamais versionnées (licences CC BY-SA sur plusieurs jeux publics).
+# Le golden set maison (phase 2) sera versionné dans data/golden/ explicitement.
+data/*
+!data/README.md
+
+# Secrets & environnement
+.env
+*.pem
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.auto.tfvars.example
+
+# Divers
+.DS_Store

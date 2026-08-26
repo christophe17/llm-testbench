@@ -1,0 +1,17 @@
+{
+  "corpus": [
+    { "_id": "d1", "title": "BM25 basics", "text": "Lexical ranking with term frequency." },
+    { "_id": "d2", "title": null, "text": "Dense embeddings map text to vectors." },
+    { "_id": "d3", "title": "Hybrid search", "text": "Fusing lexical and dense rankings." }
+  ],
+  "queries": [
+    { "_id": "q1", "text": "what is lexical ranking" },
+    { "_id": "q2", "text": "how does hybrid search work" },
+    { "_id": "q3", "text": "unjudged query that must be filtered out" }
+  ],
+  "qrels": [
+    { "query-id": "q1", "corpus-id": "d1", "score": 1 },
+    { "query-id": "q1", "corpus-id": "d2", "score": 2 },
+    { "query-id": "q2", "corpus-id": "d3", "score": 1 }
+  ]
+}

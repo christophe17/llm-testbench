@@ -1,0 +1,16 @@
+[
+  {
+    "id": "sq-1",
+    "title": "Capitals",
+    "context": "Paris is the capital of France.",
+    "question": "What is the capital of France?",
+    "answers": { "text": ["Paris", "Paris", "paris"], "answer_start": [0, 0, 0] }
+  },
+  {
+    "id": "sq-2",
+    "title": "Capitals",
+    "context": "Paris is the capital of France.",
+    "question": "What is the capital of Atlantis?",
+    "answers": { "text": [], "answer_start": [] }
+  }
+]

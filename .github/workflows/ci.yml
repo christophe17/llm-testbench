@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-groups
+      - name: Lint
+        run: |
+          uv run ruff check src tests
+          uv run ruff format --check src tests
+      - name: Typecheck
+        run: uv run mypy
+      - name: Tests (offline)
+        run: uv run pytest
+
+  notebooks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: actions/cache@v4
+        with:
+          path: data
+          key: notebooks-data-v1
+      - run: uv sync --all-groups
+      # Le notebook référence le kernel du projet (pas un `python3` ambigu qui,
+      # en local, peut être masqué par un kernel utilisateur d'un autre Python).
+      - run: uv run python -m ipykernel install --user --name llm-testbench --display-name "Python (llm-testbench)"
+      - name: Exécution des notebooks (nbmake)
+        # Le notebook 0 ne fait aucun appel LLM : pas de secrets, coût nul.
+        # Il télécharge les petits jeux (~150 Mo), cachés entre les runs.
+        run: uv run pytest --nbmake notebooks/*.ipynb --override-ini="addopts="

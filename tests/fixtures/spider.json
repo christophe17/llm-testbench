@@ -1,0 +1,12 @@
+[
+  {
+    "db_id": "concert_singer",
+    "question": "How many singers do we have?",
+    "query": "SELECT count(*) FROM singer"
+  },
+  {
+    "db_id": "pets_1",
+    "question": "Find the number of dog pets that are raised by female students.",
+    "query": "SELECT count(*) FROM student AS T1 JOIN has_pet AS T2 ON T1.stuid = T2.stuid JOIN pets AS T3 ON T2.petid = T3.petid WHERE T1.sex = 'F' AND T3.pettype = 'dog'"
+  }
+]

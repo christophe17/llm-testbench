@@ -1,0 +1,12 @@
+# Cluster de dev local (macOS Apple Silicon — toutes les images utilisées ont un build arm64).
+# k3d v5.4+ ; `make cluster-up` / `make cluster-down`.
+apiVersion: k3d.io/v1alpha4
+kind: Simple
+metadata:
+  name: llm-testbench
+servers: 1
+agents: 1
+options:
+  k3d:
+    wait: true
+    timeout: "120s"

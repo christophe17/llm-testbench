@@ -1,0 +1,18 @@
+[
+  {
+    "id": "hp-1",
+    "question": "Which city hosts the university where the inventor of X studied?",
+    "answer": "Lyon",
+    "type": "bridge",
+    "level": "medium",
+    "supporting_facts": { "title": ["Inventor of X", "University Y", "Inventor of X"], "sent_id": [0, 1, 2] },
+    "context": {
+      "title": ["Inventor of X", "University Y", "Distractor Z"],
+      "sentences": [
+        ["The inventor of X studied at University Y. ", "They were born in 1900."],
+        ["University Y is located in Lyon."],
+        ["Z is unrelated to everything."]
+      ]
+    }
+  }
+]

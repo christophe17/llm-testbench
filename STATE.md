@@ -4,24 +4,24 @@
 
 ## Phase en cours
 
-**Phase 0 — Fondations** : `GO` reçu le 2026-08-26. Plan soumis, en attente du feu vert.
+**Phase 0 — Fondations** : construite le 2026-08-26, PR ouverte, en attente de relecture par Christophe.
 
 ## Fait
 
-- 2026-08-26 : brief sauvegardé dans `CLAUDE.md`, `STATE.md` et `JOURNAL.md` créés.
-- 2026-08-26 : vérification disponibilité / taille / licence des jeux de données → `docs/datasets-verification-2026-08-26.md` (à figer dans un ADR en phase 0).
+- 2026-08-26 : brief sauvegardé, fichiers de pilotage créés, datasets vérifiés (`docs/datasets-verification-2026-08-26.md`, figé dans ADR-001).
+- 2026-08-26 : **phase 0 construite** — repo public `llm-testbench`, outillage (uv, ruff, mypy strict, pytest, pre-commit), CI GitHub Actions (lint + typecheck + tests + nbmake), 7 loaders de datasets avec 18 tests offline, cluster k3d local avec Postgres + pgvector 0.8.6 vérifié, squelette Terraform AWS (non appliqué), 3 ADR, notebook 0 exécuté de bout en bout.
 
 ## Chiffres actuels
 
-Aucun. La baseline chiffrée arrive en phase 2.
+Pas de chiffres de qualité (baseline en phase 2). Volumétries starter vérifiées :
+SciFact 5 183 docs / 300 requêtes jugées · NFCorpus 3 633 docs / 323 requêtes ·
+SQuAD 2.0 : 11 873 questions dont 50 % non répondables · QASPER 281 articles / 1 005 questions ·
+Spider dev 1 034 · TAT-QA dev 1 644 · HotpotQA dev 7 405.
 
 ## Questions ouvertes
 
-Répondues le 2026-08-26 → voir « Décisions figées » dans `CLAUDE.md`. Restent ouvertes (plan phase 0) :
-
-1. Nom du repo public.
-2. Langfuse en local : docker-compose complet dès la phase 0, ou différé au cloud en phase 1 ?
-3. Création du compte AWS : pendant la phase 0 (Terraform appliqué en fin de phase) ou au début de la phase 1 ?
+1. Compte AWS : à créer par Christophe avant le premier `terraform apply` (phase 1). Checklist : SSO, alerte budget, région `eu-west-3`.
+2. Décisions arbitrées : repo `llm-testbench` ; Langfuse différé au premier appel LLM instrumenté (phase 1) — cf. ADR-002.
 
 ## Risques suivis
 
