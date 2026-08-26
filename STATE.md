@@ -1,30 +1,47 @@
 # STATE
 
-> État courant du projet. Mis à jour à chaque session de travail. Lu en début de session avec `CLAUDE.md`, `JOURNAL.md` et les 3 derniers ADR.
+> Instantané de l'état du projet. Mis à jour à chaque session de travail.
+> Historique détaillé dans `JOURNAL.md`, décisions dans `docs/adr/`.
 
 ## Phase en cours
 
-**Phase 0 — Fondations** : construite le 2026-08-26, PR ouverte, en attente de relecture par Christophe.
+**Phase 0 — Fondations** : construite, en attente de relecture (PR de la branche `phase-0`).
 
 ## Fait
 
-- 2026-08-26 : brief sauvegardé, fichiers de pilotage créés, datasets vérifiés (`docs/datasets-verification-2026-08-26.md`, figé dans ADR-001).
-- 2026-08-26 : **phase 0 construite** — repo public `llm-testbench`, outillage (uv, ruff, mypy strict, pytest, pre-commit), CI GitHub Actions (lint + typecheck + tests + nbmake), 7 loaders de datasets avec 18 tests offline, cluster k3d local avec Postgres + pgvector 0.8.6 vérifié, squelette Terraform AWS (non appliqué), 3 ADR, notebook 0 exécuté de bout en bout.
+- Brief consolidé dans `CLAUDE.md` (+ §8 décisions au fil de l'eau), fichiers de pilotage.
+- Vérification web des jeux de données : `docs/datasets-verification-2026-08-26.md`.
+  À retenir : τ-bench déprécié → `tau2-bench` ; NQ retiré (145 GB) ; BIRD via Mini-Dev
+  (bases PostgreSQL incluses) ; licences à signaler : ChartQA GPL-3.0, FUNSD non
+  commercial, DocVQA floue.
+- Outillage : uv + Python 3.12, ruff, mypy strict, pytest, pre-commit, Makefile.
+- Interface de chargement (`eval/types.py`, validation d'intégrité à la construction,
+  flag `sampled`) + loader de référence BEIR/SciFact, testé hors ligne sur fixtures
+  (13 tests) et validé contre le vrai dépôt HF (5 183 docs / 300 requêtes, conformes
+  au papier BEIR).
+- CI GitHub Actions hors ligne : lint, mypy strict, tests, notebook via nbmake en mode
+  échantillon (kernel Jupyter dédié `llm-testbench`, enregistré par `make setup`).
+- Cluster local : k3d (mis à jour en 5.9.0) + Postgres 16 + pgvector 0.8.6, vérifié de
+  bout en bout (`make k3d-up` → extension active), Tiltfile minimal.
+- Terraform `bootstrap/` : bucket d'état S3 chiffré/versionné (verrouillage natif S3),
+  budget 55 USD avec alertes 80/100 % réel + 100 % prévisionnel. **Non appliqué** — voir
+  questions ouvertes.
+- Notebook 0 exécuté et versionné avec ses sorties (mode complet ET mode échantillon).
+- ADR 001 (datasets), 002 (report AWS/Langfuse), 003 (conventions), 004 (interface loaders).
 
 ## Chiffres actuels
 
-Pas de chiffres de qualité (baseline en phase 2). Volumétries starter vérifiées :
-SciFact 5 183 docs / 300 requêtes jugées · NFCorpus 3 633 docs / 323 requêtes ·
-SQuAD 2.0 : 11 873 questions dont 50 % non répondables · QASPER 281 articles / 1 005 questions ·
-Spider dev 1 034 · TAT-QA dev 1 644 · HotpotQA dev 7 405.
+Aucun score encore (normal : les métriques arrivent en phase 2). Repère cible noté :
+BM25 ≈ 0,67 nDCG@10 sur SciFact (papier BEIR).
 
-## Questions ouvertes
+## Décisions en attente d'arbitrage
 
-1. Compte AWS : à créer par Christophe avant le premier `terraform apply` (phase 1). Checklist : SSO, alerte budget, région `eu-west-3`.
-2. Décisions arbitrées : repo `llm-testbench` ; Langfuse différé au premier appel LLM instrumenté (phase 1) — cf. ADR-002.
+- Créer le compte AWS puis lancer `make bootstrap-apply` (10 min, ~0 €/mois) — peut se
+  faire n'importe quand avant la phase 1.
+- Relecture de la PR phase 0, puis `GO PHASE 1`.
 
-## Risques suivis
+## Contraintes actées
 
-- Phase 4 (9 sous-blocs en 3 semaines) : la phase la plus chargée du plan — arbitrage de coupe à préparer.
-- Notebooks avec appels LLM dans la CI (`nbmake`) : coût + flakiness — stratégie replay/cache à décider en phase 0/1.
-- Langfuse v3 self-hosted est une stack lourde (ClickHouse, Redis, S3) : à dimensionner pour le local.
+- Clés API : OpenAI, Anthropic, OpenRouter (Mistral via OpenRouter).
+- Budget : pas de plafond a priori ; alerte AWS à 55 USD/mois ; chaque poste documenté.
+- Rythme : pas de calendrier, les « semaines » du brief sont des unités d'effort.

@@ -1,24 +1,13 @@
-"""Fixtures partagées : chargement des échantillons bruts sous tests/fixtures/.
-
-Les fixtures sont des données SYNTHÉTIQUES qui reproduisent le schéma exact des
-sources (colonnes HF, JSON bruts) — aucune donnée réelle n'est versionnée. Les
-tests valident le parsing pur ; les téléchargements réels sont marqués
-``network`` et exclus par défaut.
-"""
-
-import json
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any
 
 import pytest
+
+from llm_testbench.config import Settings
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
-def fixture_json() -> Callable[[str], Any]:
-    def _load(name: str) -> Any:
-        return json.loads((FIXTURES_DIR / name).read_text(encoding="utf-8"))
-
-    return _load
+def offline_settings(tmp_path: Path) -> Settings:
+    """Settings pointant sur les fixtures locales : aucun test ne touche le réseau."""
+    return Settings(fixtures_dir=FIXTURES_DIR, data_dir=tmp_path / "cache")

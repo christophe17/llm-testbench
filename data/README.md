@@ -1,10 +1,10 @@
 # data/
 
-Cache local des jeux de données publics. **Rien ici n'est versionné** (voir `.gitignore`) :
-plusieurs jeux sont sous licence CC BY-SA (copyleft) et FUNSD-like interdisent la
-redistribution — les loaders de `src/llm_testbench/eval/loaders/` téléchargent depuis les
-sources officielles et cachent ici.
+- `cache/` — cache local des jeux publics téléchargés (Hugging Face, zips…). **Jamais
+  versionné** (`.gitignore`) : tout se retélécharge à partir des loaders de
+  `src/llm_testbench/eval/loaders/`, qui sont la seule source de vérité sur la provenance.
+- Le golden set maison (phase 2) vivra ici, **lui versionné**, avec son CHANGELOG.
 
-- `hf/` — cache Hugging Face (`datasets` + `huggingface_hub`)
-- `bird/` — BIRD Mini-Dev (zip + bases SQLite extraites)
-- `golden/` — (phase 2) golden set maison, **versionné explicitement**, avec CHANGELOG
+Ne jamais committer de données publiques redistribuées : certaines licences l'interdisent
+(détail dans `docs/datasets-verification-2026-08-26.md`). Les seules données versionnées
+dans le dépôt sont les fixtures minuscules de `tests/fixtures/`, rédigées à la main.

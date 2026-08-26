@@ -1,12 +1,11 @@
-# ADR-000 — Template
+# ADR NNN — Titre
 
-- **Statut** : accepté | remplacé par ADR-XXX | rejeté
 - **Date** : AAAA-MM-JJ
-- **Phase** : N
+- **Statut** : proposé | accepté | remplacé par NNN
 
 ## Contexte
 
-Le problème et les contraintes, en quelques lignes.
+Le problème, les contraintes, ce qui force une décision maintenant.
 
 ## Options considérées
 
@@ -15,8 +14,8 @@ Le problème et les contraintes, en quelques lignes.
 
 ## Décision
 
-Ce qu'on fait, et l'argument qui a tranché.
+Ce qu'on fait, en une phrase, puis le détail utile.
 
 ## Conséquences
 
-Ce que ça implique, ce que ça coûte, ce qu'on devra revisiter.
+Ce que ça permet, ce que ça coûte, ce qu'il faudra revisiter et quand.

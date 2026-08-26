@@ -1,40 +1,36 @@
-# ADR-003 — Conventions de code : package racine unique, parsing pur, MIT
+# ADR 003 — Conventions de code et d'outillage
 
-- **Statut** : accepté
 - **Date** : 2026-08-26
-- **Phase** : 0
+- **Statut** : accepté
 
 ## Contexte
 
-La structure du brief liste `src/app`, `src/llm`, `src/eval`… Il faut la
-traduire en packaging Python réel, et fixer le pattern des loaders avant que le
-harness ne grossisse.
+Décisions figées du brief (§4) à matérialiser en configuration exécutable, plus quelques
+arbitrages laissés ouverts.
 
-## Options considérées
+## Décisions
 
-1. **Packages top-level** (`import eval`, `import llm`) — colle à la lettre du
-   brief, mais `eval` masque la builtin Python, et `app`/`llm` sont des noms de
-   modules à collision quasi garantie.
-2. **Package racine unique** `src/llm_testbench/` avec les mêmes sous-modules —
-   un préfixe d'import en plus, zéro collision, `py.typed` propre.
-
-## Décision
-
-- Option 2 : `from llm_testbench.eval.loaders import load_beir`. La structure
-  du brief est respectée un niveau plus bas.
-- **Pattern loader** : fonctions de parsing **pures** (testées hors ligne sur
-  fixtures synthétiques) + chargeur réseau mince qui télécharge et délègue.
-  Les tests réseau existent mais sont marqués `network` et exclus par défaut —
-  la suite tourne hors ligne, comme l'exige le brief.
-- **Licence du code : MIT** — standard, compatible avec l'objectif vitrine.
-  Les données gardent leurs licences (cf. ADR-001).
-- Config centralisée (`pydantic-settings`, préfixe `LTB_`), `data_dir` ancré à
-  la racine du repo (pas au CWD — les notebooks s'exécutent depuis
-  `notebooks/`).
+- **Python 3.12 exclusivement** (`requires-python = ">=3.12,<3.13"`), géré par `uv`
+  (lockfile versionné, `uv sync --frozen` en CI). Exception connue : BFCL (phase 4)
+  impose 3.10 → environnement séparé, ADR 001.
+- **Package `llm_testbench`**, layout `src/`, `py.typed`. Prose en français, identifiants
+  et code en anglais ; docstrings en français car le premier lecteur est l'apprenant.
+- **ruff** (lint + format, ligne 100, règles E/W/F/I/UP/B/SIM/RUF/PT/T20) ; **mypy strict**
+  sur tout `src/` et `tests/`.
+- **Tests hors ligne par défaut** : le marqueur `network` isole tout test qui télécharge ;
+  la CI n'exécute que `-m "not network"`. Les loaders acceptent un répertoire de fixtures
+  (`LLM_TESTBENCH_FIXTURES_DIR`) pour que la même logique de jointure tourne sur fixtures
+  et données réelles — on ne teste pas un mock de la logique, on rejoue la vraie logique
+  sur des données minuscules.
+- **Mode échantillon** : `LLM_TESTBENCH_SAMPLE=1` + `sampled=True` porté par les données
+  elles-mêmes. Tout chiffre issu d'un jeu `sampled` est non publiable, par construction.
+- **CI GitHub Actions sans secret** : lint, typecheck, tests hors ligne, notebooks via
+  nbmake en mode échantillon sur fixtures. Les exécutions complètes (chiffres publiés)
+  sont manuelles et archivées.
+- **pre-commit** : hooks fichiers + ruff + mypy. `check-added-large-files` à 2 MB pour
+  bloquer un commit de données par accident.
 
 ## Conséquences
 
-- Toute nouvelle source de données suit le même pattern : parse pur + loader.
-- mypy strict passe sur l'ensemble ; `datasets` (non typé) est le seul override.
-- Si le projet était un jour installé non-editable, l'ancrage `data_dir`
-  devrait être revu (documenté dans `config.py`).
+`make check` reproduit la CI localement. Le coût : mypy strict impose des annotations
+partout, y compris dans les tests — assumé, c'est le niveau attendu du code de prod.

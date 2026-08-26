@@ -1,0 +1,25 @@
+# Active l'extension pgvector au premier démarrage. Job idempotent :
+# relançable sans effet (CREATE EXTENSION IF NOT EXISTS).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pgvector-init
+  namespace: llm-testbench
+spec:
+  backoffLimit: 10
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: pgvector/pgvector:pg16
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h postgres -U "$POSTGRES_USER"; do sleep 2; done
+              PGPASSWORD="$POSTGRES_PASSWORD" psql -h postgres -U "$POSTGRES_USER" \
+                -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS vector;"

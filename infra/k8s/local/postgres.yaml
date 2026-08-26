@@ -1,10 +1,12 @@
-# Postgres + pgvector pour le dev LOCAL uniquement.
-# Le mot de passe en clair est assumé ici : cluster k3d jetable, aucune donnée sensible.
-# En cloud (phase 1), RDS + External Secrets + AWS Secrets Manager.
+# Postgres 16 + pgvector pour le dev local.
+# Image pgvector/pgvector : multi-arch, build arm64 natif vérifié (pas d'émulation).
+# Le mot de passe en clair est assumé EN LOCAL UNIQUEMENT : en cloud, External
+# Secrets + AWS Secrets Manager (phase 1, ADR 002).
 apiVersion: v1
 kind: Secret
 metadata:
   name: postgres-credentials
+  namespace: llm-testbench
 type: Opaque
 stringData:
   POSTGRES_USER: testbench
@@ -12,18 +14,10 @@ stringData:
   POSTGRES_DB: testbench
 ---
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postgres-init
-data:
-  # Exécuté au premier démarrage : l'extension doit exister avant la première migration.
-  01-pgvector.sql: |
-    CREATE EXTENSION IF NOT EXISTS vector;
----
-apiVersion: v1
 kind: Service
 metadata:
   name: postgres
+  namespace: llm-testbench
 spec:
   selector:
     app: postgres
@@ -35,6 +29,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: postgres
+  namespace: llm-testbench
 spec:
   serviceName: postgres
   replicas: 1
@@ -48,7 +43,6 @@ spec:
     spec:
       containers:
         - name: postgres
-          # Image multi-arch (arm64 natif sur Apple Silicon).
           image: pgvector/pgvector:pg16
           ports:
             - containerPort: 5432
@@ -61,33 +55,28 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
-            - name: init
-              mountPath: /docker-entrypoint-initdb.d
           resources:
             requests:
               cpu: 100m
               memory: 256Mi
             limits:
-              memory: 1Gi
+              memory: 512Mi
           readinessProbe:
             exec:
-              command: ["pg_isready", "-U", "testbench"]
+              command: ["pg_isready", "-U", "testbench", "-d", "testbench"]
             initialDelaySeconds: 5
             periodSeconds: 5
           livenessProbe:
             exec:
-              command: ["pg_isready", "-U", "testbench"]
+              command: ["pg_isready", "-U", "testbench", "-d", "testbench"]
             initialDelaySeconds: 30
             periodSeconds: 15
-      volumes:
-        - name: init
-          configMap:
-            name: postgres-init
   volumeClaimTemplates:
     - metadata:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
+        # local-path : provisionneur par défaut de k3s/k3d
         resources:
           requests:
             storage: 2Gi

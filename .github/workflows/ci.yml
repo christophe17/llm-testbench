@@ -1,3 +1,6 @@
+# CI hors ligne : aucun secret, aucun appel réseau vers des providers.
+# Les notebooks tournent en mode échantillon sur les fixtures de tests ;
+# les chiffres publiés sont produits par des exécutions complètes manuelles (brief §2.B.4).
 name: ci
 
 on:
@@ -6,39 +9,33 @@ on:
   pull_request:
 
 jobs:
-  quality:
+  checks:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
         with:
           enable-cache: true
-      - run: uv sync --all-groups
-      - name: Lint
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint (ruff)
         run: |
           uv run ruff check src tests
           uv run ruff format --check src tests
-      - name: Typecheck
-        run: uv run mypy
-      - name: Tests (offline)
-        run: uv run pytest
 
-  notebooks:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-      - uses: actions/cache@v4
-        with:
-          path: data
-          key: notebooks-data-v1
-      - run: uv sync --all-groups
-      # Le notebook référence le kernel du projet (pas un `python3` ambigu qui,
-      # en local, peut être masqué par un kernel utilisateur d'un autre Python).
-      - run: uv run python -m ipykernel install --user --name llm-testbench --display-name "Python (llm-testbench)"
-      - name: Exécution des notebooks (nbmake)
-        # Le notebook 0 ne fait aucun appel LLM : pas de secrets, coût nul.
-        # Il télécharge les petits jeux (~150 Mo), cachés entre les runs.
-        run: uv run pytest --nbmake notebooks/*.ipynb --override-ini="addopts="
+      - name: Typecheck (mypy strict)
+        run: uv run mypy
+
+      - name: Tests (hors ligne)
+        run: uv run pytest -m "not network"
+
+      - name: Notebooks (mode échantillon, hors ligne)
+        env:
+          LLM_TESTBENCH_SAMPLE: "1"
+        run: |
+          uv run python -m ipykernel install --user --name llm-testbench
+          uv run pytest --nbmake notebooks/00_visite_guidee.ipynb

@@ -1,30 +1,26 @@
 [project]
 name = "llm-testbench"
 version = "0.1.0"
-description = "Banc d'essai technique chiffré : RAG, agents multi-sources, évaluation, LLMOps"
+description = "Banc d'essai LLM chiffré : chaque technique mesurée sur des jeux publics à vérité de référence"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
-license = "MIT"
-authors = [{ name = "Christophe Dufour", email = "dufour.chri@gmail.com" }]
+license = { text = "MIT" }
+authors = [{ name = "Christophe" }]
 dependencies = [
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
-    "httpx>=0.27",
-    "datasets>=3.0",
-    "huggingface-hub>=0.24",
-    "tqdm>=4.66",
+    "datasets>=4.0",
 ]
 
 [dependency-groups]
 dev = [
+    "pytest>=8.3",
     "ruff>=0.6",
     "mypy>=1.11",
-    "pytest>=8.3",
     "pre-commit>=3.8",
     "nbmake>=1.5",
-    "jupytext>=1.16",
     "ipykernel>=6.29",
-    "types-tqdm",
+    "jupyter>=1.0",
 ]
 
 [build-system]
@@ -41,31 +37,36 @@ src = ["src", "tests"]
 
 [tool.ruff.lint]
 select = [
-    "E",   # pycodestyle
-    "F",   # pyflakes
-    "W",   # warnings
-    "I",   # isort
-    "N",   # pep8-naming
-    "UP",  # pyupgrade
-    "B",   # bugbear
-    "SIM", # simplify
-    "PTH", # pathlib partout
-    "RUF",
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "SIM",       # simplify
+    "RUF",       # ruff-specific
+    "PT",        # pytest style
+    "T20",       # no print in src (notebooks n'y passent pas)
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20"]
+# Dans les notebooks, print est le mode d'affichage normal et les cellules de
+# lecture guidée dépassent parfois 100 colonnes.
+"*.ipynb" = ["T20", "E501"]
+
 [tool.mypy]
-strict = true
 python_version = "3.12"
+strict = true
 mypy_path = "src"
 packages = ["llm_testbench"]
 
 [[tool.mypy.overrides]]
-module = ["datasets", "datasets.*"]
+module = "datasets.*"
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q -m 'not network'"
+addopts = "-q --strict-markers"
 markers = [
-    "network: tests qui téléchargent des données (exclus par défaut, `make test-network`)",
+    "network: tests nécessitant le réseau (exclus par défaut, `make test-network`)",
 ]

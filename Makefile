@@ -1,51 +1,68 @@
+# Banc d'essai LLM — cibles de développement.
+# Toutes les commandes Python passent par uv ; rien ne s'installe hors de .venv.
+
 .DEFAULT_GOAL := help
-CLUSTER := llm-testbench
+SHELL := /bin/bash
 
-help: ## Affiche cette aide
-	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
+K3D_CLUSTER := llm-testbench
+NOTEBOOKS := notebooks/00_visite_guidee.ipynb
 
-install: ## Environnement Python + hooks pre-commit + kernel Jupyter du projet
-	uv sync --all-groups
+help: ## Liste les cibles disponibles
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+setup: ## Installe l'environnement (deps + hooks pre-commit + kernel Jupyter)
+	uv sync
 	uv run pre-commit install
-	uv run python -m ipykernel install --user --name llm-testbench --display-name "Python (llm-testbench)"
+	uv run python -m ipykernel install --user --name llm-testbench \
+		--display-name "Python (llm-testbench)"
 
-lint: ## Ruff (check + format)
+lint: ## Ruff : lint + format check
 	uv run ruff check src tests
 	uv run ruff format --check src tests
 
-typecheck: ## mypy strict
+format: ## Ruff : corrige lint + format
+	uv run ruff check --fix src tests
+	uv run ruff format src tests
+
+typecheck: ## Mypy strict
 	uv run mypy
 
-test: ## Tests offline (les tests réseau sont exclus)
-	uv run pytest
+test: ## Tests hors ligne (les tests réseau sont exclus)
+	uv run pytest -m "not network"
 
-test-network: ## Tests qui téléchargent des données
-	uv run pytest -m network --override-ini="addopts="
+test-network: ## Tests réseau uniquement (télécharge les datasets réels)
+	uv run pytest -m network
 
-check: lint typecheck test ## Lint + typecheck + tests
+notebooks-ci: ## Exécute les notebooks en mode échantillon hors ligne (comme la CI)
+	LLM_TESTBENCH_SAMPLE=1 uv run pytest --nbmake $(NOTEBOOKS)
 
-notebooks: ## Exécute les notebooks de bout en bout (nbmake)
-	uv run pytest --nbmake notebooks/*.ipynb --override-ini="addopts="
+notebooks-full: ## Exécute les notebooks en mode complet (télécharge les vrais datasets)
+	uv run pytest --nbmake $(NOTEBOOKS)
 
-data-starter: ## Télécharge le sous-ensemble de démarrage (~150 Mo)
-	uv run python -m llm_testbench.eval.loaders.starter
+check: lint typecheck test ## Tout ce que la CI vérifie, sauf les notebooks
 
-data-starter-large: ## Idem + HotpotQA (1,3 Go) et BIRD Mini-Dev (~500 Mo)
-	uv run python -m llm_testbench.eval.loaders.starter --large
+# ---------------------------------------------------------------- cluster local
 
-cluster-up: ## Crée le cluster k3d local + Postgres/pgvector
+k3d-up: ## Crée le cluster k3d et déploie Postgres/pgvector
 	k3d cluster create --config infra/k3d/config.yaml || true
 	kubectl apply -k infra/k8s/local
-	kubectl -n llm-testbench rollout status statefulset/postgres --timeout=120s
 
-cluster-down: ## Détruit le cluster k3d local
-	k3d cluster delete $(CLUSTER)
+k3d-down: ## Détruit le cluster k3d
+	k3d cluster delete $(K3D_CLUSTER)
 
-db-forward: ## Expose Postgres local sur localhost:5432
-	kubectl -n llm-testbench port-forward svc/postgres 5432:5432
-
-tilt-up: ## Boucle de dev avec hot-reload (phase 1+)
+tilt-up: ## Boucle de dev avec hot-reload (nécessite le cluster k3d)
 	tilt up
 
-.PHONY: help install lint typecheck test test-network check notebooks \
-	data-starter data-starter-large cluster-up cluster-down db-forward tilt-up
+pg-port-forward: ## Expose Postgres du cluster sur localhost:5432
+	kubectl -n llm-testbench port-forward svc/postgres 5432:5432
+
+# ---------------------------------------------------------------- infra cloud
+
+bootstrap-plan: ## Terraform bootstrap (état distant + alerte budget) — plan
+	cd infra/terraform/bootstrap && terraform init && terraform plan
+
+bootstrap-apply: ## Terraform bootstrap — apply (à lancer une seule fois, compte AWS requis)
+	cd infra/terraform/bootstrap && terraform init && terraform apply
+
+.PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
+	check k3d-up k3d-down tilt-up pg-port-forward bootstrap-plan bootstrap-apply
