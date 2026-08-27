@@ -1,0 +1,72 @@
+[project]
+name = "llm-testbench"
+version = "0.1.0"
+description = "Banc d'essai LLM chiffré : chaque technique mesurée sur des jeux publics à vérité de référence"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Christophe" }]
+dependencies = [
+    "pydantic>=2.8",
+    "pydantic-settings>=2.4",
+    "datasets>=4.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "ruff>=0.6",
+    "mypy>=1.11",
+    "pre-commit>=3.8",
+    "nbmake>=1.5",
+    "ipykernel>=6.29",
+    "jupyter>=1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_testbench"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "SIM",       # simplify
+    "RUF",       # ruff-specific
+    "PT",        # pytest style
+    "T20",       # no print in src (notebooks n'y passent pas)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20"]
+# Dans les notebooks, print est le mode d'affichage normal et les cellules de
+# lecture guidée dépassent parfois 100 colonnes.
+"*.ipynb" = ["T20", "E501"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+mypy_path = "src"
+packages = ["llm_testbench"]
+
+[[tool.mypy.overrides]]
+module = "datasets.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+markers = [
+    "network: tests nécessitant le réseau (exclus par défaut, `make test-network`)",
+]

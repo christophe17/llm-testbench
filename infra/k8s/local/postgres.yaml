@@ -1,0 +1,82 @@
+# Postgres 16 + pgvector pour le dev local.
+# Image pgvector/pgvector : multi-arch, build arm64 natif vérifié (pas d'émulation).
+# Le mot de passe en clair est assumé EN LOCAL UNIQUEMENT : en cloud, External
+# Secrets + AWS Secrets Manager (phase 1, ADR 002).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-credentials
+  namespace: llm-testbench
+type: Opaque
+stringData:
+  POSTGRES_USER: testbench
+  POSTGRES_PASSWORD: testbench-local-only
+  POSTGRES_DB: testbench
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: llm-testbench
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: llm-testbench
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg16
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "testbench", "-d", "testbench"]
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["pg_isready", "-U", "testbench", "-d", "testbench"]
+            initialDelaySeconds: 30
+            periodSeconds: 15
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        # local-path : provisionneur par défaut de k3s/k3d
+        resources:
+          requests:
+            storage: 2Gi

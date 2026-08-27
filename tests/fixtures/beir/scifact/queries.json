@@ -1,0 +1,7 @@
+[
+  {"_id": "1", "text": "0-dimensional biomaterials show inductive properties."},
+  {"_id": "3", "text": "1,000 genomes project enables mapping of genetic sequence variation."},
+  {"_id": "5", "text": "Statins increase the rate of myalgia in treated patients."},
+  {"_id": "13", "text": "BC1 RNA is a translational activator."},
+  {"_id": "99", "text": "Query present in the queries file but judged by no split (must be filtered out)."}
+]

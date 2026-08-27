@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Notebooks : sorties exécutées localement, pas les checkpoints
+.ipynb_checkpoints/
+
+# Données : le cache des jeux publics ne se versionne pas (data/README.md explique quoi versionner)
+data/cache/
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+.terraform.lock.hcl
+
+# Secrets et environnement local
+.env
+.envrc
+
+# macOS
+.DS_Store

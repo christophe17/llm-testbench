@@ -1,0 +1,41 @@
+# CI hors ligne : aucun secret, aucun appel réseau vers des providers.
+# Les notebooks tournent en mode échantillon sur les fixtures de tests ;
+# les chiffres publiés sont produits par des exécutions complètes manuelles (brief §2.B.4).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check src tests
+          uv run ruff format --check src tests
+
+      - name: Typecheck (mypy strict)
+        run: uv run mypy
+
+      - name: Tests (hors ligne)
+        run: uv run pytest -m "not network"
+
+      - name: Notebooks (mode échantillon, hors ligne)
+        env:
+          LLM_TESTBENCH_SAMPLE: "1"
+        run: |
+          uv run python -m ipykernel install --user --name llm-testbench
+          uv run pytest --nbmake notebooks/00_visite_guidee.ipynb
