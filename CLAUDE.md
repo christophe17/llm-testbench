@@ -156,9 +156,9 @@ Une phase = une branche = une PR avec une description sérieuse.
 
 ---
 
-## 5. La roadmap — 8 phases, 16 semaines
+## 5. La roadmap — 10 phases
 
-Calendrier : 0 (s1) · 1 (s2–3) · 2 (s4–6) · 3 (s7–8) · **4 (s9–11)** · 5 (s12–13) · 6 (s14–15) · 7+8 (s16).
+Calendrier : 0 (s1) · 1 (s2–3) · 2 (s4–6) · 3 (s7–8) · **4 (s9–11)** · 5 (s12–13) · 6 (s14–15) · 7+8 (s16). Les phases 9 et 10 sont des extensions décidées le 2026-08-27, hors calendrier initial (rappel : les « semaines » sont des unités d'effort, pas des échéances).
 
 Un seul système, qui grossit à chaque phase. Jamais un second projet.
 
@@ -212,7 +212,7 @@ Regarde ce que font Ragas, promptfoo et DeepEval — mais **construis le nôtre 
 
 **Chaque technique est derrière un flag et mesurée sur les jeux publics.** Gain non significatif → on retire et on documente pourquoi. Une technique retirée avec preuve chiffrée vaut mieux que dix techniques empilées.
 
-Ordre de rentabilité constatée : recherche hybride BM25 + dense avec fusion RRF · re-ranking cross-encoder · comparaison de 4 stratégies de chunking (recursive, sémantique, parent-document, late chunking) sur **documents bruts** avec QASPER · contextual retrieval · transformation de requête (HyDE, multi-query, décomposition multi-hop, routage) · filtrage par métadonnées.
+Ordre de rentabilité constatée : recherche hybride BM25 + dense avec fusion RRF · re-ranking cross-encoder · comparaison de 4 stratégies de chunking (recursive, sémantique, parent-document, late chunking) sur **documents bruts** avec QASPER · contextual retrieval · transformation de requête (HyDE, multi-query, décomposition multi-hop, routage) · filtrage par métadonnées · **GraphRAG** (extraction d'un graphe d'entités du corpus, retrieval par graphe) — ajouté le 2026-08-27, en dernier de l'ordre de rentabilité : coût d'indexation élevé pour des gains incertains dans la littérature, c'est le candidat le plus sérieux au retrait chiffré et c'est très bien ainsi.
 
 **L'ingestion devient un pipeline opéré, orchestré par Dagster** (ou Airflow — argumente dans un ADR). Sa raison d'être ici n'est pas la fraîcheur du corpus, qui est statique sur les jeux publics, mais la **matrice d'expériences** : chaque combinaison jeu de données × stratégie de chunking × modèle d'embeddings × paramètres de retrieval produit un index distinct, et il y en aura plus d'une centaine entre les phases 2 et 3.
 
@@ -224,13 +224,15 @@ Ce que tu construis : jobs paramétrés et partitionnés sur ces dimensions, ide
 
 **Livrable clé** : tableau « technique → gain qualité avec intervalle de confiance → coût latence p95 → coût € », plus l'écart à la littérature.
 
-**Notebooks** : (1) pourquoi le hybrid search sauve les acronymes et le jargon ; (2) le duel des stratégies de chunking sur documents bruts ; (3) transformation de requête : quand ça aide, quand ça coûte pour rien.
+**Notebooks** : (1) pourquoi le hybrid search sauve les acronymes et le jargon ; (2) le duel des stratégies de chunking sur documents bruts ; (3) transformation de requête : quand ça aide, quand ça coûte pour rien ; (4) notre pipeline contre **LlamaIndex** out-of-the-box sur le même jeu BEIR — où le framework fait gagner du temps, où il plafonne, chiffré (même pattern que Ragas/promptfoo en phase 2 : le nôtre d'abord, puis la comparaison).
 
 ### PHASE 4 — Agents multi-sources (semaines 9–11) ⭐ À ÉGALITÉ AVEC LE RAG
 
 Dans mes missions passées, mes agents interrogeaient des bases SQL, des API métier, des données structurées et des images. C'est mon terrain d'ingénierie et le segment qui se commoditise le moins vite. Ce n'est pas un appendice du RAG.
 
 **4.1 Socle d'orchestration.** D'abord une **machine à états maison**, puis la même chose avec LangGraph, et explique-moi honnêtement ce que le framework apporte et ce qu'il masque. Schémas d'outils, validation Pydantic stricte, erreurs d'outil renvoyées de façon exploitable. Garde-fous : budget d'étapes et de tokens, détection de boucle, timeout global, dégradation gracieuse vers une réponse partielle honnête. Parallélisation des appels indépendants.
+
+En complément (ajouté 2026-08-27), un **benchmark de frameworks d'agents** : le même agent de référence porté sur **smolagents, OpenAI Agents SDK et CrewAI**, mesuré sur le même harness — exactitude sur les mêmes tâches, tokens, latence, lignes de code. Raison d'être : le filtre ATS/mots-clés des offres, et un comparatif chiffré que quasi personne ne publie. Garde-fou anti-« empilement » : ces ports sont des **livrables de comparaison**, pas du code de production — `src/` garde une seule implémentation (maison + LangGraph), les ports vivent dans le matériel de benchmark. Budget : environ une journée par framework, ne pas creuser au-delà.
 
 **4.2 SQL — le bloc le plus difficile, mesuré sur Spider et BIRD.** Le schéma complet ne tient pas dans le contexte : catalogue de schéma et **retrieval sur le schéma** (du RAG appliqué aux métadonnées, joli pont avec la phase 3). Pipeline de sûreté avant exécution : parsing de la requête générée (sqlglot), allowlist de tables et colonnes, interdiction DDL/DML, `LIMIT` forcé, `EXPLAIN` préalable pour rejeter les requêtes trop coûteuses, timeout, rôle Postgres en lecture seule, row-level security. Boucle de correction sur erreur SQL, avec budget. Pièges à traiter explicitement : jointures plausibles mais fausses, résultat vide interprété comme « il n'y en a pas », agrégations et `NULL`, dates et fuseaux. **Règle absolue : le modèle ne recalcule jamais un chiffre, il restitue le résultat de la requête.** Métrique : exactitude d'exécution, pas comparaison de texte.
 
@@ -244,13 +246,15 @@ Dans mes missions passées, mes agents interrogeaient des bases SQL, des API mé
 
 **4.7 Sécurité des outils** (l'essentiel de l'ancienne phase 7). Injection indirecte via les **données renvoyées par un outil** — champ texte empoisonné en base, réponse d'API hostile : c'est la vraie menace d'un agent. Benchmark **AgentDojo**. Séparation stricte instructions / données, allowlist d'outils par contexte, sandboxing, permissions utilisateur propagées de bout en bout, journal d'audit des actions. Fabrique les attaques, montre qu'elles marchent, corrige, reteste, rechiffre.
 
-**4.8 Serveur MCP et composition.** Expose nos outils via MCP, puis fais consommer **plusieurs serveurs** : découverte dynamique, gouvernance des permissions, comportement quand un serveur devient indisponible ou renvoie n'importe quoi. Beaucoup savent exposer un serveur MCP ; très peu savent en orchestrer plusieurs proprement.
+**4.8 Serveur MCP et composition.** Expose nos outils via MCP, puis fais consommer **plusieurs serveurs** : découverte dynamique, gouvernance des permissions, comportement quand un serveur devient indisponible ou renvoie n'importe quoi. Beaucoup savent exposer un serveur MCP ; très peu savent en orchestrer plusieurs proprement. Situe aussi le protocole **A2A** (agent-to-agent) par rapport à MCP — en discussion argumentée dans le notebook, pas en implémentation.
 
 **4.9 Évaluation étendue** — mesurée sur BFCL et τ-bench. La vérité de référence n'est plus un passage, ce qui change les métriques : trajectoires (outils appelés, ordre, arguments, nombre d'étapes, coût par tâche réussie), exactitude d'exécution SQL, exactitude par champ en extraction, matrice de confusion du routage, fidélité des chiffres cités. **Étends le harness de la phase 2, ne crée pas un second harness.**
 
+**4.10 Mémoire d'agent** (ajouté 2026-08-27). Mémoire conversationnelle intra-session et mémoire long-terme inter-sessions — c'est du retrieval appliqué à l'historique des échanges, donc une réutilisation directe de la phase 3, pas une brique exotique. Quoi retenir, où le stocker, quand l'injecter, et **l'effet mesuré** : gain sur les tâches multi-tours (tau2-bench) contre coût en tokens de chaque stratégie. Situer au passage le vocabulaire « context engineering » et le paysage (mem0, checkpointing LangGraph) — en connaissance, notre implémentation reste la nôtre.
+
 **Point de séniorité obligatoire** : implémente délibérément un cas où l'agent est **la mauvaise réponse** — une requête déterministe fait mieux, plus vite, moins cher — mesure-le, documente-le.
 
-**Notebooks** : (1) un agent sans framework, la mécanique à nu ; (2) text-to-SQL, du schéma à la requête sûre ; (3) outils, API et effets de bord ; (4) données structurées et images — extraire sans halluciner ; (5) le routage multi-sources et les sources contradictoires ; (6) évaluer un agent : trajectoires, exécution, extraction.
+**Notebooks** : (1) un agent sans framework, la mécanique à nu — puis le même agent porté sur LangGraph, smolagents, OpenAI Agents SDK et CrewAI, comparés au chiffre sur le même harness : ce que chaque framework apporte, masque et coûte ; (2) text-to-SQL, du schéma à la requête sûre ; (3) outils, API et effets de bord ; (4) données structurées et images — extraire sans halluciner ; (5) le routage multi-sources et les sources contradictoires ; (6) évaluer un agent : trajectoires, exécution, extraction ; (7) la mémoire d'agent : quoi retenir, où, à quel coût.
 
 ### PHASE 5 — LLMOps : observabilité, coût, exploitation (semaines 12–13) ⭐ MON ARME
 
@@ -261,6 +265,8 @@ C'est ici que mes 20 ans deviennent un avantage. Peu d'AI Engineers savent faire
 Traçabilité OTel/GenAI + Langfuse : trace complète requête → routage → retrieval → reranking → outils → génération, avec durée, tokens et coût par span. Coût par requête et **par profil de trafic**, extrapolé en coût mensuel pour des volumes cibles que tu proposeras. TTFT et p50/p95/p99 décomposés par étape sous charge. Budgets, alertes, kill switch sur dérive de coût. Registre de versions de prompts avec rollback à chaud sans redéploiement. A/B testing de prompts derrière feature flag, avec analyse statistique sur trafic simulé. Qualité en continu : échantillonnage des requêtes vers un juge asynchrone, détection de drift sur la distribution entrante — mesurée en injectant une dérive contrôlée depuis le générateur, ce qui te donne un vrai chiffre : au bout de combien de requêtes la détection se déclenche-t-elle ? Déploiement canary et shadow pour un changement de prompt ou de modèle. Boucle de feedback : implémente l'endpoint et le stockage, alimente-le depuis le juge à défaut d'utilisateurs, et dis-le.
 
 **Runbooks obligatoires** : le provider est indisponible · la qualité s'est dégradée sans changement de code (le fournisseur a silencieusement mis à jour son modèle) · les coûts ont triplé dans la nuit.
+
+**UI de chat minimale** (ajouté 2026-08-27), en fin de phase : une page qui consomme le streaming SSE, affiche les citations et alimente l'endpoint de feedback — trois choses déjà construites à ce stade. Son but est de rendre le banc démontrable en 30 secondes en entretien ou devant un client, pas de faire du produit : pas de framework front lourd, pas de design system, une page.
 
 **Notebooks** : (1) anatomie d'une trace et d'où viennent les millisecondes ; (2) le modèle de coût, du token au prix par utilisateur ; (3) détecter une régression de qualité en production sans labels.
 
@@ -285,6 +291,24 @@ L'essentiel a été traité en phase 4 (sécurité des outils, AgentDojo) et en 
 Deux posts techniques tirés du JOURNAL : « le harness d'évaluation que j'ai construit, et pourquoi les métriques standard mentent » ; « self-host vs API : le calcul complet, avec mes chiffres ». Une contribution open source ciblée dans l'écosystème réellement utilisé. CV en trois blocs : AI Engineering (le banc d'essai et les chiffres) / Production et opérations / 20 ans d'ingénierie reformulés en ownership.
 
 Préparation d'entretien : system design IA chronométré, argumentaire build vs buy sur trois briques, et **trois histoires d'incident au format situation-action-résultat chiffré**. Elles ne viendront pas d'utilisateurs — il n'y en a pas — mais de la construction elle-même : une régression détectée par la CI d'évaluation, une dérive de coût, un juge mal calibré, une quantization qui dégrade en silence, un pipeline qui reconstruit tout au lieu de l'incrément. Ce sont de vrais incidents ; tiens-les à jour dans `JOURNAL.md` au fil de l'eau, tu ne les reconstitueras pas après coup.
+
+### PHASE 9 — Voice (extension, ajoutée le 2026-08-27)
+
+Le segment voice agents monte vite dans les offres 2026 et le banc d'essai n'avait aucun composant audio. Même logique que tout le reste : **on branche sur le système existant, on mesure**.
+
+Pipeline temps réel STT → agent existant → TTS, exposé par l'API actuelle : streaming audio bidirectionnel, barge-in (l'utilisateur coupe la parole à l'agent), gestion du silence et des tours de parole. La latence perçue devient le sujet central : le TTFT devient un **time-to-first-audio**, décomposé par étape (STT, agent, TTS) avec le harness d'observabilité de la phase 5. Coût par minute de conversation, comparé au coût par requête texte. Dégradation gracieuse vers le texte quand l'audio échoue.
+
+Jeux d'évaluation à vérifier au démarrage de la phase (même protocole que la phase 0 : disponibilité, taille, licence) — candidats : VoiceBench et équivalents ; à défaut, rejeu audio des questions des jeux texte existants via TTS, avec la contamination de cette boucle documentée.
+
+**Notebooks** : (1) d'où vient la latence d'un agent vocal — la décomposition milliseconde par milliseconde ; (2) évaluer un agent qu'on écoute : ce qui change quand la sortie n'est plus du texte.
+
+### PHASE 10 — Browser / computer use (extension optionnelle, ajoutée le 2026-08-27)
+
+**Optionnelle : décision GO/NO-GO à la fin de la phase 9**, car c'est le sujet le plus lourd en infra pour le gain d'employabilité le plus incertain. Si NO-GO, un paragraphe « pas fait, et pourquoi » dans le README suffit.
+
+Un outil navigateur dans l'agent de la phase 4 — pas un nouveau système : le browser est une source/un outil de plus derrière l'interface existante, avec les mêmes garde-fous (budget d'étapes, sandbox, journal d'audit) et les risques d'injection de la phase 4.7 démultipliés (une page web hostile est l'injection indirecte par excellence). Mesuré sur WebArena ou équivalent — vérification des jeux au démarrage, même protocole que la phase 0.
+
+**Notebook** : un agent qui clique — ce que le computer use change aux garde-fous et à l'évaluation.
 
 ---
 
@@ -326,3 +350,7 @@ Puis attends `GO PHASE 0`.
 - 2026-08-26 — Langfuse et modules cloud AWS reportés en phase 1 ; en phase 0, bootstrap Terraform seul : bucket d'état + budget 55 USD (~50 €) avec alertes (ADR 002).
 - 2026-08-26 — CI hors ligne sans secret : tests avec fixtures, notebooks nbmake en mode échantillon (`LLM_TESTBENCH_SAMPLE=1`) ; les chiffres publiés viennent d'exécutions complètes manuelles (ADR 003).
 - 2026-08-26 — Pédagogie des notebooks : niveau débutant sur les notions LLM/IR. Problématique d'abord, chaque terme défini à sa première apparition, exemple jouet avant toute abstraction, progression pas à pas, lexique final. Ne jamais supposer le vocabulaire retrieval/évaluation acquis (le DevOps/K8s/SQL, si).
+- 2026-08-27 — Repo public confirmé (point non négociable). Par ailleurs, 2 clients sont intéressés par une implémentation : les déploiements clients seront des **repos séparés** et constitueront le portfolio « vraie prod » ; le banc d'essai reste le laboratoire et la référence pédagogique. Aucun contenu client dans ce repo.
+- 2026-08-27 — Extension de roadmap validée après confrontation aux offres AI Engineer 2026 : GraphRAG en phase 3 (technique mesurée derrière flag, candidat assumé au retrait chiffré) ; mémoire d'agent en 4.10 + notebook dédié ; paysage des frameworks (LangChain, LlamaIndex, CrewAI, smolagents, OpenAI Agents SDK) et protocole A2A traités **en connaissance dans les notebooks, jamais en implémentation** ; UI de chat minimale en fin de phase 5 ; phase 9 Voice ; phase 10 Browser/computer use, optionnelle (GO/NO-GO fin de phase 9). Un seul système — pas de repo séparé pour ces sujets, les repos séparés sont réservés aux clients.
+- 2026-08-27 — Jeux d'évaluation des phases 9 et 10 (VoiceBench, WebArena ou équivalents) : à vérifier au démarrage de ces phases, même protocole que la phase 0.
+- 2026-08-27 — Révision du même jour sur les frameworks (motif : filtre ATS/mots-clés des offres) : ils passent de « en connaissance seulement » à **comparaison chiffrée bornée**. Phase 4.1 : le même agent de référence porté sur smolagents, OpenAI Agents SDK et CrewAI, mesuré sur le même harness (~1 jour/framework). Phase 3 : notre pipeline vs LlamaIndex sur le même jeu BEIR. Les ports sont des livrables de benchmark, `src/` garde une seule implémentation de production (maison + LangGraph). A2A reste en discussion, pas en implémentation.

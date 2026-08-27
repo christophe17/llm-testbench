@@ -28,6 +28,11 @@
   questions ouvertes.
 - Notebook 0 exécuté et versionné avec ses sorties (mode complet ET mode échantillon).
 - ADR 001 (datasets), 002 (report AWS/Langfuse), 003 (conventions), 004 (interface loaders).
+- 2026-08-27 : audit marché (offres AI Engineer France 2026) → roadmap étendue à 10
+  phases : GraphRAG (phase 3), mémoire d'agent (4.10), UI de chat minimale (phase 5),
+  phase 9 Voice, phase 10 Browser/computer use (optionnelle). Frameworks en comparaison
+  chiffrée bornée : même agent porté sur smolagents, OpenAI Agents SDK et CrewAI (4.1),
+  LlamaIndex vs notre pipeline (phase 3). Détail dans `CLAUDE.md` §8 et `JOURNAL.md`.
 
 ## Chiffres actuels
 

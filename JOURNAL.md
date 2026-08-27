@@ -72,3 +72,46 @@ construire les concepts avant. Le bon ordre s'est révélé être : voir les don
 d'abord, lire le code ensuite — l'inverse de la v1.
 
 **Suite** : relecture de la nouvelle version du notebook.
+
+## 2026-08-27 — Audit marché et extension de la roadmap (8 → 10 phases)
+
+**Contexte** : question posée — la roadmap est-elle calibrée pour un poste AI Engineer en
+France en remote ? Vérification web contre les offres et analyses de recrutement 2026.
+
+**Fait** : cœur de la roadmap confirmé (éval, agents, MCP, observabilité, coût, vLLM —
+la « littératie en évaluation » est citée comme premier signal d'embauche). Quatre trous
+identifiés et intégrés : GraphRAG (phase 3, derrière flag, candidat assumé au retrait
+chiffré), mémoire d'agent (4.10 + notebook 7), voice agents (nouvelle phase 9), browser/
+computer use (nouvelle phase 10, optionnelle, GO/NO-GO fin de phase 9). Paysage des
+frameworks (LangChain, LlamaIndex, CrewAI, smolagents, OpenAI Agents SDK) et A2A traités
+en connaissance dans les notebooks, jamais en implémentation. UI de chat minimale ajoutée
+en fin de phase 5. Décisions actées : repo public confirmé ; 2 clients intéressés → les
+déploiements clients seront des repos séparés (portfolio « vraie prod »), le banc d'essai
+reste le laboratoire — la règle « jamais un second projet » tient, les extensions se
+branchent sur le système unique pour réutiliser harness, infra et observabilité.
+
+**Incidents / surprises** : point de vigilance marché — le full remote est minoritaire
+sur ce métier en France (même Mistral attend de la présence à Paris) ; viser le remote
+réduit l'entonnoir et renforce le poids du différenciateur mesure/portfolio.
+
+**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+
+## 2026-08-27 — Révision : les frameworks passent en comparaison chiffrée
+
+**Contexte** : objection soulevée sur la décision du matin (« frameworks en connaissance
+seulement ») — une offre qui exige LangGraph/CrewAI passe par un filtre ATS avant
+d'atteindre un humain ; un mot-clé absent du CV peut être éliminatoire au tri, même si
+l'entretien se gagnerait sur les concepts.
+
+**Fait** : décision révisée. Phase 4.1 : le même agent de référence porté sur smolagents,
+OpenAI Agents SDK et CrewAI, mesuré sur le même harness (exactitude, tokens, latence,
+lignes de code, ~1 jour par framework) — les ports sont des livrables de benchmark,
+`src/` garde une seule implémentation de production (maison + LangGraph). Phase 3 :
+notre pipeline comparé à LlamaIndex out-of-the-box sur le même jeu BEIR (pattern
+« le nôtre d'abord, puis la comparaison », déjà acté pour Ragas/promptfoo en phase 2).
+A2A reste en discussion. Bénéfice attendu : mots-clés CV honnêtement gagnés + un
+comparatif chiffré de frameworks que quasi personne ne publie.
+
+**Incidents / surprises** : —
+
+**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
