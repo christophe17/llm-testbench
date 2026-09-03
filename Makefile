@@ -45,6 +45,17 @@ notebooks-full: ## Exécute les notebooks en mode complet (télécharge les vrai
 
 check: lint typecheck test ## Tout ce que la CI vérifie, sauf les notebooks
 
+# ---------------------------------------------------------------- application
+
+api: ## Lance l'API en local (rechargement à chaud) — .env requis
+	uv run uvicorn llm_testbench.app.main:app --reload --port 8000
+
+ingest-scifact: ## Indexe SciFact (BEIR) dans pgvector — OPENAI_API_KEY et base requis
+	uv run python -m llm_testbench.ingest.cli scifact
+
+ingest-qasper: ## Indexe QASPER (validation) dans pgvector
+	uv run python -m llm_testbench.ingest.cli qasper
+
 # ---------------------------------------------------------------- cluster local
 
 k3d-up: ## Crée le cluster k3d et déploie Postgres/pgvector
@@ -69,4 +80,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (à lancer une seule fois, com
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check k3d-up k3d-down tilt-up pg-port-forward bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper k3d-up k3d-down tilt-up pg-port-forward bootstrap-plan bootstrap-apply
