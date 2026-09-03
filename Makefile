@@ -28,16 +28,16 @@ typecheck: ## Mypy strict
 	uv run mypy
 
 test: ## Tests hors ligne (les tests réseau sont exclus)
-	uv run pytest -m "not network"
+	uv run python -m pytest -m "not network"
 
 test-network: ## Tests réseau uniquement (télécharge les datasets réels)
-	uv run pytest -m network
+	uv run python -m pytest -m network
 
 notebooks-ci: ## Exécute les notebooks en mode échantillon hors ligne (comme la CI)
-	LLM_TESTBENCH_SAMPLE=1 uv run pytest --nbmake $(NOTEBOOKS)
+	LLM_TESTBENCH_SAMPLE=1 uv run python -m pytest --nbmake $(NOTEBOOKS)
 
 notebooks-full: ## Exécute les notebooks en mode complet (télécharge les vrais datasets)
-	uv run pytest --nbmake $(NOTEBOOKS)
+	uv run python -m pytest --nbmake $(NOTEBOOKS)
 
 check: lint typecheck test ## Tout ce que la CI vérifie, sauf les notebooks
 
