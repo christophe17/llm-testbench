@@ -5,53 +5,51 @@
 
 ## Phase en cours
 
-**Phase 1 — Squelette de production : construite, en cours de finition** (démarrée le
-2026-09-03, branche `phase-1`, 15 commits). PR #2 (docs : phase 5B + clôture phase 0) toujours
-ouverte — `phase-1` est branchée dessus, à rebaser sur `main` si le merge est fait en squash.
+**Phase 1 — Squelette de production : construite, en relecture** (2026-09-03, branche
+`phase-1`, PR à ouvrir sur `main` ; PR #2 docs à merger avant). Ce qui reste demande des actions
+de Christophe (clés, compte AWS), pas du code.
 
 ## Fait en phase 1 (2026-09-03)
 
-- **Couche LLM** (`src/llm_testbench/llm/`, ADR 006) : types neutres, gouvernance des données
-  (classes, métadonnées de backend datées, politique TOML par refus par défaut, décision tracée),
-  registre `config/llm_backends.toml` (anthropic, openai, openrouter, bedrock, local), table de
-  prix datée (Anthropic + OpenAI relevés le 03/09), prompts versionnés Jinja2 strict avec
-  empreinte, retry/backoff/gigue, circuit breaker, délai, budget, cache exact et sémantique,
-  providers Anthropic (dont Bedrock) et compatible OpenAI sur SDK officiels (`max_retries=0`),
-  embeddings, sorties structurées avec réparation bornée, façade `LLMClient`, traces OTel
-  (attributs `gen_ai.*` + `llm_testbench.*`), simulateur réseau pour tests et notebooks.
-- **Sources et ingestion** (ADR 007) : `Source`/`Evidence`/`Provenance`/`Citation` homogènes,
-  parsing (texte, markdown, sections), chunker récursif (baseline phase 3), schéma Postgres
-  (documents, chunks, registre d'index, une table de vecteurs HNSW par index), store psycopg
-  asynchrone, pipeline idempotent, loader QASPER (Parquet HF, 281 papiers validation),
-  `DocumentSource`, réponse citée (`prompts/chat_answer.md`, sentinelle de refus).
-- **API** : `/chat` JSON et `/chat/stream` SSE, `/healthz`, `/readyz` (503 avec raison),
-  `/sources`, erreurs typées → codes HTTP, CLI d'ingestion (`make ingest-scifact|qasper`).
-- **Infra** : Dockerfile multi-arch non-root, chart Helm (probes, HPA, PDB, sécurité,
-  ExternalSecret), Tiltfile, Terraform `envs/dev` (VPC, EKS 1.33 + Pod Identity + add-ons
-  managés, RDS pg16 pgvector, ECR, S3, Secrets Manager, rôles) validé, lock providers
-  3 plateformes, `make infra-*`/`deploy`/`cluster-addons`. Vérifié sur k3d : image poussée,
-  pod en marche, readiness 503 « index absent » tant que rien n'est ingéré (voulu).
-- **Langfuse v4 sur k3d** (Helm, ClickHouse mono-nœud maison, init headless) : OTLP accepté,
-  événements en ClickHouse avec tous nos attributs, coût recalculé par Langfuse
-  (0,00187 $ = le nôtre) ; API legacy désactivée en mode `events_only` (guide 07 en cours).
-- **Guides infra** `docs/infra/` : README, 00 bootstrap, 01 dev local, 02 réseau, 03 EKS,
-  04 RDS, 05 secrets, 06 chart Helm, 08 coûts (07 observabilité en cours).
-- **Notebook 1** `01_appel_llm_robuste.ipynb` (39 cellules, exécuté en mode échantillon, CI).
-- Tests : 151 hors ligne, 6 sur base (`make test-db`), 2 réseau ; mypy strict ; CI verte
-  attendue (deux notebooks en nbmake).
+- **Couche LLM** (`src/llm_testbench/llm/`, ADR 006) : types neutres ; gouvernance des données
+  (classes, métadonnées de backend datées, politique TOML par refus par défaut, décision
+  tracée) ; registre `config/llm_backends.toml` (anthropic, openai, openrouter, bedrock,
+  local) ; table de prix datée ; prompts versionnés Jinja2 strict avec empreinte ;
+  retry/backoff/gigue, circuit breaker, délai, budget, cache exact et sémantique ; providers
+  Anthropic (dont Bedrock) et compatible OpenAI sur SDK officiels ; embeddings ; sorties
+  structurées avec réparation bornée ; façade `LLMClient` ; traces OTel (`gen_ai.*` +
+  `llm_testbench.*`) ; simulateurs réseau (transport scripté, embedders jouet et haché).
+- **Sources et ingestion** (ADR 007) : `Source`/`Evidence`/`Provenance`/`Citation` homogènes ;
+  parsing (texte, markdown, sections) ; chunker récursif (baseline phase 3) ; schéma Postgres
+  (documents, chunks, registre d'index, une table de vecteurs HNSW par index) ; store psycopg
+  asynchrone ; pipeline idempotent ; loader QASPER ; `DocumentSource` ; réponse citée avec
+  sentinelle de refus.
+- **API** : `/chat` JSON, `/chat/stream` SSE, `/healthz`, `/readyz` (503 avec raison),
+  `/sources`, erreurs typées → HTTP ; CLI d'ingestion.
+- **Infra** : Dockerfile, chart Helm (probes, HPA, PDB, sécurité, ExternalSecret), Tilt,
+  Terraform `envs/dev` validé (VPC, EKS 1.33 + Pod Identity, RDS pg16 pgvector, ECR, S3,
+  secrets, rôles), vérifié sur k3d ; Langfuse v4 sur k3d (OTLP → ClickHouse prouvé, coût
+  recalculé identique au nôtre) ; 9 guides `docs/infra/` (README + 00→08).
+- **Notebooks** : 1 (appel LLM robuste, 39 cellules) et 2 (document → index, 26 cellules),
+  exécutés en mode échantillon, en CI avec Postgres en service.
+- **Première mesure** (`data/results/embeddings_scifact.json`, mteb, SciFact nDCG@10) :
+  bge-base-en-v1.5 **0,740** (publié 0,7404 — écart nul) ; all-MiniLM-L6-v2 **0,645**
+  (< BM25 publié 0,665) ; text-embedding-3-small à produire avec une clé.
+- Tests : 155 hors ligne, 6 sur base, 2 réseau ; mypy strict ; hooks pre-commit alignés.
 
-## Reste à faire en phase 1
+## Reste à faire en phase 1 (actions Christophe)
 
-- Guide 07 (observabilité) ; notebook 2 (du document au chunk indexé, avec la comparaison
-  des trois embeddings via `mteb` sur SciFact — nécessite les clés et `sentence-transformers`).
-- Exécution complète des notebooks avec clés (`.env`), ingestion SciFact réelle, `/chat` réel.
-- Bootstrap AWS et `make infra-up` par Christophe (guides 00 et 03), déploiement EKS.
-- Traces, ADR de clôture, debrief, PR `phase-1`.
+1. Merger la PR #2, relire la PR `phase-1`.
+2. `.env` avec les clés (`.env.example`) → `make ingest-scifact`, `make api` ou `tilt up`,
+   `make notebooks-full` (section « vrai provider » du notebook 1, vrais embeddings et vraie
+   génération du notebook 2), `make bench-embeddings` (ajoute text-embedding-3-small).
+3. Guide 00 (bootstrap, 15 min) puis guides 02→05 : `make infra-up`, `make cluster-addons`,
+   secrets, `make deploy` — l'API sur EKS (≈ 6 $/jour allumé, `make infra-down` le soir).
 
 ## Chiffres actuels
 
-Aucun score encore (normal : les métriques arrivent en phase 2). Repère cible noté :
-BM25 ≈ 0,67 nDCG@10 sur SciFact (papier BEIR).
+Premier chiffre du banc (protocole mteb, pas encore notre harness). Repères :
+BM25 = 0,665 nDCG@10 sur SciFact (papier BEIR) ; embeddings mesurés le 2026-09-03 : bge-base-en-v1.5 0,740 (= publié), all-MiniLM-L6-v2 0,645.
 
 ## Décisions en attente d'arbitrage
 

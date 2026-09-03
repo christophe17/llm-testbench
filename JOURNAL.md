@@ -247,3 +247,35 @@ avec OTLP fonctionnel, 8 guides infra sur 9, notebook 1 exécuté en CI. 151 tes
 
 **Suite** : guide 07, notebook 2 (chunking + embeddings mesurés), exécution complète avec clés,
 bootstrap et `infra-up` par Christophe, PR phase 1.
+
+## 2026-09-03 — Phase 1 : notebook 2, première mesure, clôture de la construction
+
+**Contexte** : suite de la session ; il restait le guide 07, le notebook 2 et la comparaison
+d'embeddings.
+
+**Fait** : guide 07 (Langfuse v4, OTLP prouvé jusqu'à ClickHouse, relecture par l'API v2) ;
+module `eval/embeddings_bench.py` (mteb + adaptateur sur `LLMClient.embed`) ; notebook 2
+exécuté sur la base locale ; **première mesure du banc** : bge-base-en-v1.5 0,740 nDCG@10 sur
+SciFact — **égal au chiffre publié sur sa carte (0,7404)** — et all-MiniLM-L6-v2 0,645,
+**sous BM25 (0,665)**. Le modèle de tous les tutoriels perd contre une recherche par mots-clés
+sur ce jeu : la raison d'être de la recherche hybride de la phase 3, chiffrée avant même
+qu'elle existe. Postgres en service dans la CI pour les tests `db` et le notebook 2.
+
+**Incidents / surprises** :
+- **Feature hashing et collisions** : l'embedder « sac de mots hachés » à 32 dimensions rendait
+  un cosinus nul entre deux phrases qui partagent trois mots — deux mots tombés dans la même
+  case avec des signes opposés. À 256 dimensions le phénomène persiste (0,5 au lieu de 0,75)
+  sur cinq mots ; le test vérifie désormais la propriété (commun ≫ disjoint, identique = 1) à
+  1 024 dimensions plutôt qu'une valeur. Bonne illustration pour le notebook : un embedding est
+  une projection, et une projection perd.
+- **Un cache qui ment sur le temps** : mteb met ses résultats en cache ; la première table
+  affichait 2 s d'« indexation ». Le module force la ré-évaluation pour que la colonne durée
+  soit un temps d'encodage réel (20 s et 120 s sur M1 Pro).
+- **Une regex qui n'en était pas une** : un heredoc a doublé un antislash… puis ne l'a pas fait ;
+  la vraie cause était la collision ci-dessus. Diagnostiquer en observant (imprimer les
+  vecteurs) a coûté moins cher que deviner.
+- **Langfuse v4 events_only** (voir l'entrée précédente) : la relecture passe par
+  `/api/public/v2/observations` ; consigné dans le guide 07.
+
+**Suite** : PR `phase-1` ; actions Christophe : clés dans `.env`, exécutions complètes,
+bootstrap AWS puis `make infra-up` / `make deploy` (guides 00→05) ; puis `GO PHASE 2`.
