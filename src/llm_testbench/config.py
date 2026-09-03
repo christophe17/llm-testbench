@@ -31,6 +31,18 @@ class Settings(BaseSettings):
     fixtures_dir: Path | None = None
     """Si défini, les loaders lisent ces fixtures locales au lieu du réseau (CI hors ligne)."""
 
+    config_dir: Path | None = None
+    """Répertoire des fichiers de configuration TOML (défaut : ``<racine du dépôt>/config``)."""
+
+    prompts_dir: Path | None = None
+    """Répertoire des prompts versionnés (défaut : ``<racine du dépôt>/prompts``)."""
+
+    def resolved_config_dir(self) -> Path:
+        return self.config_dir if self.config_dir is not None else find_repo_root() / "config"
+
+    def resolved_prompts_dir(self) -> Path:
+        return self.prompts_dir if self.prompts_dir is not None else find_repo_root() / "prompts"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

@@ -71,6 +71,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+asyncio_mode = "auto"
 markers = [
     "network: tests nécessitant le réseau (exclus par défaut, `make test-network`)",
 ]
