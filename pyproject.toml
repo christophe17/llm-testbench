@@ -58,6 +58,10 @@ select = [
     "T20",       # no print in src (notebooks n'y passent pas)
 ]
 
+# Typographie française assumée dans les libellés et messages : « », ›, – ne sont pas des
+# fautes de frappe pour >, - (RUF001/RUF003).
+allowed-confusables = ["›", "–", "«", "»", "’"]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
 # Dans les notebooks, print est le mode d'affichage normal et les cellules de
@@ -80,4 +84,5 @@ addopts = "-q --strict-markers"
 asyncio_mode = "auto"
 markers = [
     "network: tests nécessitant le réseau (exclus par défaut, `make test-network`)",
+    "db: tests nécessitant Postgres/pgvector (sautés sans LLM_TESTBENCH_DATABASE_URL)",
 ]

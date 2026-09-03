@@ -6,6 +6,7 @@ SHELL := /bin/bash
 
 K3D_CLUSTER := llm-testbench
 NOTEBOOKS := notebooks/00_visite_guidee.ipynb
+DATABASE_URL ?= postgresql://testbench:testbench-local-only@localhost:5432/testbench
 
 help: ## Liste les cibles disponibles
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
@@ -32,6 +33,9 @@ test: ## Tests hors ligne (les tests réseau sont exclus)
 
 test-network: ## Tests réseau uniquement (télécharge les datasets réels)
 	uv run python -m pytest -m network
+
+test-db: ## Tests Postgres/pgvector (cluster k3d + port-forward requis)
+	LLM_TESTBENCH_DATABASE_URL=$(DATABASE_URL) uv run python -m pytest -m db
 
 notebooks-ci: ## Exécute les notebooks en mode échantillon hors ligne (comme la CI)
 	LLM_TESTBENCH_SAMPLE=1 uv run python -m pytest --nbmake $(NOTEBOOKS)
@@ -65,4 +69,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (à lancer une seule fois, com
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	check k3d-up k3d-down tilt-up pg-port-forward bootstrap-plan bootstrap-apply
+	test-db check k3d-up k3d-down tilt-up pg-port-forward bootstrap-plan bootstrap-apply
