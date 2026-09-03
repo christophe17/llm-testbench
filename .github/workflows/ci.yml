@@ -11,6 +11,21 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    # Postgres + pgvector comme service : les tests `db` et le notebook 2 tournent en CI,
+    # toujours sans secret ni appel réseau vers un provider (ADR 003, ADR 007).
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: testbench
+          POSTGRES_PASSWORD: testbench-ci
+          POSTGRES_DB: testbench
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U testbench -d testbench"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      LLM_TESTBENCH_DATABASE_URL: postgresql://testbench:testbench-ci@localhost:5432/testbench
     steps:
       - uses: actions/checkout@v4
 
@@ -30,12 +45,12 @@ jobs:
       - name: Typecheck (mypy strict)
         run: uv run mypy
 
-      - name: Tests (hors ligne)
-        run: uv run pytest -m "not network"
+      - name: Tests (hors ligne, base incluse)
+        run: uv run python -m pytest -m "not network"
 
       - name: Notebooks (mode échantillon, hors ligne)
         env:
           LLM_TESTBENCH_SAMPLE: "1"
         run: |
           uv run python -m ipykernel install --user --name llm-testbench
-          uv run pytest --nbmake notebooks/00_visite_guidee.ipynb
+          uv run python -m pytest --nbmake notebooks/00_visite_guidee.ipynb notebooks/01_appel_llm_robuste.ipynb notebooks/02_document_vers_index.ipynb

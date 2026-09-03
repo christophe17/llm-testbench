@@ -1,0 +1,103 @@
+# Backends LLM du banc d'essai et leurs métadonnées de gouvernance (ADR 006).
+#
+# Un modèle se désigne par "backend/modèle" (ex. "anthropic/claude-sonnet-5",
+# "openrouter/mistralai/mistral-large"). Le backend est une entrée de ce fichier ; le modèle
+# est libre, c'est le provider qui le validera au premier appel.
+#
+# Les métadonnées de gouvernance sont des AFFIRMATIONS relevées sur les pages publiques des
+# fournisseurs à la date indiquée, pas des garanties contractuelles. `zero_retention` décrit
+# la configuration effective de NOTRE compte, pas ce que le fournisseur propose. Une valeur
+# absente signifie « inconnue » et la politique la traite comme un refus.
+
+[defaults]
+generator = "anthropic/claude-sonnet-5"
+embeddings = "openai/text-embedding-3-small"
+
+[backends.anthropic]
+kind = "anthropic"
+api_key_env = "ANTHROPIC_API_KEY"
+structured_output = "native"
+
+[backends.anthropic.governance]
+entity = "Anthropic PBC"
+country = "US"
+inference_region = "us"
+default_retention_days = 30
+zero_retention = false
+zero_retention_available = true
+trains_on_inputs = false
+subprocessors = "fixed"
+certifications = ["SOC 2 Type II", "ISO 27001", "ISO 42001"]
+verified_on = 2026-09-03
+notes = "Rétention zéro sur demande pour les clients API ; résidence UE non vérifiée."
+
+[backends.openai]
+kind = "openai_compatible"
+api_key_env = "OPENAI_API_KEY"
+base_url = "https://api.openai.com/v1"
+structured_output = "native"
+
+[backends.openai.governance]
+entity = "OpenAI, L.L.C."
+country = "US"
+inference_region = "us"
+default_retention_days = 30
+zero_retention = false
+zero_retention_available = true
+trains_on_inputs = false
+subprocessors = "fixed"
+certifications = ["SOC 2 Type II"]
+verified_on = 2026-09-03
+notes = "Résidence des données UE disponible par projet (endpoint dédié), non activée ici."
+
+[backends.openrouter]
+kind = "openai_compatible"
+api_key_env = "OPENROUTER_API_KEY"
+base_url = "https://openrouter.ai/api/v1"
+structured_output = "prompt"
+
+[backends.openrouter.governance]
+entity = "OpenRouter, Inc."
+country = "US"
+inference_region = "variable"
+zero_retention = false
+subprocessors = "variable"
+verified_on = 2026-09-03
+notes = "Courtier : chaque modèle est routé vers un hébergeur tiers ; rétention et entraînement dépendent de l'hébergeur (filtres disponibles, non activés ici)."
+
+[backends.bedrock]
+kind = "anthropic_bedrock"
+region = "eu-west-3"
+structured_output = "native"
+enabled = false
+
+[backends.bedrock.governance]
+entity = "Amazon Web Services EMEA SARL"
+country = "LU"
+inference_region = "eu"
+default_retention_days = 0
+zero_retention = true
+zero_retention_available = true
+trains_on_inputs = false
+subprocessors = "fixed"
+certifications = ["SOC 2 Type II", "ISO 27001", "HDS"]
+verified_on = 2026-09-03
+notes = "Activé avec l'infra cloud (phase 1, guide 03). Disponibilité des modèles Claude par région UE à vérifier au moment du code."
+
+[backends.local]
+kind = "openai_compatible"
+base_url = "http://localhost:11434/v1"
+structured_output = "prompt"
+enabled = false
+
+[backends.local.governance]
+entity = "self"
+country = "self"
+inference_region = "self"
+default_retention_days = 0
+zero_retention = true
+zero_retention_available = true
+trains_on_inputs = false
+subprocessors = "fixed"
+verified_on = 2026-09-03
+notes = "Ollama en phase 1 (dev), vLLM en phase 6. Le texte ne quitte pas la machine."

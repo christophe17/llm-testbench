@@ -1,0 +1,23 @@
+# k3d : image poussée dans le registre local, un seul réplica, pas d'autoscaling.
+image:
+  repository: llm-testbench-registry:5050/llm-testbench-api
+  tag: dev
+  pullPolicy: Always
+replicaCount: 1
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 768Mi
+config:
+  LLM_TESTBENCH_DATABASE_URL: postgresql://testbench:testbench-local-only@postgres.llm-testbench:5432/testbench
+  # Traces vers Langfuse (guide 07). Les clés sont celles de l'initialisation headless
+  # locale (infra/helm/langfuse/values-local.yaml) : des constantes de dev, pas des secrets.
+  LLM_TESTBENCH_OTLP_ENDPOINT: http://langfuse-web.observability:3000/api/public/otel/v1/traces
+  LLM_TESTBENCH_LANGFUSE_PUBLIC_KEY: pk-lf-local-0000000000000000
+  LLM_TESTBENCH_LANGFUSE_SECRET_KEY: sk-lf-local-0000000000000000
