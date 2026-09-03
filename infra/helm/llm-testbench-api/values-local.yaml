@@ -1,0 +1,18 @@
+# k3d : image poussée dans le registre local, un seul réplica, pas d'autoscaling.
+image:
+  repository: llm-testbench-registry:5050/llm-testbench-api
+  tag: dev
+  pullPolicy: Always
+replicaCount: 1
+autoscaling:
+  enabled: false
+podDisruptionBudget:
+  enabled: false
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 768Mi
+config:
+  LLM_TESTBENCH_DATABASE_URL: postgresql://testbench:testbench-local-only@postgres.llm-testbench:5432/testbench

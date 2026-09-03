@@ -68,10 +68,51 @@ k3d-down: ## Détruit le cluster k3d
 tilt-up: ## Boucle de dev avec hot-reload (nécessite le cluster k3d)
 	tilt up
 
+k8s-secrets: ## Crée/actualise le Secret des clés API dans le cluster depuis .env
+	@test -f .env || (echo ".env absent : copier .env.example" && exit 1)
+	kubectl -n llm-testbench create secret generic llm-testbench-api-secrets \
+		--from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
+
+docker-build: ## Construit l'image de l'API (arm64 en local)
+	docker build -t llm-testbench-api:dev .
+
+helm-lint: ## Valide le chart Helm avec les valeurs locales et dev
+	helm lint infra/helm/llm-testbench-api -f infra/helm/llm-testbench-api/values-local.yaml
+	helm lint infra/helm/llm-testbench-api -f infra/helm/llm-testbench-api/values-dev.yaml
+	helm template api infra/helm/llm-testbench-api -f infra/helm/llm-testbench-api/values-local.yaml > /dev/null
+
 pg-port-forward: ## Expose Postgres du cluster sur localhost:5432
 	kubectl -n llm-testbench port-forward svc/postgres 5432:5432
 
 # ---------------------------------------------------------------- infra cloud
+
+TF_DEV := infra/terraform/envs/dev
+TFSTATE_BUCKET = llm-testbench-tfstate-$(shell aws sts get-caller-identity --query Account --output text)
+
+infra-init: ## Terraform envs/dev — init avec le backend S3 du bootstrap
+	cd $(TF_DEV) && terraform init -backend-config="bucket=$(TFSTATE_BUCKET)"
+
+infra-plan: ## Terraform envs/dev — plan
+	cd $(TF_DEV) && terraform plan
+
+infra-up: ## Crée l'environnement dev (EKS, RDS, ECR, secrets) — ~20 min, ~6 $/jour allumé
+	cd $(TF_DEV) && terraform apply
+	$(MAKE) kubeconfig
+
+infra-down: ## Détruit TOUT l'environnement dev (base incluse, sans snapshot)
+	cd $(TF_DEV) && terraform destroy
+
+infra-validate: ## Valide la configuration Terraform sans backend ni compte
+	cd $(TF_DEV) && terraform init -backend=false -input=false > /dev/null && terraform validate && terraform fmt -check -recursive
+
+kubeconfig: ## Configure kubectl sur le cluster EKS dev
+	cd $(TF_DEV) && $$(terraform output -raw kubeconfig_command)
+
+cluster-addons: ## Installe External Secrets (Helm) et le ClusterSecretStore sur le cluster courant
+	helm repo add external-secrets https://charts.external-secrets.io >/dev/null 2>&1 || true
+	helm upgrade --install external-secrets external-secrets/external-secrets \
+		-n external-secrets --create-namespace --wait
+	kubectl apply -f infra/k8s/dev/cluster-secret-store.yaml
 
 bootstrap-plan: ## Terraform bootstrap (état distant + alerte budget) — plan
 	cd infra/terraform/bootstrap && terraform init && terraform plan
@@ -80,4 +121,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (à lancer une seule fois, com
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper k3d-up k3d-down tilt-up pg-port-forward bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig cluster-addons bootstrap-plan bootstrap-apply

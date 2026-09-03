@@ -1,0 +1,15 @@
+.git
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.ipynb_checkpoints
+data
+docs
+infra
+notebooks
+tests
+.env
+.env.*
+*.md
+!README.md
