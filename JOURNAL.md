@@ -276,6 +276,15 @@ qu'elle existe. Postgres en service dans la CI pour les tests `db` et le noteboo
   vecteurs) a coûté moins cher que deviner.
 - **Langfuse v4 events_only** (voir l'entrée précédente) : la relecture passe par
   `/api/public/v2/observations` ; consigné dans le guide 07.
+- **La CI a attrapé ce que mon poste masquait.** Sur une base neuve, le pool psycopg
+  échouait (« vector type not found ») : chaque connexion enregistre le type `vector` à sa
+  création, avant que `ensure_schema` ait pu créer l'extension. En local, le job pgvector-init
+  de la phase 0 l'avait déjà créée : 6 tests verts, bug invisible. Correctif : le schéma passe
+  par une connexion brute dans `open()`, avant le pool ; reproduit sur une base vierge du k3d
+  (`CREATE DATABASE ci_fresh`), corrigé, CI verte. Leçon : un environnement de dev qui a de
+  l'histoire n'est pas un environnement neuf ; la CI avec un service Postgres jetable, si.
+  Première mise en scène de CI verte. Le mypy de la CI avait aussi refusé un `type: ignore`
+  que mon poste, avec `mteb` installé, rendait nécessaire — même famille.
 
 **Suite** : PR `phase-1` ; actions Christophe : clés dans `.env`, exécutions complètes,
 bootstrap AWS puis `make infra-up` / `make deploy` (guides 00→05) ; puis `GO PHASE 2`.
