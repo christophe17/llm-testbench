@@ -115,3 +115,96 @@ comparatif chiffré de frameworks que quasi personne ne publie.
 **Incidents / surprises** : —
 
 **Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+
+## 2026-08-31 — Amendement : phase 5B « Le pont », ML classique contre LLM
+
+**Contexte** : demande d'une phase courte après la phase 5 pour mesurer, avec le harness
+existant, l'arbitrage ML classique / LLM / hybride — le livrable que personne n'apporte en
+entretien. Conflit apparent avec la règle §6 « pas de prédiction ».
+
+**Fait** : phase 5B rédigée et insérée entre 5 et 6 dans `CLAUDE.md` (numérotation
+conservée, « B » = insérée après coup) ; règle §6 reformulée : exception nommée, unique,
+trois verrous (aucune autre tâche de prédiction, pas de chasse au score, module `classic/`
+jamais exposé par l'API). ADR 005 avec vérification web des jeux candidats. Trois
+corrections apportées à l'énoncé initial : (1) le bras « GBM de référence » se dédouble en
+texte-ignoré et texte-en-n-grams — la littérature (Shi et al. 2021) montre que l'hybride
+classique (AUC 0,968) bat l'hybride à embeddings LLM (0,926), donc sans ce bras le tableau
+flatterait le LLM ; (2) TabLLM n'est comparable que pour son zéro-coup, son few-shot est du
+fine-tuning ; (3) l'attente « écart qualité faible » sur le texte ne tiendra probablement
+pas sur 77 intentions fines — déclarée avant mesure, publiée telle quelle.
+
+**Incidents / surprises** : le site d'origine d'EMSCAD (Université de l'Égée) est mort — il
+répond une page d'hébergement générique ; la licence d'origine du jeu tabulaire recommandé
+n'est donc plus vérifiable à la source, seule la copie du benchmark (CC BY-NC-SA) l'est.
+`PolyAI/banking77` sur HF est encore à script (cassé avec `datasets` ≥ 3), PR Parquet
+ouverte depuis août 2025 sans réponse des mainteneurs : prévoir un miroir ou le CSV GitHub.
+
+**Suite** : arbitrage des deux jeux de la phase 5B (non bloquant avant cette phase) ;
+inchangé par ailleurs — relecture de la PR phase 0, puis `GO PHASE 1`.
+
+## 2026-08-31 — Jeux de la phase 5B arbitrés
+
+**Contexte** : recommandation de l'ADR 005 soumise.
+
+**Fait** : retenus `fake_job_postings2` (tabulaire à texte libre, EMSCAD via le benchmark
+multimodal AutoGluon) et Banking77 (classification de texte, 77 intentions). Substituts
+conservés dans l'ADR : `women_clothing_review`, MASSIVE fr-FR. ADR 005 accepté sans réserve.
+
+**Incidents / surprises** : —
+
+**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+
+## 2026-09-01 — Question : le pipeline de données est-il l'extension naturelle ?
+
+**Contexte** : question posée en relisant le brief — une phase « data pipeline » serait-elle
+la suite logique de la roadmap ?
+
+**Fait** : réponse négative, consignée, pas de modification de la roadmap. Arguments :
+(1) la phase 3 est déjà un pipeline de données opéré (Dagster, partitions, idempotence,
+lineage, Pandera, réindexation incrémentale) avec une justification propre au banc — la
+matrice d'expériences, pas la fraîcheur ; (2) un pipeline au sens data engineering
+(Kafka, Spark, dbt, CDC) existe pour des données qui bougent — le banc n'a ni source vivante
+ni trafic, ce serait réintroduire la logique « corpus vivant » supprimée par le pivot, cas
+typique du « bloc qui flotte » de l'audit de cohérence §6 ; (3) hors positionnement — le
+data engineering est un métier voisin, l'audit marché du 27/08 ne l'a pas retenu ;
+(4) les vrais pipelines de données auront leur place dans les repos clients séparés.
+Deux extensions « données » jugées légitimes : la boucle de données LLMOps (traces →
+juge → curation → golden set / jeu LoRA, reliant les phases 2, 5 et 6, sur traces
+synthétiques à déclarer comme telles), notée en candidat post-phase 10 dans `STATE.md` ;
+et le parsing de documents à l'échelle (Docling / unstructured / marker sur le corpus
+maison difficile à parser, impact mesuré sur le retrieval), qui relève du notebook 2 de la
+phase 3 plutôt que d'une phase nouvelle. Le mot « pipeline de données » est déjà légitime
+dans le README et le CV grâce à la phase 3 : à formuler ainsi en phase 8.
+
+**Incidents / surprises** : —
+
+**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+
+## 2026-09-03 — Clôture de la phase 0 : notebook relu, environnement local réparé
+
+**Contexte** : notebook 0 relu en entier (version pédagogique réécrite le 26/08) ; PR #1
+mergée sur `main` depuis le 27/08 ; amendements docs (phase 5B, journal du 01/09) encore
+non commités.
+
+**Fait** : vérification locale complète avant clôture — ruff, mypy strict, 13 tests hors
+ligne, notebook 0 exécuté en mode échantillon par nbmake — tout vert après réparation de
+l'environnement (ci-dessous). Phase 0 déclarée terminée, debrief livré. Le protocole
+s'arrête là jusqu'à `GO PHASE 1`.
+
+**Incidents / surprises** : le dépôt a été déplacé de `~/Sites/` vers `~/Roadmaps/`. Les
+scripts console du venv (`.venv/bin/pytest`, `mypy`), le kernel Jupyter `llm-testbench` et le
+hook pre-commit portaient encore l'ancien chemin absolu (shebang / `kernel.json` /
+`INSTALL_PYTHON`). Symptômes trompeurs : `uv sync --frozen` répondait « Audited 141
+packages » (rien à faire), ruff et mypy passaient, mais `uv run pytest` échouait sur
+`ModuleNotFoundError: llm_testbench` et `--nbmake` inconnu — parce que le `pytest` qui
+s'exécutait était celui de conda base (8.4.1, sur PATH), pas celui du venv (9.1.1).
+Diagnostic décisif : `head -1 .venv/bin/pytest`. Correctif : `uv sync --reinstall`,
+réenregistrement du kernel (`make setup`), `pre-commit install`. Leçon, même famille que
+l'incident kernelspec du 26/08 : un outil qui « passe » ne prouve pas qu'il tourne dans
+l'interpréteur qu'on croit, et `uv sync` ne vérifie pas les shebangs. Durcissement :
+le Makefile invoque désormais `python -m pytest` (passe par le lien `python` du venv,
+insensible au déplacement) au lieu du script console `pytest`. Reste un chemin périmé
+purement cosmétique dans une sortie versionnée du notebook 0 (racine affichée) — sera
+rafraîchi à la prochaine exécution complète.
+
+**Suite** : PR docs pour les amendements non commités ; `GO PHASE 1`.
