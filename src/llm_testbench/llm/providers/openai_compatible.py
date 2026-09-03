@@ -18,6 +18,7 @@ from typing import Any, Literal
 
 import openai
 
+from llm_testbench.llm.embeddings import EmbeddingRequest, EmbeddingResult
 from llm_testbench.llm.errors import (
     InvalidRequestError,
     LLMError,
@@ -59,6 +60,24 @@ def _usage(usage: openai.types.CompletionUsage | None) -> Usage | None:
         cache_read_tokens=cached,
         cache_write_tokens=written,
     )
+
+
+def _translate_openai_error(backend: str, error: Exception) -> LLMError:
+    if isinstance(error, openai.RateLimitError):
+        return RateLimitedError(
+            str(error), backend=backend, retry_after_s=retry_after_seconds(error.response.headers)
+        )
+    if isinstance(error, openai.APITimeoutError):
+        return ProviderTimeoutError(str(error), backend=backend)
+    if isinstance(error, openai.APIConnectionError):
+        return ProviderUnavailableError(str(error), backend=backend)
+    if isinstance(error, openai.APIStatusError):
+        if error.status_code >= 500:
+            return ProviderUnavailableError(
+                str(error), backend=backend, status_code=error.status_code
+            )
+        return InvalidRequestError(str(error), backend=backend, status_code=error.status_code)
+    return ProviderUnavailableError(f"erreur inattendue : {error!r}", backend=backend)
 
 
 class OpenAICompatibleProvider:
@@ -122,24 +141,7 @@ class OpenAICompatibleProvider:
         return params
 
     def translate_error(self, error: Exception) -> LLMError:
-        backend = self.backend
-        if isinstance(error, openai.RateLimitError):
-            return RateLimitedError(
-                str(error),
-                backend=backend,
-                retry_after_s=retry_after_seconds(error.response.headers),
-            )
-        if isinstance(error, openai.APITimeoutError):
-            return ProviderTimeoutError(str(error), backend=backend)
-        if isinstance(error, openai.APIConnectionError):
-            return ProviderUnavailableError(str(error), backend=backend)
-        if isinstance(error, openai.APIStatusError):
-            if error.status_code >= 500:
-                return ProviderUnavailableError(
-                    str(error), backend=backend, status_code=error.status_code
-                )
-            return InvalidRequestError(str(error), backend=backend, status_code=error.status_code)
-        return ProviderUnavailableError(f"erreur inattendue : {error!r}", backend=backend)
+        return _translate_openai_error(self.backend, error)
 
     # ------------------------------------------------------------------ appels
 
@@ -185,3 +187,43 @@ class OpenAICompatibleProvider:
             raise self.translate_error(error) from error
         yield StreamChunk(kind="usage", usage=usage if usage is not None else Usage(), model=model)
         yield StreamChunk(kind="end", finish_reason=finish, model=model)
+
+
+class OpenAIEmbeddingProvider:
+    """Embeddings via l'endpoint ``/embeddings`` compatible OpenAI (OpenAI, vLLM, Ollama)."""
+
+    def __init__(self, *, backend: str, client: openai.AsyncOpenAI) -> None:
+        self.backend = backend
+        self._client = client
+
+    @classmethod
+    def from_config(cls, backend: str, config: BackendConfig) -> "OpenAIEmbeddingProvider":
+        api_key = config.api_key()
+        if api_key is None:
+            if config.api_key_env is not None:
+                raise MissingCredentialsError(
+                    f"backend {backend!r} : variable d'environnement {config.api_key_env} absente"
+                )
+            api_key = _PLACEHOLDER_KEY
+        client = openai.AsyncOpenAI(api_key=api_key, base_url=config.base_url, max_retries=0)
+        return cls(backend=backend, client=client)
+
+    async def embed(self, request: EmbeddingRequest) -> EmbeddingResult:
+        params: dict[str, Any] = {"model": request.model.model, "input": list(request.texts)}
+        if request.dimensions is not None:
+            params["dimensions"] = request.dimensions
+        watch = Stopwatch()
+        try:
+            response = await self._client.embeddings.create(**params)
+        except Exception as error:
+            raise _translate_openai_error(self.backend, error) from error
+        ordered = sorted(response.data, key=lambda item: item.index)
+        usage = response.usage
+        return EmbeddingResult(
+            vectors=tuple(tuple(item.embedding) for item in ordered),
+            model=response.model,
+            backend=self.backend,
+            usage=Usage(input_tokens=usage.prompt_tokens) if usage is not None else Usage(),
+            usage_reported=usage is not None,
+            latency_ms=watch.elapsed_ms,
+        )

@@ -10,15 +10,22 @@ repos:
         args: [--maxkb=2048]
       - id: check-merge-conflict
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
-    hooks:
-      - id: ruff
-        args: [--fix]
-      - id: ruff-format
-
+  # ruff et mypy tournent avec les versions du projet (uv), jamais avec une version
+  # épinglée à part : deux versions d'un même linter finissent par se contredire.
   - repo: local
     hooks:
+      - id: ruff
+        name: ruff (lint)
+        entry: uv run ruff check --fix
+        language: system
+        types_or: [python, pyi, jupyter]
+        require_serial: true
+      - id: ruff-format
+        name: ruff (format)
+        entry: uv run ruff format
+        language: system
+        types_or: [python, pyi, jupyter]
+        require_serial: true
       - id: mypy
         name: mypy (strict)
         entry: uv run mypy

@@ -168,5 +168,6 @@ class StreamChunk(BaseModel):
     kind: Literal["text", "usage", "end"]
     text: str = ""
     usage: Usage | None = None
+    cost_usd: float | None = None
     finish_reason: FinishReason | None = None
     model: str | None = None

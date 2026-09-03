@@ -13,6 +13,7 @@ import httpx2
 import openai
 import pytest
 
+from llm_testbench.llm.embeddings import EmbeddingRequest
 from llm_testbench.llm.errors import (
     InvalidRequestError,
     LLMError,
@@ -24,6 +25,8 @@ from llm_testbench.llm.errors import (
 from llm_testbench.llm.providers import (
     AnthropicProvider,
     OpenAICompatibleProvider,
+    OpenAIEmbeddingProvider,
+    build_embedding_provider,
     build_provider,
 )
 from llm_testbench.llm.registry import Registry
@@ -442,3 +445,51 @@ def test_build_provider_reads_credentials_at_construction(monkeypatch: pytest.Mo
     local = build_provider("local", registry.get("local"))  # pas de clé requise
     assert isinstance(local, OpenAICompatibleProvider)
     assert local.backend == "local"
+
+
+# ================================================================== embeddings
+
+
+async def test_openai_embeddings_keep_input_order_and_report_usage() -> None:
+    payload = {
+        "object": "list",
+        "model": "text-embedding-3-small",
+        "data": [
+            {"object": "embedding", "index": 1, "embedding": [0.0, 1.0]},
+            {"object": "embedding", "index": 0, "embedding": [1.0, 0.0]},
+        ],
+        "usage": {"prompt_tokens": 6, "total_tokens": 6},
+    }
+    recorder = Recorder(lambda body: httpx2.Response(200, json=payload))
+    client = openai.AsyncOpenAI(
+        api_key="test",
+        max_retries=0,
+        http_client=openai.DefaultAsyncHttpxClient(transport=recorder.transport()),
+    )
+    provider = OpenAIEmbeddingProvider(backend="openai", client=client)
+
+    result = await provider.embed(
+        EmbeddingRequest(
+            model=ModelRef.parse("openai/text-embedding-3-small"),
+            texts=("premier", "second"),
+            data_class=DataClass.PUBLIC,
+            dimensions=2,
+        )
+    )
+
+    assert recorder.bodies[0]["input"] == ["premier", "second"]
+    assert recorder.bodies[0]["dimensions"] == 2
+    assert result.vectors == ((1.0, 0.0), (0.0, 1.0))  # remis dans l'ordre d'entrée
+    assert result.dimensions == 2
+    assert result.usage.input_tokens == 6
+    assert result.model == "text-embedding-3-small"
+
+
+def test_embedding_factory_refuses_backends_without_embeddings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    registry = Registry.from_settings()
+    with pytest.raises(InvalidRequestError, match="ne fournit pas d'embeddings"):
+        build_embedding_provider("anthropic", registry.get("anthropic"))
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-o")
+    assert build_embedding_provider("openai", registry.get("openai")).backend == "openai"
