@@ -67,6 +67,10 @@ class CompletionRequest(BaseModel):
     """Schéma JSON attendu en sortie. Le provider l'impose nativement s'il sait, sinon la
     façade l'injecte dans le prompt et valide après coup (``structured.py``)."""
 
+    reasoning_effort: Literal["low", "medium", "high"] | None = None
+    """Effort de raisonnement, quand le backend a ce réglage (``output_config.effort`` chez
+    Anthropic, ``reasoning_effort`` chez OpenAI). ``None`` : défaut du provider."""
+
     timeout_s: float | None = Field(default=None, gt=0)
     metadata: dict[str, str] = Field(default_factory=dict)
     """Informations de trace (nom/version/empreinte du prompt…). Hors clé de cache."""
@@ -152,6 +156,8 @@ class Completion(BaseModel):
     cached: bool = False
     attempts: int = 1
     provider_message_id: str | None = None
+    usage_reported: bool = True
+    """False si le provider n'a pas renvoyé d'usage : le coût est alors inconnu, pas nul."""
 
 
 class StreamChunk(BaseModel):
