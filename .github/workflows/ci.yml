@@ -53,4 +53,4 @@ jobs:
           LLM_TESTBENCH_SAMPLE: "1"
         run: |
           uv run python -m ipykernel install --user --name llm-testbench
-          uv run pytest --nbmake notebooks/00_visite_guidee.ipynb notebooks/01_appel_llm_robuste.ipynb
+          uv run python -m pytest --nbmake notebooks/00_visite_guidee.ipynb notebooks/01_appel_llm_robuste.ipynb notebooks/02_document_vers_index.ipynb
