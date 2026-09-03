@@ -5,45 +5,48 @@
 
 ## Phase en cours
 
-**Phase 1 — Squelette de production : en cours** (démarrée le 2026-09-03, branche `phase-1`,
-plan validé le même jour). Phase 0 terminée (PR #1 mergée le 2026-08-27). PR #2 (docs :
-phase 5B + clôture phase 0) en attente de merge — `phase-1` est branchée dessus, à rebaser
-sur `main` avant l'ouverture de sa PR si le merge est fait en squash.
+**Phase 1 — Squelette de production : construite, en cours de finition** (démarrée le
+2026-09-03, branche `phase-1`, 15 commits). PR #2 (docs : phase 5B + clôture phase 0) toujours
+ouverte — `phase-1` est branchée dessus, à rebaser sur `main` si le merge est fait en squash.
 
-Ordre de construction : bootstrap AWS (guide `docs/infra/00-bootstrap.md`, exécuté par
-Christophe) → couche LLM + gouvernance + prompts versionnés → sources, ingestion, pgvector →
-API `/chat` SSE → Langfuse/OTel → Terraform `envs/dev` + Helm → notebooks 1 et 2 → traces.
+## Fait en phase 1 (2026-09-03)
 
-## Fait
+- **Couche LLM** (`src/llm_testbench/llm/`, ADR 006) : types neutres, gouvernance des données
+  (classes, métadonnées de backend datées, politique TOML par refus par défaut, décision tracée),
+  registre `config/llm_backends.toml` (anthropic, openai, openrouter, bedrock, local), table de
+  prix datée (Anthropic + OpenAI relevés le 03/09), prompts versionnés Jinja2 strict avec
+  empreinte, retry/backoff/gigue, circuit breaker, délai, budget, cache exact et sémantique,
+  providers Anthropic (dont Bedrock) et compatible OpenAI sur SDK officiels (`max_retries=0`),
+  embeddings, sorties structurées avec réparation bornée, façade `LLMClient`, traces OTel
+  (attributs `gen_ai.*` + `llm_testbench.*`), simulateur réseau pour tests et notebooks.
+- **Sources et ingestion** (ADR 007) : `Source`/`Evidence`/`Provenance`/`Citation` homogènes,
+  parsing (texte, markdown, sections), chunker récursif (baseline phase 3), schéma Postgres
+  (documents, chunks, registre d'index, une table de vecteurs HNSW par index), store psycopg
+  asynchrone, pipeline idempotent, loader QASPER (Parquet HF, 281 papiers validation),
+  `DocumentSource`, réponse citée (`prompts/chat_answer.md`, sentinelle de refus).
+- **API** : `/chat` JSON et `/chat/stream` SSE, `/healthz`, `/readyz` (503 avec raison),
+  `/sources`, erreurs typées → codes HTTP, CLI d'ingestion (`make ingest-scifact|qasper`).
+- **Infra** : Dockerfile multi-arch non-root, chart Helm (probes, HPA, PDB, sécurité,
+  ExternalSecret), Tiltfile, Terraform `envs/dev` (VPC, EKS 1.33 + Pod Identity + add-ons
+  managés, RDS pg16 pgvector, ECR, S3, Secrets Manager, rôles) validé, lock providers
+  3 plateformes, `make infra-*`/`deploy`/`cluster-addons`. Vérifié sur k3d : image poussée,
+  pod en marche, readiness 503 « index absent » tant que rien n'est ingéré (voulu).
+- **Langfuse v4 sur k3d** (Helm, ClickHouse mono-nœud maison, init headless) : OTLP accepté,
+  événements en ClickHouse avec tous nos attributs, coût recalculé par Langfuse
+  (0,00187 $ = le nôtre) ; API legacy désactivée en mode `events_only` (guide 07 en cours).
+- **Guides infra** `docs/infra/` : README, 00 bootstrap, 01 dev local, 02 réseau, 03 EKS,
+  04 RDS, 05 secrets, 06 chart Helm, 08 coûts (07 observabilité en cours).
+- **Notebook 1** `01_appel_llm_robuste.ipynb` (39 cellules, exécuté en mode échantillon, CI).
+- Tests : 151 hors ligne, 6 sur base (`make test-db`), 2 réseau ; mypy strict ; CI verte
+  attendue (deux notebooks en nbmake).
 
-- Brief consolidé dans `CLAUDE.md` (+ §8 décisions au fil de l'eau), fichiers de pilotage.
-- Vérification web des jeux de données : `docs/datasets-verification-2026-08-26.md`.
-  À retenir : τ-bench déprécié → `tau2-bench` ; NQ retiré (145 GB) ; BIRD via Mini-Dev
-  (bases PostgreSQL incluses) ; licences à signaler : ChartQA GPL-3.0, FUNSD non
-  commercial, DocVQA floue.
-- Outillage : uv + Python 3.12, ruff, mypy strict, pytest, pre-commit, Makefile.
-- Interface de chargement (`eval/types.py`, validation d'intégrité à la construction,
-  flag `sampled`) + loader de référence BEIR/SciFact, testé hors ligne sur fixtures
-  (13 tests) et validé contre le vrai dépôt HF (5 183 docs / 300 requêtes, conformes
-  au papier BEIR).
-- CI GitHub Actions hors ligne : lint, mypy strict, tests, notebook via nbmake en mode
-  échantillon (kernel Jupyter dédié `llm-testbench`, enregistré par `make setup`).
-- Cluster local : k3d (mis à jour en 5.9.0) + Postgres 16 + pgvector 0.8.6, vérifié de
-  bout en bout (`make k3d-up` → extension active), Tiltfile minimal.
-- Terraform `bootstrap/` : bucket d'état S3 chiffré/versionné (verrouillage natif S3),
-  budget 55 USD avec alertes 80/100 % réel + 100 % prévisionnel. **Non appliqué** — voir
-  questions ouvertes.
-- Notebook 0 exécuté et versionné avec ses sorties (mode complet ET mode échantillon).
-- ADR 001 (datasets), 002 (report AWS/Langfuse), 003 (conventions), 004 (interface loaders),
-  005 (phase 5B).
-- 2026-08-27 : audit marché (offres AI Engineer France 2026) → roadmap étendue à 10
-  phases : GraphRAG (phase 3), mémoire d'agent (4.10), UI de chat minimale (phase 5),
-  phase 9 Voice, phase 10 Browser/computer use (optionnelle). Frameworks en comparaison
-  chiffrée bornée : même agent porté sur smolagents, OpenAI Agents SDK et CrewAI (4.1),
-  LlamaIndex vs notre pipeline (phase 3). Détail dans `CLAUDE.md` §8 et `JOURNAL.md`.
-- 2026-08-31 : amendement — phase 5B « Le pont » (ML classique vs LLM vs hybride, ~1 semaine,
-  entre 5 et 6, six bras dont l'hybride classique GBM + n-grams), règle §6 reformulée avec
-  exception bornée (trois verrous), ADR 005. Jeux arbitrés : `fake_job_postings2` + Banking77.
+## Reste à faire en phase 1
+
+- Guide 07 (observabilité) ; notebook 2 (du document au chunk indexé, avec la comparaison
+  des trois embeddings via `mteb` sur SciFact — nécessite les clés et `sentence-transformers`).
+- Exécution complète des notebooks avec clés (`.env`), ingestion SciFact réelle, `/chat` réel.
+- Bootstrap AWS et `make infra-up` par Christophe (guides 00 et 03), déploiement EKS.
+- Traces, ADR de clôture, debrief, PR `phase-1`.
 
 ## Chiffres actuels
 

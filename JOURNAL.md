@@ -208,3 +208,42 @@ purement cosmétique dans une sortie versionnée du notebook 0 (racine affichée
 rafraîchi à la prochaine exécution complète.
 
 **Suite** : PR docs pour les amendements non commités ; `GO PHASE 1`.
+
+## 2026-09-03 — Phase 1 : squelette de production construit en une session
+
+**Contexte** : `GO PHASE 1` reçu le matin après la clôture de la phase 0. Plan validé avec
+quatre arbitrages (OpenRouter en backend de largeur seulement, gouvernance des données dès la
+phase 1, guides infra pédagogiques, QASPER + trio d'embeddings).
+
+**Fait** : couche LLM complète (ADR 006), sources/ingestion/pgvector (ADR 007), API JSON + SSE,
+image + chart Helm + Tilt vérifiés sur k3d, Terraform `envs/dev` validé, Langfuse v4 sur k3d
+avec OTLP fonctionnel, 8 guides infra sur 9, notebook 1 exécuté en CI. 151 tests hors ligne,
+6 sur base. Détail dans `STATE.md`.
+
+**Incidents / surprises** :
+- **Deux versions d'un même linter se contredisent.** Le hook pre-commit épinglait ruff 0.6.9,
+  le projet utilise la version résolue par uv ; une règle de style de tests (PT012) passait chez
+  l'un et bloquait chez l'autre. Correctif : les hooks passent par `uv run ruff` ; `make lint`
+  couvre aussi les notebooks, comme le hook. Même famille que le venv déplacé du matin : un outil
+  « vert » ne prouve rien sur l'outil qui tourne vraiment.
+- **`$path` en zsh est `PATH`.** Une boucle `for path in …` a effacé le PATH du shell : « curl :
+  command not found ». Vingt minutes de diagnostic pour une variable mal nommée.
+- **Les modèles Claude actuels refusent `temperature`.** Vérifié dans la référence API : le
+  provider Anthropic ignore `temperature` et `seed` (sinon 400). Le « température 0 pour le
+  déterminisme » de la phase 5B se mesurera autrement. Consigné dans le notebook 1.
+- **Le chart Langfuse 2.x exige un opérateur ClickHouse** (CRD, trois keepers) : trop lourd pour
+  le « strict nécessaire » local. Contournement : ClickHouse mono-nœud en 60 lignes de
+  StatefulSet, le chart en mode « ClickHouse externe ». Puis **Langfuse v4 est en mode
+  `events_only`** : les endpoints `/api/public/traces` et `/observations` répondent 404 ; les
+  spans OTLP sont bien en ClickHouse (`events_core`), avec tous nos attributs, et Langfuse
+  recalcule le coût (0,00187 $, identique au nôtre — un contrôle croisé gratuit). Le worker
+  démarré avant la fin des migrations avait aussi laissé des erreurs : redémarré.
+- **`helm --wait` expire sur une readiness qui refuse** : ce n'est pas un bug, c'est `/readyz`
+  qui dit « index absent ». Documenté (guides 01 et 06) plutôt que contourné.
+- **Une pipe masque un échec** (`make check | tail` sous `set -e`) : un commit a tenté de partir
+  avec mypy rouge, le hook l'a arrêté. `set -o pipefail` désormais dans les enchaînements.
+- **Les tests de chunking n'avaient jamais tourné** : chaque `make check` s'arrêtait au lint
+  avant pytest. Deux attentes fausses dans les tests, corrigées ; le chunker était juste.
+
+**Suite** : guide 07, notebook 2 (chunking + embeddings mesurés), exécution complète avec clés,
+bootstrap et `infra-up` par Christophe, PR phase 1.
