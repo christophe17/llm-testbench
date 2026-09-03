@@ -63,7 +63,7 @@ select = [
 
 # Typographie française assumée dans les libellés et messages : « », ›, – ne sont pas des
 # fautes de frappe pour >, - (RUF001/RUF003).
-allowed-confusables = ["›", "–", "«", "»", "’"]
+allowed-confusables = ["›", "–", "«", "»", "’", "×", "−"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]

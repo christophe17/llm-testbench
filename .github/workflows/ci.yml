@@ -31,11 +31,11 @@ jobs:
         run: uv run mypy
 
       - name: Tests (hors ligne)
-        run: uv run pytest -m "not network"
+        run: uv run python -m pytest -m "not network"
 
       - name: Notebooks (mode échantillon, hors ligne)
         env:
           LLM_TESTBENCH_SAMPLE: "1"
         run: |
           uv run python -m ipykernel install --user --name llm-testbench
-          uv run pytest --nbmake notebooks/00_visite_guidee.ipynb
+          uv run pytest --nbmake notebooks/00_visite_guidee.ipynb notebooks/01_appel_llm_robuste.ipynb

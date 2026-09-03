@@ -18,6 +18,7 @@ secrets:
         key: llm-testbench/dev/openrouter-api-key
       - name: LLM_TESTBENCH_DATABASE_URL
         key: llm-testbench/dev/database-url
+# Aucune annotation IRSA : l'accès Bedrock passe par EKS Pod Identity, associé par
+# Terraform au couple (namespace llm-testbench, ServiceAccount api) — iam.tf.
 serviceAccount:
-  annotations:
-    eks.amazonaws.com/role-arn: "<api_role_arn>"
+  create: true

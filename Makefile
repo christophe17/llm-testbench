@@ -5,7 +5,7 @@
 SHELL := /bin/bash
 
 K3D_CLUSTER := llm-testbench
-NOTEBOOKS := notebooks/00_visite_guidee.ipynb
+NOTEBOOKS := notebooks/00_visite_guidee.ipynb notebooks/01_appel_llm_robuste.ipynb
 DATABASE_URL ?= postgresql://testbench:testbench-local-only@localhost:5432/testbench
 
 help: ## Liste les cibles disponibles
@@ -17,13 +17,13 @@ setup: ## Installe l'environnement (deps + hooks pre-commit + kernel Jupyter)
 	uv run python -m ipykernel install --user --name llm-testbench \
 		--display-name "Python (llm-testbench)"
 
-lint: ## Ruff : lint + format check
-	uv run ruff check src tests
-	uv run ruff format --check src tests
+lint: ## Ruff : lint + format check (code et notebooks, comme le hook pre-commit)
+	uv run ruff check src tests notebooks
+	uv run ruff format --check src tests notebooks
 
 format: ## Ruff : corrige lint + format
-	uv run ruff check --fix src tests
-	uv run ruff format src tests
+	uv run ruff check --fix src tests notebooks
+	uv run ruff format src tests notebooks
 
 typecheck: ## Mypy strict
 	uv run mypy
@@ -84,6 +84,23 @@ helm-lint: ## Valide le chart Helm avec les valeurs locales et dev
 pg-port-forward: ## Expose Postgres du cluster sur localhost:5432
 	kubectl -n llm-testbench port-forward svc/postgres 5432:5432
 
+# ---------------------------------------------------------------- observabilité locale
+
+langfuse-up: ## Déploie Langfuse (Helm) + ClickHouse mono-nœud sur le k3d (namespace observability)
+	helm repo add langfuse https://langfuse.github.io/langfuse-k8s >/dev/null 2>&1 || true
+	helm repo update langfuse >/dev/null
+	kubectl apply -k infra/k8s/local/observability
+	kubectl -n observability rollout status statefulset/clickhouse --timeout=300s
+	helm upgrade --install langfuse langfuse/langfuse -n observability \
+		-f infra/helm/langfuse/values-local.yaml --wait --timeout 20m
+
+langfuse-down: ## Retire Langfuse et ClickHouse du k3d
+	helm uninstall langfuse -n observability || true
+	kubectl delete -k infra/k8s/local/observability --ignore-not-found
+
+langfuse-port-forward: ## Expose l'interface Langfuse sur localhost:3000
+	kubectl -n observability port-forward svc/langfuse-web 3000:3000
+
 # ---------------------------------------------------------------- infra cloud
 
 TF_DEV := infra/terraform/envs/dev
@@ -108,6 +125,17 @@ infra-validate: ## Valide la configuration Terraform sans backend ni compte
 kubeconfig: ## Configure kubectl sur le cluster EKS dev
 	cd $(TF_DEV) && $$(terraform output -raw kubeconfig_command)
 
+deploy: ## Construit et pousse l'image sur ECR (SHA git) puis déploie le chart sur le cluster courant
+	$(eval ECR := $(shell cd $(TF_DEV) && terraform output -raw ecr_repository_url))
+	$(eval TAG := $(shell git rev-parse --short HEAD))
+	aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin $(ECR)
+	docker build -t $(ECR):$(TAG) .
+	docker push $(ECR):$(TAG)
+	kubectl create namespace llm-testbench --dry-run=client -o yaml | kubectl apply -f -
+	helm upgrade --install api infra/helm/llm-testbench-api -n llm-testbench \
+		-f infra/helm/llm-testbench-api/values-dev.yaml \
+		--set image.repository=$(ECR) --set image.tag=$(TAG)
+
 cluster-addons: ## Installe External Secrets (Helm) et le ClusterSecretStore sur le cluster courant
 	helm repo add external-secrets https://charts.external-secrets.io >/dev/null 2>&1 || true
 	helm upgrade --install external-secrets external-secrets/external-secrets \
@@ -121,4 +149,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (à lancer une seule fois, com
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy cluster-addons bootstrap-plan bootstrap-apply
