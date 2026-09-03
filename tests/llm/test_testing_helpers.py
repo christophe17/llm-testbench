@@ -7,6 +7,7 @@ from llm_testbench.llm.errors import (
     RateLimitedError,
 )
 from llm_testbench.llm.testing import (
+    HashingEmbedder,
     Step,
     ToyEmbedder,
     anthropic_error,
@@ -74,3 +75,19 @@ async def test_toy_embedder_groups_paraphrases() -> None:
         )
     )
     assert result.dimensions == 3
+
+
+def test_hashing_embedder_is_lexical_deterministic_and_normalised() -> None:
+    embedder = HashingEmbedder(dimensions=1024)
+    a = embedder.vector("retrieval finds relevant documents")
+    b = embedder.vector("documents relevant to retrieval")
+    c = embedder.vector("crêpes farine œufs lait")
+
+    def dot(x: tuple[float, ...], y: tuple[float, ...]) -> float:
+        return sum(p * q for p, q in zip(x, y, strict=True))
+
+    assert dot(a, a) == pytest.approx(1.0)  # normalisé
+    assert dot(a, b) > 0.6  # trois mots communs sur quatre (collisions rares à 1 024 cases)
+    assert abs(dot(a, c)) < 0.3  # aucun mot commun
+    assert a == embedder.vector("retrieval finds relevant documents")  # déterministe
+    assert embedder.vector("") == tuple([0.0] * 1024)

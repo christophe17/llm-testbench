@@ -56,6 +56,9 @@ ingest-scifact: ## Indexe SciFact (BEIR) dans pgvector — OPENAI_API_KEY et bas
 ingest-qasper: ## Indexe QASPER (validation) dans pgvector
 	uv run python -m llm_testbench.ingest.cli qasper
 
+bench-embeddings: ## Compare 3 modèles d'embeddings sur SciFact via mteb (groupe bench, clé OpenAI) → data/results/
+	uv run --group bench python -m llm_testbench.eval.embeddings_bench --device mps
+
 # ---------------------------------------------------------------- cluster local
 
 k3d-up: ## Crée le cluster k3d et déploie Postgres/pgvector
@@ -149,4 +152,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (à lancer une seule fois, com
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper bench-embeddings k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy cluster-addons bootstrap-plan bootstrap-apply

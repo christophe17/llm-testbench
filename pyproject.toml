@@ -24,6 +24,10 @@ dependencies = [
 ]
 
 [dependency-groups]
+bench = [
+    "mteb>=2.20.5",
+    "sentence-transformers>=6.0.1",
+]
 dev = [
     "pytest>=8.3",
     "ruff>=0.6",
@@ -78,7 +82,7 @@ mypy_path = "src"
 packages = ["llm_testbench"]
 
 [[tool.mypy.overrides]]
-module = "datasets.*"
+module = ["datasets.*", "mteb.*", "sentence_transformers.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

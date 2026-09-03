@@ -9,7 +9,10 @@ notebook 1 crédibles : on regarde le vrai chemin, pas une maquette.
 """
 
 import asyncio
+import hashlib
 import json
+import math
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -176,6 +179,43 @@ class ToyEmbedder:
         return EmbeddingResult(
             vectors=tuple(self.vector(t) for t in request.texts),
             model="toy-embedding-3d",
+            backend=self.backend,
+            usage=Usage(input_tokens=sum(len(t) // 4 for t in request.texts)),
+            latency_ms=0.5,
+        )
+
+
+class HashingEmbedder:
+    """Embeddings « sac de mots hachés » : déterministes, hors ligne, lexicaux.
+
+    Chaque mot est haché vers une dimension (avec un signe), le vecteur est normalisé.
+    Deux textes qui partagent des mots ont un cosinus élevé ; aucune sémantique (« voiture »
+    et « automobile » sont orthogonaux). C'est l'embedding le plus rustique qui soit — et
+    c'est exactement ce que les modèles appris viennent améliorer (notebook 2, partie 5).
+    """
+
+    backend = "openai"
+
+    def __init__(self, dimensions: int = 256) -> None:
+        # Peu de dimensions = collisions (deux mots dans la même case, signes opposés
+        # qui s'annulent) : 256 suffit pour des textes courts.
+        self.dimensions = dimensions
+        self.calls: list[EmbeddingRequest] = []
+
+    def vector(self, text: str) -> tuple[float, ...]:
+        values = [0.0] * self.dimensions
+        for token in re.findall(r"\w+", text.lower()):
+            digest = int(hashlib.sha1(token.encode("utf-8")).hexdigest()[:8], 16)
+            sign = 1.0 if digest >> 31 & 1 else -1.0
+            values[digest % self.dimensions] += sign
+        norm = math.sqrt(sum(v * v for v in values))
+        return tuple(v / norm for v in values) if norm else tuple(values)
+
+    async def embed(self, request: EmbeddingRequest) -> EmbeddingResult:
+        self.calls.append(request)
+        return EmbeddingResult(
+            vectors=tuple(self.vector(t) for t in request.texts),
+            model=f"hashing-{self.dimensions}d",
             backend=self.backend,
             usage=Usage(input_tokens=sum(len(t) // 4 for t in request.texts)),
             latency_ms=0.5,
