@@ -17,7 +17,7 @@ import sys
 import time
 from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
@@ -186,8 +186,10 @@ def run_scifact(
             if client is None:
                 raise ValueError(f"{name!r} demande un LLMClient (modèle d'API)")
             encoder = ClientEncoder(client, name, dimensions=api_dimensions)
+            # cast : le protocole d'encodeur de mteb est typé plus finement que notre adaptateur,
+            # et mteb est absent des environnements sans le groupe `bench` (CI).
             result = mteb.evaluate(
-                encoder,  # type: ignore[arg-type]
+                cast(Any, encoder),
                 [task],
                 encode_kwargs={"batch_size": batch_size},
                 show_progress_bar=False,
