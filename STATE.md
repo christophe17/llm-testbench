@@ -5,8 +5,14 @@
 
 ## Phase en cours
 
-**Phase 0 — Fondations : terminée** (PR #1 mergée le 2026-08-27, notebook 0 relu en entier
-le 2026-09-03, vérification locale complète verte le même jour). Prochaine étape : `GO PHASE 1`.
+**Phase 1 — Squelette de production : en cours** (démarrée le 2026-09-03, branche `phase-1`,
+plan validé le même jour). Phase 0 terminée (PR #1 mergée le 2026-08-27). PR #2 (docs :
+phase 5B + clôture phase 0) en attente de merge — `phase-1` est branchée dessus, à rebaser
+sur `main` avant l'ouverture de sa PR si le merge est fait en squash.
+
+Ordre de construction : bootstrap AWS (guide `docs/infra/00-bootstrap.md`, exécuté par
+Christophe) → couche LLM + gouvernance + prompts versionnés → sources, ingestion, pgvector →
+API `/chat` SSE → Langfuse/OTel → Terraform `envs/dev` + Helm → notebooks 1 et 2 → traces.
 
 ## Fait
 
@@ -46,12 +52,14 @@ BM25 ≈ 0,67 nDCG@10 sur SciFact (papier BEIR).
 
 ## Décisions en attente d'arbitrage
 
-- Créer le compte AWS puis lancer `make bootstrap-apply` (10 min, ~0 €/mois) — peut se
-  faire n'importe quand avant la phase 1.
-- Versionner les amendements docs encore non commités (CLAUDE.md §5/§6/§8 pour la phase
-  5B, ADR 005, entrées JOURNAL des 31/08, 01/09 et 03/09, ce STATE) : branche docs courte +
-  PR, avant d'ouvrir la branche `phase-1` depuis un `main` à jour.
-- `GO PHASE 1` — commence par l'audit de cohérence de l'énoncé (règle §6) et le plan d'une page.
+- **Bootstrap AWS à appliquer par Christophe** en suivant `docs/infra/00-bootstrap.md`
+  (compte AWS existant, région eu-west-3, aucun budget ni bucket d'état à ce jour — le
+  bucket `eks-foundations-terraform-chris` appartient à un autre projet, on n'y touche pas).
+  Les modules `envs/dev` en dépendent.
+- Merge de la PR #2.
+- Contraintes réelles de gouvernance des données : inconnues à ce jour, mécanisme construit
+  en phase 1 avec une politique permissive sur données publiques ; à durcir quand elles se
+  préciseront (CLAUDE.md §8, 2026-09-03).
 - Candidat d'extension post-phase 10 (noté le 2026-09-01, décision GO/NO-GO **après la
   phase 5**, pas avant) : la boucle de données LLMOps — traces de la phase 5 → échantillonnage
   → étiquetage par le juge calibré (phase 2) → curation → extension du golden set et jeu

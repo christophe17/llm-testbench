@@ -26,3 +26,6 @@ data/cache/
 
 # macOS
 .DS_Store
+
+# Terraform : les tfvars contiennent des valeurs personnelles (e-mail d'alerte...)
+*.tfvars
