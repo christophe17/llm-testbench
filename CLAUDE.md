@@ -145,6 +145,7 @@ Une phase = une branche = une PR avec une description sérieuse.
 │   ├── generation/   # chaînes, assemblage de contexte
 │   ├── agents/       # orchestration, outils, garde-fous
 │   ├── eval/         # harness, métriques, juges, runners de benchmarks
+│   ├── classic/      # phase 5B uniquement : modèles classiques comme bras de comparaison
 │   └── obs/          # instrumentation, coût, traces
 ├── prompts/          # prompts versionnés
 ├── data/             # jeux publics (cache) + golden set maison versionné
@@ -156,9 +157,9 @@ Une phase = une branche = une PR avec une description sérieuse.
 
 ---
 
-## 5. La roadmap — 10 phases
+## 5. La roadmap — 10 phases + la phase 5B
 
-Calendrier : 0 (s1) · 1 (s2–3) · 2 (s4–6) · 3 (s7–8) · **4 (s9–11)** · 5 (s12–13) · 6 (s14–15) · 7+8 (s16). Les phases 9 et 10 sont des extensions décidées le 2026-08-27, hors calendrier initial (rappel : les « semaines » sont des unités d'effort, pas des échéances).
+Calendrier : 0 (s1) · 1 (s2–3) · 2 (s4–6) · 3 (s7–8) · **4 (s9–11)** · 5 (s12–13) · 5B (~1 semaine, hors calendrier initial, entre 5 et 6) · 6 (s14–15) · 7+8 (s16). Les phases 5B, 9 et 10 sont des extensions décidées après coup (5B le 2026-08-31, 9 et 10 le 2026-08-27), hors calendrier initial (rappel : les « semaines » sont des unités d'effort, pas des échéances).
 
 Un seul système, qui grossit à chaque phase. Jamais un second projet.
 
@@ -270,9 +271,44 @@ Traçabilité OTel/GenAI + Langfuse : trace complète requête → routage → r
 
 **Notebooks** : (1) anatomie d'une trace et d'où viennent les millisecondes ; (2) le modèle de coût, du token au prix par utilisateur ; (3) détecter une régression de qualité en production sans labels.
 
+### PHASE 5B — Le pont : ML classique ou LLM, la réponse est un tableau (~1 semaine, ajoutée le 2026-08-31)
+
+Le « B » signifie « insérée après coup entre 5 et 6 », pas « sous-partie de la phase 5 ».
+
+Objet : mesurer, avec le harness existant, l'arbitrage entre un modèle de ML classique, un LLM et un hybride sur la **même tâche**. C'est l'unique livrable du projet où l'on entraîne un modèle classique, et il n'existe que comme bras de comparaison : on ne construit pas un système de prédiction, on chiffre un choix d'architecture. C'est l'exception bornée de la section 6.
+
+**5B.1 Tâche tabulaire à texte libre**, sur un jeu public à référence publiée (choix arbitré au démarrage de la phase, ADR 005). Bras obligatoires, tous mesurés par le même runner :
+- baseline stupide (`DummyClassifier`, stratégies majoritaire et stratifiée) ;
+- une règle simple (un seul attribut, un seul seuil — un arbre de profondeur 1) ;
+- gradient boosting **texte ignoré** ;
+- gradient boosting **texte en n-grams TF-IDF** — l'hybride classique, obligatoire : sans lui l'hybride LLM est comparé à un homme de paille (littérature sur fake_job_postings : 0,968 contre 0,926 pour l'hybride à embeddings) ;
+- LLM en zéro-coup sur lignes sérialisées (gabarit de sérialisation en fichier versionné dans `prompts/`, sortie structurée validée), puis few-shot en contexte à k fixé (exemples stratifiés, identiques pour toutes les lignes, graine fixée) ;
+- hybride : embeddings des champs textuels par le provider de la phase 1, injectés comme features dans le gradient boosting.
+
+Un seul modèle LLM par bras, choisi pour ce qu'on déploierait vraiment à ce volume ; le modèle est un paramètre du notebook, pas une dimension du tableau.
+
+**5B.2 Le cas inverse : classification de texte.** Baseline stupide · TF-IDF + modèle linéaire · embeddings + modèle linéaire (le « milieu » : sémantique sans génération) · LLM zéro-coup avec la liste des étiquettes dans le prompt · LLM few-shot. Attente déclarée avant mesure : écart de qualité faible pour un écart de coût de plusieurs ordres de grandeur. Si la mesure contredit l'attente, c'est le résultat, on le publie.
+
+**5B.3 Axes de mesure, tous dans le tableau :**
+- qualité : métrique du jeu (AUC / F1 macro), N runs, intervalle bootstrap — comparée au score publié ;
+- latence p95 par prédiction et débit en lot ;
+- coût pour mille prédictions : entraînement amorti + inférence pour le classique, tokens × tarif via l'instrumentation de la phase 5 pour le LLM ; effet du cache de prompt (la liste d'étiquettes et les exemples few-shot sont un préfixe constant) ;
+- déterminisme : taux d'accord prédiction à prédiction entre deux exécutions identiques (graine fixée pour le classique ; température 0 pour le LLM — le chiffre n'est pas 100 %, c'est le point) ;
+- reproductibilité : ce qu'il faut épingler pour rejouer le chiffre dans six mois (versions, graines, identifiant exact du modèle — un modèle d'API peut changer sans préavis, voir le runbook de la phase 5) ;
+- auditabilité : existence d'une explication **par prédiction** recalculable par un tiers (SHAP / coefficients) contre un justificatif généré ; un seul proxy chiffré : stabilité du justificatif LLM sur la même entrée rejouée ;
+- défendabilité devant un régulateur : grille discrète (0/1/2) à critères explicites, adossée aux obligations de transparence de l'AI Act et à l'art. 22 RGPD, déclarée qualitative, reliée à `docs/ai-act.md` de la phase 7.
+
+**5B.4 Contamination.** Les jeux tabulaires publics sont anciens et omniprésents sur Kaggle : le zéro-coup LLM est probablement flatté. Appliquer la mesure de signal de contamination de la phase 2 et l'écrire à côté du chiffre. Référence de littérature imparfaite et documentée : TabLLM fait du fine-tuning few-shot, pas du few-shot en contexte — seul son zéro-coup est comparable à notre bras.
+
+**5B.5 Livrable clé** : `docs/decision-tree-ml-vs-llm.md`, un arbre de décision d'architecture où **chaque branche cite un chiffre du tableau** — quand une règle suffit, quand le ML classique, quand l'hybride, quand le LLM (peu de données étiquetées, étiquettes mouvantes, texte long et rare) — plus le seuil de volume où le coût bascule. L'arbre entre dans le README de la phase 8.
+
+**Garde-fous** : un module `src/llm_testbench/classic/` (modèles classiques, sérialisation de lignes, features hybrides), testé et typé, **jamais exposé par l'API ni appelé par l'agent** ; les runners étendent `eval/`. Hyperparamètres par défaut ou recherche bornée et documentée — pas de chasse au score. Pas de feature store, pas de dérive, pas de réentraînement, pas de matrice de modèles, pas de seconde tâche.
+
+**Notebook** : « choisir entre un XGBoost et un LLM, la réponse est un tableau » — les sorties intermédiaires visibles sont la ligne sérialisée, le prompt final, la réponse brute et son parsing, l'explication SHAP d'une prédiction, et le tableau.
+
 ### PHASE 6 — Inférence et modèles ouverts (semaines 14–15)
 
-vLLM : continuous batching, PagedAttention, KV cache — je veux comprendre **pourquoi** c'est rapide, pas seulement comment le lancer. Quantization AWQ / GPTQ / FP8 avec **impact qualité mesuré par notre harness sur les jeux publics** : presque personne ne fait cette mesure, c'est exactement ce qui me distinguera. Modèle économique : throughput vs latence, sizing GPU, coût par million de tokens self-host vs API, **seuil de bascule en volume**. Déploiement GPU sur Kubernetes, autoscaling, cold start. Embeddings et reranker self-hosted. Enfin un LoRA/QLoRA sur un cas justifié, évalué contre la baseline prompt-only — **et documente les cas où le fine-tuning n'était pas la bonne réponse, chiffres à l'appui**.
+vLLM : continuous batching, PagedAttention, KV cache — je veux comprendre **pourquoi** c'est rapide, pas seulement comment le lancer. Quantization AWQ / GPTQ / FP8 avec **impact qualité mesuré par notre harness sur les jeux publics** : presque personne ne fait cette mesure, c'est exactement ce qui me distinguera. Modèle économique : throughput vs latence, sizing GPU, coût par million de tokens self-host vs API, **seuil de bascule en volume**. Déploiement GPU sur Kubernetes, autoscaling, cold start. Embeddings et reranker self-hosted. Enfin un LoRA/QLoRA sur un cas justifié, évalué contre la baseline prompt-only — **et documente les cas où le fine-tuning n'était pas la bonne réponse, chiffres à l'appui**. Rejouer le bras LLM de la phase 5B sur un modèle self-hosted : coût marginal et qualité, une ligne de plus dans son tableau.
 
 Module Terraform GPU éphémère, destruction évidente.
 
@@ -286,7 +322,7 @@ L'essentiel a été traité en phase 4 (sécurité des outils, AgentDojo) et en 
 
 ### PHASE 8 — Packaging (semaine 16, commencé dès la semaine 4)
 
-**README du banc d'essai** : ce que le projet mesure → l'architecture (un schéma) → **le tableau maître des résultats**, technique par technique, avec écart à la littérature, coût et latence → les décisions et arbitrages → ce qui a cassé et ce que j'en ai tiré → ce que je ferais différemment à l'échelle 100×.
+**README du banc d'essai** : ce que le projet mesure → l'architecture (un schéma) → **le tableau maître des résultats**, technique par technique, avec écart à la littérature, coût et latence, et l'arbre de décision ML classique / LLM de la phase 5B → les décisions et arbitrages → ce qui a cassé et ce que j'en ai tiré → ce que je ferais différemment à l'échelle 100×.
 
 Deux posts techniques tirés du JOURNAL : « le harness d'évaluation que j'ai construit, et pourquoi les métriques standard mentent » ; « self-host vs API : le calcul complet, avec mes chiffres ». Une contribution open source ciblée dans l'écosystème réellement utilisé. CV en trois blocs : AI Engineering (le banc d'essai et les chiffres) / Production et opérations / 20 ans d'ingénierie reformulés en ownership.
 
@@ -320,7 +356,7 @@ Un outil navigateur dans l'agent de la phase 4 — pas un nouveau système : le 
 
 **Jamais :** pas de version simplifiée du code dans les notebooks · pas de certification · pas de reimplémentation d'un transformer from scratch · pas de fine-tuning avant la phase 6 · pas de second projet · pas d'empilement de frameworks pour faire joli.
 
-**Et spécifiquement pour ce projet :** ne me propose jamais d'élargir le périmètre vers de la prédiction, du scoring ou de la modélisation métier. Le sujet est le retrieval, les agents, la mesure et l'exploitation.
+**Et spécifiquement pour ce projet :** le sujet est le retrieval, les agents, la mesure et l'exploitation. Ne me propose jamais d'élargir le périmètre vers de la prédiction, du scoring ou de la modélisation métier **comme livrable** : aucun modèle prédictif n'est construit pour sa valeur métier, aucune tâche de prédiction n'est ajoutée pour elle-même. **Unique exception, nommée et bornée — la phase 5B** : des modèles classiques y sont entraînés uniquement comme bras de comparaison d'un arbitrage d'architecture, sur un jeu public à référence publiée, mesurés par le harness commun. Trois verrous : (1) aucune autre tâche de prédiction, dans aucune autre phase, sans amendement explicite du brief ; (2) hyperparamètres par défaut ou recherche bornée et documentée — un bras de comparaison honnête, pas un modèle optimisé ; (3) le code classique vit dans `src/` testé et typé, mais n'est jamais exposé par l'API ni appelé par l'agent. Toute proposition qui réutilise ce module hors 5B est à traiter comme une violation de cette règle, pas comme une extension naturelle.
 
 ---
 
@@ -354,3 +390,5 @@ Puis attends `GO PHASE 0`.
 - 2026-08-27 — Extension de roadmap validée après confrontation aux offres AI Engineer 2026 : GraphRAG en phase 3 (technique mesurée derrière flag, candidat assumé au retrait chiffré) ; mémoire d'agent en 4.10 + notebook dédié ; paysage des frameworks (LangChain, LlamaIndex, CrewAI, smolagents, OpenAI Agents SDK) et protocole A2A traités **en connaissance dans les notebooks, jamais en implémentation** ; UI de chat minimale en fin de phase 5 ; phase 9 Voice ; phase 10 Browser/computer use, optionnelle (GO/NO-GO fin de phase 9). Un seul système — pas de repo séparé pour ces sujets, les repos séparés sont réservés aux clients.
 - 2026-08-27 — Jeux d'évaluation des phases 9 et 10 (VoiceBench, WebArena ou équivalents) : à vérifier au démarrage de ces phases, même protocole que la phase 0.
 - 2026-08-27 — Révision du même jour sur les frameworks (motif : filtre ATS/mots-clés des offres) : ils passent de « en connaissance seulement » à **comparaison chiffrée bornée**. Phase 4.1 : le même agent de référence porté sur smolagents, OpenAI Agents SDK et CrewAI, mesuré sur le même harness (~1 jour/framework). Phase 3 : notre pipeline vs LlamaIndex sur le même jeu BEIR. Les ports sont des livrables de benchmark, `src/` garde une seule implémentation de production (maison + LangGraph). A2A reste en discussion, pas en implémentation.
+- 2026-08-31 — Phase 5B « Le pont » ajoutée entre 5 et 6 (~1 semaine) : arbitrage ML classique / LLM / hybride mesuré par le harness commun sur deux tâches publiques, six bras dont l'hybride classique GBM + n-grams TF-IDF (obligatoire, sinon homme de paille). Exception nommée et bornée à la règle « pas de prédiction » de la section 6 (trois verrous). Module `src/llm_testbench/classic/`, jamais exposé par l'API (ADR 005).
+- 2026-08-31 — Jeux de la phase 5B arbitrés : tabulaire `fake_job_postings2` (EMSCAD via le benchmark multimodal AutoGluon, copie CC BY-NC-SA — jamais redistribuée ; site d'origine mort, licence amont invérifiable) et texte Banking77 (CC BY 4.0, chargement hors script HF). Substituts documentés si l'un casse : `women_clothing_review`, MASSIVE fr-FR (ADR 005).
