@@ -98,17 +98,24 @@ async def _configure(conn: AsyncConnection[Any]) -> None:
 
 
 class PgVectorStore:
-    def __init__(self, pool: AsyncConnectionPool[AsyncConnection[Any]]) -> None:
+    def __init__(
+        self, pool: AsyncConnectionPool[AsyncConnection[Any]], *, url: str | None = None
+    ) -> None:
         self._pool = pool
+        self._url = url
 
     @classmethod
     def from_url(cls, url: str, *, min_size: int = 1, max_size: int = 4) -> "PgVectorStore":
         pool: AsyncConnectionPool[AsyncConnection[Any]] = AsyncConnectionPool(
             url, min_size=min_size, max_size=max_size, open=False, configure=_configure
         )
-        return cls(pool)
+        return cls(pool, url=url)
 
     async def open(self) -> None:
+        """Applique le schéma AVANT d'ouvrir le pool : chaque connexion du pool enregistre
+        le type ``vector`` à sa création, ce qui échoue tant que l'extension n'existe pas.
+        Sur une base neuve (CI), l'ordre inverse ne peut pas fonctionner."""
+        await self.ensure_schema()
         await self._pool.open()
 
     async def close(self) -> None:
@@ -129,7 +136,13 @@ class PgVectorStore:
     # ------------------------------------------------------------------ schéma
 
     async def ensure_schema(self) -> None:
+        """Idempotent. Passe par une connexion brute (sans adaptateur ``vector``) quand l'URL
+        est connue, pour pouvoir créer l'extension elle-même ; sinon par le pool."""
         schema = resources.files("llm_testbench.ingest.sql").joinpath(SCHEMA_FILE).read_text()
+        if self._url is not None:
+            async with await AsyncConnection.connect(self._url, autocommit=True) as conn:
+                await conn.execute(schema)
+            return
         async with self._pool.connection() as conn:
             await conn.execute(schema)
 

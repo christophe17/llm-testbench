@@ -63,7 +63,6 @@ async def run(
     )
     client = LLMClient.from_settings(settings)
     async with PgVectorStore.from_url(settings.database_url) as store:
-        await store.ensure_schema()
         pipeline = IngestionPipeline(
             client=client,
             store=store,

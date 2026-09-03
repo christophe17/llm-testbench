@@ -114,9 +114,8 @@ def create_app(
                 state["reason"] = "LLM_TESTBENCH_DATABASE_URL absent"
             else:
                 store = PgVectorStore.from_url(settings.database_url)
-                await store.open()
+                await store.open()  # applique le schéma puis ouvre le pool
                 state["store"] = store
-                await store.ensure_schema()
                 spec = await store.get_index(settings.index_key)
                 if spec is None:
                     state["reason"] = (
