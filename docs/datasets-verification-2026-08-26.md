@@ -1,7 +1,7 @@
 # Vérification des jeux de données du banc d'essai — 2026-08-26
 
 Vérification web (nom, version, licence, taille, mode de récupération) de chaque entrée du tableau
-de la section 4 de `CLAUDE.md`. Contexte outillage : les scripts de chargement Hugging Face sont
+de la section 4 de `CLAUDE.md` à cette date (tableau désormais dans `docs/roadmap/README.md`). Contexte outillage : les scripts de chargement Hugging Face sont
 dépréciés (`datasets` ≥ 3.x ne les exécute plus) — le critère « se charge proprement aujourd'hui »
 signifie : dépôt HF en Parquet natif, ou téléchargement direct versionné.
 

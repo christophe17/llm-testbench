@@ -320,3 +320,25 @@ contre de vraies offres au moment de la phase 8.
 **Suite** : inchangée — PR `phase-1`, actions Christophe (clés, exécutions complètes,
 bootstrap AWS), puis `GO PHASE 2`. Les amendements s'appliquent au plan des phases 3, 5,
 5B et 6.
+
+## 2026-10-16 — Brief restructuré, tout sur `main`
+
+**Contexte** : `CLAUDE.md` faisait 56 Ko (~15 000 tokens) chargés à chaque session et dans
+chaque sous-agent, roadmap des phases 0 à 10 comprise ; les amendements s'empilaient en §8 au
+lieu de corriger le texte (exemple : le §1 visait encore le CDI d'AI Engineer, que la décision
+PD-8 range en repli). Trois branches ouvertes (`phase-0` fusionnée, `phase-1` et la branche
+docs en attente depuis le 2026-09-03).
+
+**Fait** : `CLAUDE.md` réduit au contrat de travail (§1–4, §6, numérotation conservée pour les
+renvois du code) ; roadmap dans `docs/roadmap/` (vue d'ensemble + tableau des jeux, un fichier
+par phase, amendements intégrés dans le texte) ; §8 déplacé tel quel dans `docs/decisions.md`.
+PR #3 fusionnée (elle contenait la #2), branches supprimées en local et sur GitHub ; désormais
+tout sur `main` (ADR 008). Phase 2.7 reformulée en conséquence : hook `pre-push` + CI rouge au
+lieu d'une PR bloquée.
+
+**Incidents / surprises** : la PR #3 a été fusionnée sans relecture formelle de Christophe —
+la relecture de la phase 1 se fait désormais sur `main`. Le passage sans PR retire le seul
+mécanisme qui *bloquait* une régression : à présenter honnêtement en entretien (ADR 008).
+
+**Suite** : inchangée — actions Christophe (clés, exécutions complètes, bootstrap AWS), puis
+`GO PHASE 2`.

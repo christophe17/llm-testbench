@@ -5,9 +5,9 @@
 
 ## Phase en cours
 
-**Phase 1 — Squelette de production : construite, en relecture** (2026-09-03, branche
-`phase-1`, PR à ouvrir sur `main` ; PR #2 docs à merger avant). Ce qui reste demande des actions
-de Christophe (clés, compte AWS), pas du code.
+**Phase 1 — Squelette de production : construite** (2026-09-03), fusionnée dans `main` le
+2026-10-16 avec la PR #2 (PR #3). Depuis, tout se fait sur `main`, sans branche ni PR
+(ADR 008). Ce qui reste demande des actions de Christophe (clés, compte AWS), pas du code.
 
 ## Fait en phase 1 (2026-09-03)
 
@@ -39,7 +39,7 @@ de Christophe (clés, compte AWS), pas du code.
 
 ## Reste à faire en phase 1 (actions Christophe)
 
-1. Merger la PR #2, relire la PR `phase-1`.
+1. Relire la phase 1 sur `main` (fusionnée le 2026-10-16 sans relecture formelle de la PR #3).
 2. `.env` avec les clés (`.env.example`) → `make ingest-scifact`, `make api` ou `tilt up`,
    `make notebooks-full` (section « vrai provider » du notebook 1, vrais embeddings et vraie
    génération du notebook 2), `make bench-embeddings` (ajoute text-embedding-3-small).
@@ -57,10 +57,9 @@ BM25 = 0,665 nDCG@10 sur SciFact (papier BEIR) ; embeddings mesurés le 2026-09-
   (compte AWS existant, région eu-west-3, aucun budget ni bucket d'état à ce jour — le
   bucket `eks-foundations-terraform-chris` appartient à un autre projet, on n'y touche pas).
   Les modules `envs/dev` en dépendent.
-- Merge de la PR #2.
 - Contraintes réelles de gouvernance des données : inconnues à ce jour, mécanisme construit
   en phase 1 avec une politique permissive sur données publiques ; à durcir quand elles se
-  préciseront (CLAUDE.md §8, 2026-09-03).
+  préciseront (`docs/decisions.md`, 2026-09-03).
 - Candidat d'extension post-phase 10 (noté le 2026-09-01, décision GO/NO-GO **après la
   phase 5**, pas avant) : la boucle de données LLMOps — traces de la phase 5 → échantillonnage
   → étiquetage par le juge calibré (phase 2) → curation → extension du golden set et jeu
@@ -70,19 +69,16 @@ BM25 = 0,665 nDCG@10 sur SciFact (papier BEIR) ; embeddings mesurés le 2026-09-
 
 ## Amendements inscrits pour les phases à venir (2026-10-15)
 
-Décision : pas de roadmap « pipeline » séparée (voir `JOURNAL.md` 2026-10-15 et 2026-09-01).
-À la place, trois obligations ajoutées au brief, à reprendre dans le plan de chaque phase :
+Pas de roadmap « pipeline » séparée (`JOURNAL.md` 2026-10-15 et 2026-09-01). Les trois
+obligations ajoutées (Dagster livrable nommé en phase 3, file + worker en phase 5, manifeste de
+run en 5B et 6) sont intégrées dans `docs/roadmap/phase-3.md`, `phase-5.md`, `phase-5b.md` et
+`phase-6.md`.
 
-- **Phase 3** : le bloc Dagster est un livrable nommé — ADR Dagster / Airflow / Prefect,
-  ligne « régénération d'une ligne depuis zéro : durée, coût, part du cache » dans le tableau
-  maître, notebook 5 « la matrice d'expériences » (partitions, cache, backfill, reprise,
-  lineage visibles).
-- **Phase 5** : échantillonnage vers le juge et boucle de feedback via une vraie file et un
-  worker (at-least-once, idempotence par clé, retries, DLQ surveillée) ; choix de la file
-  (Postgres `SKIP LOCKED` / Redis Streams / SQS) par ADR au plan de phase, contrainte k3d.
-- **Phases 5B et 6** : un manifeste de run par entraînement (config hachée, graine, révision
-  du jeu, versions, identifiant exact du modèle, métriques, coût) ; sans manifeste, pas de
-  chiffre dans le tableau.
+## Organisation du brief (2026-10-16)
+
+`CLAUDE.md` ne garde que le contrat de travail ; roadmap dans `docs/roadmap/` (un fichier par
+phase), registre des décisions dans `docs/decisions.md`. Reprise de session : `STATE.md`,
+`JOURNAL.md`, `docs/decisions.md`, 3 derniers ADR, fichier de la phase en cours.
 
 ## Contraintes actées
 

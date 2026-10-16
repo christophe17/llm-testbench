@@ -33,7 +33,8 @@ make k3d-up         # cluster local k3d + Postgres/pgvector
 
 ## Structure
 
-Voir `CLAUDE.md` (brief complet), `STATE.md` (état courant), `docs/adr/` (décisions),
+Voir `CLAUDE.md` (contrat de travail), `docs/roadmap/` (les phases), `STATE.md` (état courant),
+`docs/decisions.md` et `docs/adr/` (décisions),
 `notebooks/00_visite_guidee.ipynb` (visite guidée de l'architecture et des jeux de données).
 
 ## Licences des données
