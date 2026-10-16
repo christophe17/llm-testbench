@@ -1,0 +1,34 @@
+# Politique de gouvernance des données (ADR 006) — PROVISOIRE.
+#
+# Les contraintes réelles ne sont pas encore connues (2026-09-03). Cette politique est un
+# défaut raisonnable, à durcir ou assouplir sans toucher au code. Refus par défaut : une
+# métadonnée inconnue échoue à toute exigence.
+#
+# Exigences possibles par classe :
+#   allowed_regions               = ["eu", "self", "us", "variable"]
+#   require_zero_retention        = true | false   (rétention zéro EFFECTIVE sur notre compte)
+#   forbid_training               = true | false   (le fournisseur n'entraîne pas sur les entrées)
+#   forbid_variable_subprocessors = true | false   (pas de courtier à hébergeurs variables)
+
+[rules.public]
+
+[rules.internal]
+forbid_training = true
+
+[rules.confidential]
+allowed_regions = ["eu", "self"]
+require_zero_retention = true
+forbid_training = true
+forbid_variable_subprocessors = true
+
+[rules.personal]
+allowed_regions = ["eu", "self"]
+require_zero_retention = true
+forbid_training = true
+forbid_variable_subprocessors = true
+
+[rules.regulated]
+allowed_regions = ["eu", "self"]
+require_zero_retention = true
+forbid_training = true
+forbid_variable_subprocessors = true

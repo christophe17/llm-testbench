@@ -1,0 +1,97 @@
+# Langfuse v4 (chart langfuse/langfuse 2.x) sur k3d, dimensionné au strict nécessaire.
+#
+# - ClickHouse externe mono-nœud (infra/k8s/local/observability/), pas d'opérateur ;
+# - Postgres, Valkey (Redis) et SeaweedFS (S3) embarqués, volumes réduits ;
+# - initialisation « headless » : organisation, projet, utilisateur et clés d'API créés au
+#   premier démarrage, pour que l'API du banc puisse tracer sans passer par l'interface.
+# Tous les secrets ci-dessous sont des valeurs de dev LOCAL UNIQUEMENT.
+
+langfuse:
+  salt:
+    value: "local-only-salt-change-me-in-any-real-deployment"
+  encryptionKey:
+    value: "0000000000000000000000000000000000000000000000000000000000000000"
+  nextauth:
+    url: "http://localhost:3000"
+    secret:
+      value: "local-only-nextauth-secret"
+  features:
+    telemetryEnabled: false
+  additionalEnv:
+    - name: LANGFUSE_INIT_ORG_ID
+      value: "llm-testbench"
+    - name: LANGFUSE_INIT_ORG_NAME
+      value: "llm-testbench"
+    - name: LANGFUSE_INIT_PROJECT_ID
+      value: "phase-1"
+    - name: LANGFUSE_INIT_PROJECT_NAME
+      value: "phase-1"
+    - name: LANGFUSE_INIT_PROJECT_PUBLIC_KEY
+      value: "pk-lf-local-0000000000000000"
+    - name: LANGFUSE_INIT_PROJECT_SECRET_KEY
+      value: "sk-lf-local-0000000000000000"
+    - name: LANGFUSE_INIT_USER_EMAIL
+      value: "dev@llm-testbench.local"
+    - name: LANGFUSE_INIT_USER_NAME
+      value: "dev"
+    - name: LANGFUSE_INIT_USER_PASSWORD
+      value: "local-only-password"
+  web:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 1536Mi
+  worker:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        memory: 1536Mi
+
+clickhouse:
+  deploy: false
+  crdCheck: false
+  host: clickhouse.observability
+  httpPort: 8123
+  nativePort: 9000
+  auth:
+    username: default
+    password: clickhouse-local-only
+  cluster:
+    enabled: false
+  migration:
+    url: clickhouse://clickhouse.observability:9000
+    ssl: false
+    autoMigrate: true
+
+postgresql:
+  deploy: true
+  auth:
+    password: langfuse-local-only
+  storage:
+    requestedSize: 2Gi
+
+redis:
+  deploy: true
+  auth:
+    password: redis-local-only
+  dataStorage:
+    requestedSize: 1Gi
+
+s3:
+  deploy: true
+  auth:
+    rootUser: langfuse
+    rootPassword: langfuse-local-only
+  allInOne:
+    data:
+      size: 5Gi
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 1Gi

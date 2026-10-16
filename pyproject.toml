@@ -10,9 +10,24 @@ dependencies = [
     "pydantic>=2.8",
     "pydantic-settings>=2.4",
     "datasets>=4.0",
+    "anthropic>=1.3.0",
+    "openai>=3.7.0",
+    "jinja2>=3.1.6",
+    "opentelemetry-api>=1.44.0",
+    "opentelemetry-sdk>=1.44.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.44.0",
+    "psycopg[binary,pool]>=3.3.5",
+    "pgvector>=0.5.0",
+    "numpy>=2.5.2",
+    "fastapi>=0.141.1",
+    "uvicorn[standard]>=0.52.4",
 ]
 
 [dependency-groups]
+bench = [
+    "mteb>=2.20.5",
+    "sentence-transformers>=6.0.1",
+]
 dev = [
     "pytest>=8.3",
     "ruff>=0.6",
@@ -21,6 +36,8 @@ dev = [
     "nbmake>=1.5",
     "ipykernel>=6.29",
     "jupyter>=1.0",
+    "pytest-asyncio>=1.4.0",
+    "httpx>=0.28.1",
 ]
 
 [build-system]
@@ -48,6 +65,10 @@ select = [
     "T20",       # no print in src (notebooks n'y passent pas)
 ]
 
+# Typographie française assumée dans les libellés et messages : « », ›, – ne sont pas des
+# fautes de frappe pour >, - (RUF001/RUF003).
+allowed-confusables = ["›", "–", "«", "»", "’", "×", "−"]
+
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
 # Dans les notebooks, print est le mode d'affichage normal et les cellules de
@@ -61,12 +82,14 @@ mypy_path = "src"
 packages = ["llm_testbench"]
 
 [[tool.mypy.overrides]]
-module = "datasets.*"
+module = ["datasets.*", "mteb.*", "sentence_transformers.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+asyncio_mode = "auto"
 markers = [
     "network: tests nécessitant le réseau (exclus par défaut, `make test-network`)",
+    "db: tests nécessitant Postgres/pgvector (sautés sans LLM_TESTBENCH_DATABASE_URL)",
 ]

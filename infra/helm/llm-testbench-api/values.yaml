@@ -1,0 +1,87 @@
+# Valeurs par défaut : niveau production (probes, ressources, HPA, PDB, non-root).
+# Les valeurs locales (k3d) et cloud (EKS) surchargent l'image, les secrets et l'exposition.
+
+image:
+  repository: llm-testbench-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+# Variables d'environnement non secrètes (préfixe LLM_TESTBENCH_ côté application).
+config:
+  LLM_TESTBENCH_INDEX_KEY: scifact-recursive-oai-small
+  LLM_TESTBENCH_SOURCE_KEY: "docs:scifact"
+  LLM_TESTBENCH_RETRIEVAL_K: "5"
+  LLM_TESTBENCH_SERVICE_NAME: llm-testbench-api
+  # LLM_TESTBENCH_OTLP_ENDPOINT: http://langfuse-web.observability:3000/api/public/otel/v1/traces
+
+# Secrets : soit un Secret Kubernetes existant (local), soit External Secrets (cloud).
+secrets:
+  existingSecret: llm-testbench-api-secrets
+  externalSecret:
+    enabled: false
+    secretStoreRef:
+      name: aws-secrets-manager
+      kind: ClusterSecretStore
+    refreshInterval: 1h
+    # Une clé Secrets Manager par variable : {name: NOM_VARIABLE, key: chemin/du/secret}
+    data: []
+
+serviceAccount:
+  create: true
+  annotations: {}   # EKS : eks.amazonaws.com/role-arn pour l'accès Bedrock (guide 03)
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  host: ""
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi   # pas de limite CPU : le throttling CFS dégrade la latence sans protéger
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+probes:
+  startup:
+    path: /healthz
+    failureThreshold: 30   # 30 × 2 s : le pool Postgres et le schéma peuvent prendre du temps
+    periodSeconds: 2
+  readiness:
+    path: /readyz          # 503 tant que l'index n'est pas là : le pod ne reçoit rien
+    periodSeconds: 10
+  liveness:
+    path: /healthz
+    periodSeconds: 20
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+terminationGracePeriodSeconds: 30

@@ -31,6 +31,40 @@ class Settings(BaseSettings):
     fixtures_dir: Path | None = None
     """Si défini, les loaders lisent ces fixtures locales au lieu du réseau (CI hors ligne)."""
 
+    config_dir: Path | None = None
+    """Répertoire des fichiers de configuration TOML (défaut : ``<racine du dépôt>/config``)."""
+
+    prompts_dir: Path | None = None
+    """Répertoire des prompts versionnés (défaut : ``<racine du dépôt>/prompts``)."""
+
+    # ------------------------------------------------------------ API et stockage
+
+    database_url: str | None = None
+    """Postgres + pgvector. En local : ``make pg-port-forward`` puis
+    ``postgresql://testbench:testbench-local-only@localhost:5432/testbench``."""
+
+    chat_model: str | None = None
+    """``backend/modèle`` du générateur ; défaut : ``defaults.generator`` du registre."""
+
+    source_key: str = "docs:scifact"
+    index_key: str = "scifact-recursive-oai-small"
+    """L'index interrogé par l'API (registre ``indexes`` en base)."""
+
+    retrieval_k: int = 5
+    service_name: str = "llm-testbench-api"
+
+    otlp_endpoint: str | None = None
+    """Endpoint OTLP/HTTP des traces (Langfuse : ``<url>/api/public/otel/v1/traces``)."""
+
+    langfuse_public_key: str | None = None
+    langfuse_secret_key: str | None = None
+
+    def resolved_config_dir(self) -> Path:
+        return self.config_dir if self.config_dir is not None else find_repo_root() / "config"
+
+    def resolved_prompts_dir(self) -> Path:
+        return self.prompts_dir if self.prompts_dir is not None else find_repo_root() / "prompts"
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:

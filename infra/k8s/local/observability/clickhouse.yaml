@@ -1,0 +1,89 @@
+# ClickHouse mono-nœud pour Langfuse en local (guide 07).
+#
+# Le chart Langfuse 2.x déploie ClickHouse via un opérateur (CRD + Keeper ×3) : trop lourd
+# pour « le strict nécessaire » du brief sur un k3d. Le chart accepte un ClickHouse externe
+# non clusterisé : le voici, en 60 lignes. Image multi-arch (arm64 natif vérifié).
+# Identifiants en clair : EN LOCAL UNIQUEMENT.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: clickhouse-credentials
+type: Opaque
+stringData:
+  CLICKHOUSE_USER: default
+  CLICKHOUSE_PASSWORD: clickhouse-local-only
+  CLICKHOUSE_DB: default
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+spec:
+  selector:
+    app: clickhouse
+  ports:
+    - name: http
+      port: 8123
+      targetPort: 8123
+    - name: native
+      port: 9000
+      targetPort: 9000
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse
+spec:
+  serviceName: clickhouse
+  replicas: 1
+  selector:
+    matchLabels:
+      app: clickhouse
+  template:
+    metadata:
+      labels:
+        app: clickhouse
+    spec:
+      containers:
+        - name: clickhouse
+          image: clickhouse/clickhouse-server:26.4
+          ports:
+            - containerPort: 8123
+            - containerPort: 9000
+          envFrom:
+            - secretRef:
+                name: clickhouse-credentials
+          env:
+            # Autorise le mot de passe du compte default (l'image le refuse sinon).
+            - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
+              value: "1"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /ping
+              port: 8123
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/clickhouse
+      securityContext:
+        fsGroup: 101
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 10Gi

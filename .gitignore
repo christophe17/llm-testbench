@@ -18,7 +18,9 @@ data/cache/
 *.tfstate
 *.tfstate.backup
 *.tfplan
-.terraform.lock.hcl
+# Les .terraform.lock.hcl des environnements sont versionnés (empreintes multi-plateformes) ;
+# celui du bootstrap (état local, usage unique) reste ignoré.
+infra/terraform/bootstrap/.terraform.lock.hcl
 
 # Secrets et environnement local
 .env
@@ -26,3 +28,6 @@ data/cache/
 
 # macOS
 .DS_Store
+
+# Terraform : les tfvars contiennent des valeurs personnelles (e-mail d'alerte...)
+*.tfvars

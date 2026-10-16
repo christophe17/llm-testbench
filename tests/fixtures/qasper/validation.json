@@ -1,0 +1,30 @@
+[
+  {
+    "id": "1001.0001",
+    "title": "A Tiny Paper on Retrieval",
+    "abstract": "We study retrieval. It is useful.",
+    "full_text": {
+      "section_name": ["Introduction", "Method", "Empty"],
+      "paragraphs": [
+        ["Retrieval finds documents.", "It is the first step of RAG."],
+        ["We embed chunks.", "Then we search with cosine similarity."],
+        []
+      ]
+    },
+    "qas": {
+      "question_id": ["q1", "q2"],
+      "question": ["What is the first step of RAG?", "Which similarity is used?"]
+    }
+  },
+  {
+    "id": "1001.0002",
+    "title": "Another Tiny Paper",
+    "abstract": "We study chunking.",
+    "full_text": [
+      {"section_name": "Body", "paragraphs": ["Chunking splits documents.", "Overlap helps."]}
+    ],
+    "qas": [
+      {"question_id": "q3", "question": "What does chunking do?"}
+    ]
+  }
+]

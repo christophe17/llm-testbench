@@ -1,0 +1,6 @@
+apiVersion: v2
+name: llm-testbench-api
+description: API du banc d'essai LLM — /chat avec citations, JSON et SSE
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
