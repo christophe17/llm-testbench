@@ -68,6 +68,22 @@ BM25 = 0,665 nDCG@10 sur SciFact (papier BEIR) ; embeddings mesurés le 2026-09-
   engineering (Kafka/Spark/dbt/CDC) : hors positionnement, données statiques, doublon de la
   phase 3 — voir `JOURNAL.md` 2026-09-01.
 
+## Amendements inscrits pour les phases à venir (2026-10-15)
+
+Décision : pas de roadmap « pipeline » séparée (voir `JOURNAL.md` 2026-10-15 et 2026-09-01).
+À la place, trois obligations ajoutées au brief, à reprendre dans le plan de chaque phase :
+
+- **Phase 3** : le bloc Dagster est un livrable nommé — ADR Dagster / Airflow / Prefect,
+  ligne « régénération d'une ligne depuis zéro : durée, coût, part du cache » dans le tableau
+  maître, notebook 5 « la matrice d'expériences » (partitions, cache, backfill, reprise,
+  lineage visibles).
+- **Phase 5** : échantillonnage vers le juge et boucle de feedback via une vraie file et un
+  worker (at-least-once, idempotence par clé, retries, DLQ surveillée) ; choix de la file
+  (Postgres `SKIP LOCKED` / Redis Streams / SQS) par ADR au plan de phase, contrainte k3d.
+- **Phases 5B et 6** : un manifeste de run par entraînement (config hachée, graine, révision
+  du jeu, versions, identifiant exact du modèle, métriques, coût) ; sans manifeste, pas de
+  chiffre dans le tableau.
+
 ## Contraintes actées
 
 - Clés API : OpenAI, Anthropic, OpenRouter (Mistral via OpenRouter).

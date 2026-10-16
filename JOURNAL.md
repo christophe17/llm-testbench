@@ -288,3 +288,35 @@ qu'elle existe. Postgres en service dans la CI pour les tests `db` et le noteboo
 
 **Suite** : PR `phase-1` ; actions Christophe : clés dans `.env`, exécutions complètes,
 bootstrap AWS puis `make infra-up` / `make deploy` (guides 00→05) ; puis `GO PHASE 2`.
+
+## 2026-10-15 — Le mot « pipeline » : pas de roadmap séparée, trois amendements
+
+**Contexte** : question posée en regardant l'ensemble du portfolio (le banc d'essai plus
+quatre projets voisins spécifiés ou en cours, dont deux sans code) — le « côté pipeline »
+des offres AI Engineer est-il couvert, ou faut-il une roadmap dédiée ? Reprise de la
+question du 2026-09-01, cette fois avec les projets voisins sur la table.
+
+**Fait** : réponse négative confirmée, et le brief amendé. Analyse : le mot « pipeline »
+recouvre quatre choses dans les offres — pipeline RAG (phases 1 et 3), pipeline de données
+orchestré (phase 3, Dagster, partitions, lineage, Pandera), pipeline événementiel asynchrone
+(file, worker, DLQ) et plateforme d'entraînement (reproductibilité, versionnage, DDP,
+export). Les deux derniers sont portés par des projets voisins qui n'ont pas une ligne de
+code et dont l'horizon dépasse celui du CDI : le banc ne compte pas dessus. Kafka, dbt et le
+streaming restent hors périmètre (data engineering, métier voisin). Trois faiblesses
+corrigées par amendement : (1) le bloc Dagster de la phase 3 était une ligne de passage
+sans ADR ni notebook, alors que c'est le livrable qui répond au mot-clé — il devient un
+livrable nommé avec ADR, ligne du tableau maître et notebook 5 ; (2) le juge asynchrone et
+le feedback de la phase 5 n'imposaient aucune forme — ils passent par une vraie file et un
+worker, ce qui donne un pipeline événementiel codé dans ce dépôt quoi qu'il arrive
+ailleurs ; (3) aucun manifeste de run pour les entraînements de 5B et 6 — exigé désormais,
+sans outil supplémentaire. Inscrit dans `CLAUDE.md` (§5 phases 3, 5, 5B, 6 ; §6 ; §8) et
+`STATE.md`.
+
+**Incidents / surprises** : l'analyse d'offres du 27/08 qui a motivé l'extension des
+frameworks n'est archivée nulle part ; le raisonnement sur le sens du mot « pipeline »
+repose sur la connaissance générale des offres 2026, pas sur un corpus relu. À vérifier
+contre de vraies offres au moment de la phase 8.
+
+**Suite** : inchangée — PR `phase-1`, actions Christophe (clés, exécutions complètes,
+bootstrap AWS), puis `GO PHASE 2`. Les amendements s'appliquent au plan des phases 3, 5,
+5B et 6.
