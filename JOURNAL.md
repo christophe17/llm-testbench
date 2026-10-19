@@ -364,3 +364,48 @@ courant dans un notebook est une dépendance cachée à l'emplacement du fichier
 
 **Suite** : inchangée — actions Christophe (clés, exécutions complètes, bootstrap AWS), puis
 `GO PHASE 2`.
+
+## 2026-10-19 — Reprise : audit du banc, un seul environnement, déploiement OIDC, règle des services AWS
+
+**Contexte** : projet mis de côté un mois. Christophe demande trois choses : valider que le
+banc sert la roadmap globale (`~/Roadmaps/program`) et la recherche de missions freelance,
+auditer ce qui a été généré, et juger le choix de Kubernetes face à son besoin de monter en
+compétence sur AWS sans mauvaise décision d'infra. Le programme a changé le matin même (PD-18 :
+sherpapier gelé, ce banc est la preuve pour les missions).
+
+**Fait** : audit livré (`docs/decisions.md`, première ligne du jour) — les deux objectifs
+tiennent, EKS confirmé, huit corrections. Puis, sur son feu vert : `prod` retiré du brief ; CV
+renvoyé au programme et nombre d'années retiré du §1 ; `docs/aws-competences.md` supprimé ;
+doc rot corrigé (README Terraform, index des guides, bandeau du README) ; **ADR 009** ;
+**déploiement par GitHub Actions et OIDC** (bootstrap `github.tf`, access entry dans
+`envs/dev`, `deploy.yml` sur runner arm64, `make deploy-trigger`, guide 09) ; **URL de la
+base composée dans le cluster** par un template External Secrets — le mot de passe RDS ne
+traverse plus l'état Terraform ; **règle d'entrée des services AWS** dans `CLAUDE.md` §4 et
+ses premières applications dans les phases 3 à 7 ; génération Claude 5.5 par défaut et table
+de prix du jour. Vérifié : `terraform validate` sur les deux modules, `helm lint` et rendu de
+l'`ExternalSecret` avec les valeurs `database.*`, `make check` (155 tests, mypy strict),
+notebooks 1 et 2 réexécutés en mode échantillon sur un pgvector jetable.
+
+**Incidents / surprises** :
+- **Une session parallèle rangeait les notebooks** (`notebooks/phase-N/`) pendant l'audit :
+  `FileNotFoundError` sur un chemin lu dix minutes plus tôt. Son travail était complet et
+  consigné ; commité à part, avant le mien, en isolant dans le Makefile son bloc du mien par
+  un patch partiel. Leçon : deux sessions sur un même dépôt, c'est `git status` avant chaque
+  écriture, et jamais un commit global.
+- **Un script d'édition arrêté par son propre garde-fou** : une ancre recopiée sans ses `**`
+  ne correspondait plus ; l'assertion a évité une édition partielle de cinq guides. Le coût
+  d'une ancre exacte est inférieur à celui d'un fichier à moitié modifié.
+- **Restreindre l'endpoint EKS à une IP et déployer depuis GitHub sont exclusifs** sans runner
+  dans le VPC ni mode pull : la correction « hygiène » de l'audit a cédé devant le pipeline,
+  et la décision est écrite (ADR 009) plutôt que subie.
+- **Haiku 5.5 n'a pas de prix de cache publié** dans la référence relevée : la table le laisse
+  absent, et `cost_usd` rend `None` sur un appel en cache — comme prévu. Le tableau de coûts du
+  notebook 1 a cassé dessus : la cellule gérait ce `None` pour la colonne « économie » et pas
+  pour la colonne « 1 appel (cache) ». Corrigée : elle affiche « inconnu ». La règle « jamais
+  une estimation » a tenu jusque dans l'affichage, et le notebook en fait la démonstration.
+- **Le code du quota GPU n'est pas vérifiable** hors d'un compte : `STATE.md` fait chercher le
+  code par son nom plutôt que de le coder en dur.
+
+**Suite** : actions Christophe (`STATE.md`) — relire les commits du jour, clés, exécutions
+complètes, bootstrap (huit ressources), variable GitHub, demande de quota GPU — puis
+`GO PHASE 2`.

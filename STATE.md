@@ -8,6 +8,10 @@
 **Phase 1 — Squelette de production : construite** (2026-09-03), fusionnée dans `main` le
 2026-10-16 avec la PR #2 (PR #3). Depuis, tout se fait sur `main`, sans branche ni PR
 (ADR 008). Ce qui reste demande des actions de Christophe (clés, compte AWS), pas du code.
+**Audit de reprise du 2026-10-19** (ADR 009, `JOURNAL.md`, `docs/decisions.md`) : brief et
+infra corrigés — un seul environnement, déploiement par GitHub Actions et OIDC, URL de base
+composée dans le cluster, règle d'entrée des services AWS, Claude 5.5 par défaut. Rien de
+changé au cap ; le banc ne prouve rien tant que la phase 1 n'est pas étudiée et exécutée.
 
 ## Fait en phase 1 (2026-09-03)
 
@@ -29,7 +33,7 @@
 - **Infra** : Dockerfile, chart Helm (probes, HPA, PDB, sécurité, ExternalSecret), Tilt,
   Terraform `envs/dev` validé (VPC, EKS 1.33 + Pod Identity, RDS pg16 pgvector, ECR, S3,
   secrets, rôles), vérifié sur k3d ; Langfuse v4 sur k3d (OTLP → ClickHouse prouvé, coût
-  recalculé identique au nôtre) ; 9 guides `docs/infra/` (README + 00→08).
+  recalculé identique au nôtre) ; 10 guides `docs/infra/` (README + 00→09, le 09 ajouté le 2026-10-19).
 - **Notebooks** : 1 (appel LLM robuste, 39 cellules) et 2 (document → index, 26 cellules),
   exécutés en mode échantillon, en CI avec Postgres en service.
 - **Première mesure** (`data/results/embeddings_scifact.json`, mteb, SciFact nDCG@10) :
@@ -43,8 +47,24 @@
 2. `.env` avec les clés (`.env.example`) → `make ingest-scifact`, `make api` ou `tilt up`,
    `make notebooks-full` (section « vrai provider » du notebook 1, vrais embeddings et vraie
    génération du notebook 2), `make bench-embeddings` (ajoute text-embedding-3-small).
-3. Guide 00 (bootstrap, 15 min) puis guides 02→05 : `make infra-up`, `make cluster-addons`,
-   secrets, `make deploy` — l'API sur EKS (≈ 6 $/jour allumé, `make infra-down` le soir).
+3. Guide 00 (bootstrap, 15 min ; huit ressources depuis le 2026-10-19, rôle OIDC GitHub
+   compris), puis la variable de dépôt du guide 09 :
+   `gh variable set AWS_DEPLOY_ROLE_ARN --body "$(cd infra/terraform/bootstrap && terraform output -raw github_deploy_role_arn)"`,
+   puis guides 02→05 : `make infra-up`, `make cluster-addons`, secrets, `make deploy` ou
+   `make deploy-trigger` (guide 09) — l'API sur EKS (≈ 6 $/jour allumé, `make infra-down` le
+   soir).
+4. **Demander le quota GPU dès maintenant** (phase 6, ADR 009 : des jours à des semaines) :
+
+   ```bash
+   aws service-quotas list-service-quotas --service-code ec2 --region eu-west-3 \
+     --query "Quotas[?starts_with(QuotaName, 'Running On-Demand G and VT')].[QuotaCode,QuotaName,Value]" --output table
+   aws service-quotas request-service-quota-increase --service-code ec2 --region eu-west-3 \
+     --quota-code <code ci-dessus> --desired-value 8   # 8 vCPU : un g6.2xlarge ou deux g6.xlarge
+   ```
+
+   Même demande pour « All G and VT Spot Instance Requests » si la phase 6 tourne en Spot.
+   g6 (GPU L4) est servi à Paris depuis décembre 2024 ; à vérifier le jour venu :
+   `aws ec2 describe-instance-type-offerings --location-type region --region eu-west-3 --filters Name=instance-type,Values=g6.xlarge`.
 
 ## Chiffres actuels
 
@@ -56,7 +76,7 @@ BM25 = 0,665 nDCG@10 sur SciFact (papier BEIR) ; embeddings mesurés le 2026-09-
 - **Bootstrap AWS à appliquer par Christophe** en suivant `docs/infra/00-bootstrap.md`
   (compte AWS existant, région eu-west-3, aucun budget ni bucket d'état à ce jour — le
   bucket `eks-foundations-terraform-chris` appartient à un autre projet, on n'y touche pas).
-  Les modules `envs/dev` en dépendent.
+  Les modules `envs/dev` et le workflow de déploiement (guide 09) en dépendent.
 - Contraintes réelles de gouvernance des données : inconnues à ce jour, mécanisme construit
   en phase 1 avec une politique permissive sur données publiques ; à durcir quand elles se
   préciseront (`docs/decisions.md`, 2026-09-03).
@@ -73,6 +93,16 @@ Pas de roadmap « pipeline » séparée (`JOURNAL.md` 2026-10-15 et 2026-09-01).
 obligations ajoutées (Dagster livrable nommé en phase 3, file + worker en phase 5, manifeste de
 run en 5B et 6) sont intégrées dans `docs/roadmap/phase-3.md`, `phase-5.md`, `phase-5b.md` et
 `phase-6.md`.
+
+## Amendements du 2026-10-19 (audit de reprise, ADR 009)
+
+Règle d'entrée des services AWS (`CLAUDE.md` §4) et ses premières applications : Bedrock
+Knowledge Bases en bras de comparaison du notebook 4 de la phase 3 ; SQS (abstraction à deux
+implémentations, Postgres `SKIP LOCKED` en local), ADOT, Karpenter et Cost Anomaly Detection en
+phase 5 ; node group GPU sur l'EKS existant comme seconde cible mesurée de la phase 6 ;
+Guardrails (phase 7) et AgentCore (phase 4) en option. Le CV sort de la phase 8 (tenu par le
+programme). Un seul environnement `dev`. Déploiement par GitHub Actions et OIDC (guide 09). Les
+notebooks 1 et 2 tournent sur `claude-sonnet-5-5`.
 
 ## Organisation du brief (2026-10-16)
 
