@@ -23,6 +23,21 @@ module "eks" {
   authentication_mode                      = "API"
   enable_cluster_creator_admin_permissions = true
 
+  # Le rôle de déploiement GitHub Actions (bootstrap, github.tf) devient administrateur du
+  # cluster de dev, le temps d'un `helm upgrade`. La réponse de moindre privilège (EditPolicy
+  # limitée au namespace, plus un ClusterRole pour les CRD External Secrets) est au guide 09.
+  access_entries = var.github_deploy_role_name == "" ? {} : {
+    github_deploy = {
+      principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.github_deploy_role_name}"
+      policy_associations = {
+        admin = {
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = { type = "cluster" }
+        }
+      }
+    }
+  }
+
   enable_irsa         = true # gardé pour les charts qui ne parlent pas encore Pod Identity
   create_kms_key      = true
   deletion_protection = false # `make infra-down` doit pouvoir tout détruire

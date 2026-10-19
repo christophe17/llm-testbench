@@ -1,7 +1,7 @@
 # Guide 00 — Bootstrap AWS : l'état distant et l'alerte de budget avant le premier euro
 
 **Durée** : 15 minutes. **Prérequis** : compte AWS, AWS CLI configurée, Terraform ≥ 1.10.
-**Coût** : ~0 €/mois. **Code** : `infra/terraform/bootstrap/` (trois fichiers, ~100 lignes).
+**Coût** : ~0 €/mois. **Code** : `infra/terraform/bootstrap/` (`main.tf`, `github.tf`, `variables.tf`, `outputs.tf`).
 
 Ce guide s'exécute une seule fois par compte. Tout ce qui suit dans la phase 1 (réseau, EKS,
 RDS) stocke son état dans le bucket créé ici et vit sous l'alerte de budget créée ici.
@@ -85,8 +85,13 @@ consommation du mois et prévient des jours avant que le réel ne crève le plaf
 
 **[`variables.tf`](../../infra/terraform/bootstrap/variables.tf)** : région, plafond, et
 l'adresse e-mail d'alerte, seule variable sans défaut. **[`outputs.tf`](../../infra/terraform/bootstrap/outputs.tf)** :
-le nom du bucket et un bloc `backend "s3"` prêt à coller dans les modules d'environnement,
-avec `use_lockfile = true`.
+le nom du bucket, un bloc `backend "s3"` prêt à coller dans les modules d'environnement,
+avec `use_lockfile = true`, et l'ARN du rôle de déploiement.
+
+**[`github.tf`](../../infra/terraform/bootstrap/github.tf)** : le fournisseur OIDC de GitHub
+et le rôle que le workflow de déploiement assume, lus ligne à ligne au guide 09. Ils sont ici,
+et pas dans `envs/dev`, parce que c'est une identité de compte : stable, gratuite, et qui doit
+survivre au `make infra-down` du soir.
 
 ## Exécution
 
@@ -121,11 +126,12 @@ make bootstrap-plan
 initialized!`. Le plan doit se terminer par :
 
 ```
-Plan: 5 to add, 0 to change, 0 to destroy.
+Plan: 8 to add, 0 to change, 0 to destroy.
 ```
 
-Cinq ressources : le bucket, son versioning, son chiffrement, son blocage d'accès public, le
-budget. Si le chiffre diffère, arrêtez-vous et lisez le plan.
+Huit ressources : le bucket, son versioning, son chiffrement, son blocage d'accès public, le
+budget, puis le fournisseur OIDC GitHub, le rôle de déploiement et sa politique (guide 09). Si
+le chiffre diffère, arrêtez-vous et lisez le plan.
 
 **4. Appliquer.**
 
@@ -133,8 +139,9 @@ budget. Si le chiffre diffère, arrêtez-vous et lisez le plan.
 make bootstrap-apply
 ```
 
-Répondez `yes`. En fin d'exécution, deux sorties : `tfstate_bucket` et `backend_example`.
-Notez le nom du bucket : `llm-testbench-tfstate-<identifiant de compte>`.
+Répondez `yes`. En fin d'exécution, trois sorties : `tfstate_bucket`, `backend_example` et
+`github_deploy_role_arn` (à poser dans le dépôt GitHub, guide 09). Notez le nom du bucket :
+`llm-testbench-tfstate-<identifiant de compte>`.
 
 **5. Contrôler ce qui a été créé.** Ne croyez pas Terraform sur parole, interrogez AWS.
 
@@ -163,9 +170,10 @@ git check-ignore infra/terraform/bootstrap/terraform.tfstate
 ```
 
 Il est **local**, et git l'ignore. C'est l'exception assumée : ce module crée le bucket
-d'état, il ne peut pas y ranger le sien. Il ne contient que cinq ressources stables. S'il
+d'état, il ne peut pas y ranger le sien. Il ne contient que huit ressources stables. S'il
 est perdu, `terraform import` les récupère en quelques minutes (les identifiants sont le
-nom du bucket et, pour le budget, `<compte>:llm-testbench-monthly`).
+nom du bucket, `<compte>:llm-testbench-monthly` pour le budget, l'ARN du fournisseur OIDC et
+le nom du rôle).
 
 **7. Me dire que c'est fait**, avec le nom du bucket. Les modules `envs/dev` en ont besoin
 pour leur bloc `backend`.
@@ -186,7 +194,7 @@ pour leur bloc `backend`.
   Terraform personnel ; en entreprise, on passe à une clé gérée par le client.
 - **Vos identifiants sont ceux d'un utilisateur IAM à clés longues.** Acceptable sur un
   compte personnel. La réponse de production est IAM Identity Center (SSO, identifiants
-  temporaires) pour les humains et OIDC pour la CI. On y revient au guide 03.
+  temporaires) pour les humains et OIDC pour la CI — ce second point est fait, guide 09.
 - **Le fichier `.terraform.lock.hcl` est ignoré par git** depuis la phase 0. Pour ce module,
   c'est sans conséquence ; pour les modules d'environnement, on le versionnera avec les
   empreintes des deux plateformes (`darwin_arm64` pour vous, `linux_amd64` pour une CI
@@ -250,8 +258,9 @@ les dérives rapides. Le budget est le filet, pas la ceinture.
 ## Ce qu'on n'a pas fait, et pourquoi
 
 - **Pas de DynamoDB** : le verrou natif suffit et c'est un service de moins.
-- **Pas d'OIDC pour la CI** : la CI reste hors ligne et sans secret (ADR 003) ; le
-  déploiement est manuel en phase 1. On créera le rôle OIDC le jour où un pipeline déploie.
+- **L'OIDC pour la CI est ici depuis le 2026-10-19** (`github.tf`, ADR 009) : la CI de
+  *tests* reste hors ligne et sans secret (ADR 003) ; seul le workflow de déploiement,
+  déclenché à la main, assume le rôle (guide 09).
 - **Pas de clé KMS personnalisée** : pas de besoin de contrôle de politique de clé sur un
   compte personnel.
 - **Pas de Cost Anomaly Detection** : complémentaire, à ajouter en phase 5 avec le reste
@@ -266,4 +275,5 @@ les dérives rapides. Le budget est le filet, pas la ceinture.
 | Bucket S3 d'état (quelques ko, versionné) | ~0 € |
 | Appels KMS sur la clé `aws/s3` | ~0 € (centimes au pire) |
 | AWS Budgets (deux premiers budgets) | 0 € |
+| Fournisseur OIDC GitHub, rôle IAM | 0 € |
 | **Total** | **~0 €** |

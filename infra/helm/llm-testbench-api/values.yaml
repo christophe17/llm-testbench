@@ -28,6 +28,16 @@ secrets:
     # Une clé Secrets Manager par variable : {name: NOM_VARIABLE, key: chemin/du/secret}
     data: []
 
+# Base de données en cloud : rien de secret ici. Si `masterSecretArn` est renseigné (secret
+# géré par RDS, {username, password}), l'ExternalSecret compose LLM_TESTBENCH_DATABASE_URL
+# dans le cluster à partir de ces trois valeurs et du secret (guide 05). Rempli par
+# `make deploy` et par le workflow de déploiement depuis les sorties Terraform / l'API RDS.
+database:
+  host: ""
+  port: 5432
+  name: testbench
+  masterSecretArn: ""
+
 serviceAccount:
   create: true
   annotations: {}   # EKS : eks.amazonaws.com/role-arn pour l'accès Bedrock (guide 03)

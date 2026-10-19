@@ -82,6 +82,9 @@ data "aws_iam_policy_document" "external_secrets" {
     ]
     resources = [
       "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${local.secret_prefix}/*",
+      # Le secret géré par RDS ({username, password}) : External Secrets compose l'URL de
+      # la base dans le cluster à partir de lui (guide 05, ADR 009).
+      module.rds.db_instance_master_user_secret_arn,
     ]
   }
 }

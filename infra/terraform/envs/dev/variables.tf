@@ -85,7 +85,18 @@ variable "external_secrets_namespace" {
 }
 
 variable "public_access_cidrs" {
-  description = "CIDR autorisés sur l'endpoint public de l'API Kubernetes (votre IP/32 en pratique)"
+  description = <<-EOT
+    CIDR autorisés sur l'endpoint public de l'API Kubernetes. Ouvert par défaut, et c'est un
+    choix (ADR 009, guide 09) : l'authentification est IAM (access entries) et le pipeline
+    GitHub Actions déploie depuis des runners à IP variable. Restreignez à votre IP/32 si vous
+    ne déployez que depuis votre poste (TF_VAR_public_access_cidrs='["a.b.c.d/32"]').
+  EOT
   type        = list(string)
   default     = ["0.0.0.0/0"]
+}
+
+variable "github_deploy_role_name" {
+  description = "Nom du rôle IAM de GitHub Actions créé par le bootstrap (github.tf) ; \"\" pour ne pas lui ouvrir le cluster"
+  type        = string
+  default     = "llm-testbench-github-deploy"
 }

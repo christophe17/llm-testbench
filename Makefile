@@ -130,16 +130,23 @@ infra-validate: ## Valide la configuration Terraform sans backend ni compte
 kubeconfig: ## Configure kubectl sur le cluster EKS dev
 	cd $(TF_DEV) && $$(terraform output -raw kubeconfig_command)
 
-deploy: ## Construit et pousse l'image sur ECR (SHA git) puis déploie le chart sur le cluster courant
+deploy: ## Construit et pousse l'image sur ECR (SHA git) puis déploie le chart sur le cluster courant (même chose que le workflow deploy.yml, guide 09)
 	$(eval ECR := $(shell cd $(TF_DEV) && terraform output -raw ecr_repository_url))
 	$(eval TAG := $(shell git rev-parse --short HEAD))
+	$(eval RDS_HOST := $(shell cd $(TF_DEV) && terraform output -raw rds_address))
+	$(eval RDS_SECRET := $(shell cd $(TF_DEV) && terraform output -raw rds_master_secret_arn))
 	aws ecr get-login-password --region eu-west-3 | docker login --username AWS --password-stdin $(ECR)
 	docker build -t $(ECR):$(TAG) .
 	docker push $(ECR):$(TAG)
 	kubectl create namespace llm-testbench --dry-run=client -o yaml | kubectl apply -f -
 	helm upgrade --install api infra/helm/llm-testbench-api -n llm-testbench \
 		-f infra/helm/llm-testbench-api/values-dev.yaml \
-		--set image.repository=$(ECR) --set image.tag=$(TAG)
+		--set image.repository=$(ECR) --set image.tag=$(TAG) \
+		--set database.host=$(RDS_HOST) --set database.masterSecretArn=$(RDS_SECRET)
+
+deploy-trigger: ## Lance le workflow GitHub Actions de déploiement sur main (rôle OIDC, guide 09)
+	gh workflow run deploy.yml --ref main
+	gh run list --workflow=deploy.yml --limit 1
 
 cluster-addons: ## Installe External Secrets (Helm) et le ClusterSecretStore sur le cluster courant
 	helm repo add external-secrets https://charts.external-secrets.io >/dev/null 2>&1 || true
@@ -154,4 +161,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (à lancer une seule fois, com
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper bench-embeddings k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper bench-embeddings k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply

@@ -1,7 +1,8 @@
 # Guide 05 — Les secrets : Secrets Manager, External Secrets, identités de pods
 
 **Durée** : 15 minutes. **Prérequis** : guide 03 (cluster et add-ons). **Coût** :
-~0,40 $/mois par secret (4 secrets), détruits avec l'environnement. **Code** :
+~0,40 $/mois par secret (trois clés, plus le secret géré par RDS), détruits avec
+l'environnement. **Code** :
 `infra/terraform/envs/dev/secrets.tf`, `iam.tf`, `infra/k8s/dev/cluster-secret-store.yaml`,
 `infra/helm/llm-testbench-api/templates/externalsecret.yaml`.
 
@@ -27,8 +28,9 @@ le changement doit se propager sans redéploiement manuel.
 ## Lecture guidée du code réel
 
 **[`secrets.tf`](../../infra/terraform/envs/dev/secrets.tf)** — trois secrets de clés
-(`llm-testbench/dev/anthropic-api-key`, `openai-api-key`, `openrouter-api-key`) et
-l'URL de base (guide 04). Deux détails qui comptent :
+(`llm-testbench/dev/anthropic-api-key`, `openai-api-key`, `openrouter-api-key`), et rien
+d'autre : l'URL de base n'est pas un secret Terraform (voir le template plus bas). Deux
+détails qui comptent :
 
 - `recovery_window_in_days = 0` : Secrets Manager garde normalement un secret supprimé
   30 jours (et le nom reste bloqué). Zéro, pour qu'un `infra-down` suivi d'un `infra-up`
@@ -38,7 +40,8 @@ l'URL de base (guide 04). Deux détails qui comptent :
   Terraform ne l'écrasera jamais, et elle n'entrera jamais dans l'état.
 
 **[`iam.tf`](../../infra/terraform/envs/dev/iam.tf)** — le rôle `external_secrets` : lire
-et décrire les secrets sous le préfixe `llm-testbench/dev/*`, rien d'autre ; associé par
+et décrire les secrets sous le préfixe `llm-testbench/dev/*` et le secret géré par RDS
+(`module.rds.db_instance_master_user_secret_arn`), rien d'autre ; associé par
 Pod Identity au ServiceAccount `external-secrets` du namespace du même nom (créé par le
 chart de l'opérateur).
 
@@ -52,7 +55,14 @@ Terraform.
 — dans le namespace de l'API, un `ExternalSecret` par déploiement : chaque entrée
 `data` associe une variable d'environnement à une clé Secrets Manager ; l'opérateur
 fabrique le `Secret` `llm-testbench-api-secrets` que le Deployment consomme, et le
-rafraîchit toutes les heures (`refreshInterval`).
+rafraîchit toutes les heures (`refreshInterval`). Quand `database.masterSecretArn` est
+renseigné (par `make deploy` ou le workflow, depuis les sorties Terraform / l'API RDS),
+deux entrées `data` supplémentaires lisent `username` et `password` dans le secret géré par
+RDS (`remoteRef.property`), et un bloc `target.template` (moteur v2) compose
+`LLM_TESTBENCH_DATABASE_URL` dans le cluster, mot de passe encodé par `urlquery`. Lisez les
+accolades à deux niveaux : `{{ .Values... }}` est rendu par Helm, `{{ .db_password }}` est
+laissé tel quel pour l'opérateur. C'est la réponse de production au compromis d'avant
+(ADR 009) : le mot de passe ne quitte Secrets Manager que pour le `Secret` Kubernetes.
 
 ## Exécution
 
@@ -65,7 +75,8 @@ aws secretsmanager put-secret-value --secret-id llm-testbench/dev/openrouter-api
 ```
 
 Chargez `.env` avant (`set -a; source .env; set +a`) pour ne pas coller de clé dans
-l'historique du shell. L'URL de base, elle, est déjà posée par Terraform.
+l'historique du shell. L'URL de base, elle, est composée par l'opérateur à partir du secret
+géré par RDS : rien à poser.
 
 **2. Vérifier la synchronisation** :
 
@@ -76,8 +87,20 @@ kubectl -n llm-testbench get secret llm-testbench-api-secrets -o jsonpath='{.dat
 
 Attendu : les quatre clés (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
 `LLM_TESTBENCH_DATABASE_URL`). Si `READY False` : `kubectl describe externalsecret api`
-donne la raison (accès refusé → association Pod Identity, préfixe de la politique IAM ;
-secret introuvable → nom).
+donne la raison (accès refusé → association Pod Identity, préfixe ou ARN de la politique
+IAM ; secret introuvable → nom ; erreur de template → une clé `data` manquante).
+
+Vérifiez l'URL composée **sans afficher le mot de passe** :
+
+```bash
+kubectl -n llm-testbench get secret llm-testbench-api-secrets -o jsonpath='{.data.LLM_TESTBENCH_DATABASE_URL}' \
+  | base64 -d | sed -E 's#//[^:]+:[^@]+@#//<user>:<password>@#'
+```
+
+Attendu : `postgresql://<user>:<password>@<adresse RDS>:5432/testbench`. Si le pod ne se
+connecte pas alors que l'adresse est bonne, c'est l'encodage : comparez la longueur du mot
+de passe dans Secrets Manager et dans le `Secret` — `urlquery` allonge les caractères
+réservés (`%23` pour `#`).
 
 **3. Prouver que le pod n'a aucune clé AWS** :
 
@@ -106,7 +129,10 @@ un processus ne relit pas ses variables d'environnement.
   créer un `ExternalSecret`. Dans un cluster partagé, un `SecretStore` par namespace et
   des rôles distincts.
 - **Le secret RDS géré n'est pas au format attendu** par l'application (JSON
-  `{username, password}`) : d'où l'URL composée dans un second secret (guide 04).
+  `{username, password}`) : d'où le template de l'`ExternalSecret`, qui lit deux propriétés et
+  compose l'URL. **`mergePolicy` vaut `Replace` par défaut** : seules les clés écrites par le
+  template entrent dans le `Secret`, donc le template redit chaque clé d'API — en oublier une,
+  c'est la faire disparaître du pod sans message d'erreur.
 
 ## Questions d'entretien
 
@@ -147,6 +173,7 @@ sur la facture.
 - **Pas de rotation automatique des clés LLM** : les fournisseurs n'exposent pas d'API de
   rotation ; la rotation est manuelle par construction.
 - **Pas de Reloader** : une rotation rare se gère avec un `rollout restart`.
-- **Pas de template External Secrets pour composer l'URL de base** : le compromis
-  Terraform est documenté (guide 04) ; le template est la suite si le compromis gêne.
+- **Pas d'authentification IAM à la base** (guide 04) : le mot de passe existe toujours,
+  mais il ne quitte plus Secrets Manager que pour le `Secret` Kubernetes, composé dans le
+  cluster. Le template a remplacé le compromis Terraform le 2026-10-19 (ADR 009).
 - **Pas de SecretStore par namespace** : un seul locataire sur ce cluster.

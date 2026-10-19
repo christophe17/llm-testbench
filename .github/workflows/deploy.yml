@@ -1,0 +1,83 @@
+# Déploiement de l'API sur le cluster EKS dev, déclenché à la main (le cluster est
+# éphémère : un déploiement automatique à chaque push échouerait le soir).
+# Aucune clé AWS dans GitHub : le job obtient des identifiants temporaires par OIDC en
+# assumant le rôle créé par le bootstrap Terraform (infra/terraform/bootstrap/github.tf).
+# Ce que fait ce workflow est exactement `make deploy` (guide 09).
+name: deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write # jeton OIDC pour AssumeRoleWithWebIdentity
+  contents: read
+
+# Un seul déploiement à la fois sur l'environnement dev.
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: eu-west-3
+  CLUSTER_NAME: llm-testbench-dev
+  ECR_REPOSITORY: llm-testbench-api
+  NAMESPACE: llm-testbench
+
+jobs:
+  deploy:
+    # Runner arm64 : même architecture que les nœuds Graviton, pas d'émulation QEMU.
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Identifiants AWS temporaires (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Connexion à ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build et push de l'image (tag = SHA git)
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          TAG: ${{ github.sha }}
+        run: |
+          docker build -t "$IMAGE:${TAG::7}" .
+          docker push "$IMAGE:${TAG::7}"
+
+      - name: Kubeconfig et paramètres de la base (API AWS, pas l'état Terraform)
+        id: params
+        run: |
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER_NAME"
+          read -r RDS_HOST RDS_SECRET < <(aws rds describe-db-instances \
+            --db-instance-identifier "$CLUSTER_NAME" \
+            --query 'DBInstances[0].[Endpoint.Address,MasterUserSecret.SecretArn]' --output text)
+          echo "rds_host=$RDS_HOST" >> "$GITHUB_OUTPUT"
+          echo "rds_secret=$RDS_SECRET" >> "$GITHUB_OUTPUT"
+
+      - name: Helm upgrade
+        env:
+          IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
+          TAG: ${{ github.sha }}
+        run: |
+          kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
+          helm upgrade --install api infra/helm/llm-testbench-api -n "$NAMESPACE" \
+            -f infra/helm/llm-testbench-api/values-dev.yaml \
+            --set image.repository="$IMAGE" --set image.tag="${TAG::7}" \
+            --set database.host="${{ steps.params.outputs.rds_host }}" \
+            --set database.masterSecretArn="${{ steps.params.outputs.rds_secret }}"
+
+      # La readiness refuse tant que l'index n'existe pas dans RDS (guide 04) : un rollout
+      # qui n'aboutit pas n'est pas forcément un déploiement raté. On constate, on n'arbitre pas.
+      - name: État du rollout
+        continue-on-error: true
+        run: kubectl -n "$NAMESPACE" rollout status deploy/api --timeout=180s
+
+      - name: Pods et ExternalSecret
+        if: always()
+        run: |
+          kubectl -n "$NAMESPACE" get pods -o wide
+          kubectl -n "$NAMESPACE" get externalsecret

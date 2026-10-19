@@ -52,6 +52,10 @@ la première question d'entretien sur EKS.
 - `authentication_mode = "API"` et `enable_cluster_creator_admin_permissions = true` :
   l'identité qui lance `terraform apply` devient administrateur du cluster par une access
   entry — c'est ce qui rend `kubectl` possible dès la fin de l'apply.
+- `access_entries` : le rôle de déploiement GitHub Actions (bootstrap, `github.tf`) reçoit
+  `AmazonEKSClusterAdminPolicy` sur le cluster de dev — c'est ce qui permet au workflow du
+  guide 09 de faire `helm upgrade`. Le moindre privilège (`AmazonEKSEditPolicy` limitée au
+  namespace, plus un ClusterRole pour les CRD External Secrets) y est discuté.
 - `enable_irsa = true` : le fournisseur OIDC existe quand même, pour les charts qui ne
   parlent pas encore Pod Identity.
 - `create_kms_key = true` : chiffrement des secrets Kubernetes au repos avec une clé KMS
@@ -220,5 +224,11 @@ port-forward suffit.
   phase 1.
 - **Pas d'IAM Identity Center** : un seul humain sur un compte personnel ; la réponse de
   production reste notée (guide 00).
-- **Pas de pipeline de déploiement** : `make deploy` depuis le poste ; le rôle OIDC pour
-  GitHub Actions viendra si un jour la CI déploie (ADR 003 : elle reste hors ligne).
+- **Le pipeline de déploiement est au guide 09** (depuis le 2026-10-19) : `make deploy`
+  depuis le poste, et le même déploiement par GitHub Actions avec un rôle OIDC ; la CI de
+  tests reste hors ligne (ADR 003).
+- **Pas de restriction de l'endpoint public à une IP** : `public_access_cidrs` reste ouvert,
+  et c'est une décision (ADR 009) — le pipeline déploie depuis des runners GitHub à IP
+  variable, et l'authentification est IAM (access entries, journaux d'audit). Le jour où le
+  déploiement passe en mode pull (GitOps) ou par un runner dans le VPC, on ferme ; d'ici là,
+  `TF_VAR_public_access_cidrs='["votre.ip/32"]'` si vous ne déployez que depuis votre poste.

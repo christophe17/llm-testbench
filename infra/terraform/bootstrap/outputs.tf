@@ -14,3 +14,8 @@ output "backend_example" {
     }
   EOT
 }
+
+output "github_deploy_role_arn" {
+  description = "À poser dans le dépôt GitHub : gh variable set AWS_DEPLOY_ROLE_ARN --body <valeur> (guide 09)"
+  value       = aws_iam_role.github_deploy.arn
+}

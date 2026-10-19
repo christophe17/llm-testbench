@@ -18,6 +18,19 @@ output "rds_address" {
   value = module.rds.db_instance_address
 }
 
+output "rds_port" {
+  value = module.rds.db_instance_port
+}
+
+output "rds_database" {
+  value = "testbench"
+}
+
+output "rds_master_secret_arn" {
+  description = "Secret géré par RDS ({username, password}) : External Secrets compose l'URL de la base à partir de lui"
+  value       = module.rds.db_instance_master_user_secret_arn
+}
+
 output "api_role_arn" {
   value = aws_iam_role.api.arn
 }
@@ -31,7 +44,7 @@ output "data_bucket" {
 }
 
 output "secret_names" {
-  description = "Secrets à renseigner à la main avec `aws secretsmanager put-secret-value`"
+  description = "Clés des providers à renseigner à la main avec `aws secretsmanager put-secret-value` (guide 05)"
   value       = [for s in aws_secretsmanager_secret.api_keys : s.name]
 }
 

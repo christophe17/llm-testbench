@@ -65,13 +65,15 @@ Chaque valeur par défaut de `values.yaml` répond à un incident classique.
 
 **[`templates/externalsecret.yaml`](../../infra/helm/llm-testbench-api/templates/externalsecret.yaml)**
 — rendu seulement si activé : pour chaque entrée `data`, une clé du `Secret` cible
-alimentée par une clé Secrets Manager. `creationPolicy: Owner` : le `Secret` appartient
-à l'`ExternalSecret`, il disparaît avec lui.
+alimentée par une clé Secrets Manager ; et, si `database.masterSecretArn` est renseigné, un
+template qui compose l'URL de la base dans le cluster (guide 05). `creationPolicy: Owner` :
+le `Secret` appartient à l'`ExternalSecret`, il disparaît avec lui.
 
 **Les deux fichiers de valeurs.** `values-local.yaml` : image du registre local, un
 réplica, pas d'HPA ni de PDB, URL de base vers le service `postgres` du namespace.
-`values-dev.yaml` : image ECR au SHA git, External Secrets, annotation du rôle IAM sur
-le ServiceAccount (Pod Identity, guide 03).
+`values-dev.yaml` : image ECR au SHA git, External Secrets, le bloc `database` (adresse et
+ARN du secret RDS, remplis par `make deploy` ou le workflow du guide 09), identité de pod
+pour Bedrock (guide 03).
 
 ## Exécution
 

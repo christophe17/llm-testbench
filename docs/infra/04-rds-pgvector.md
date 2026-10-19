@@ -2,8 +2,8 @@
 
 **Durée** : 20 minutes. **Prérequis** : guide 03 (environnement créé). **Coût** :
 ~0,02 $/h + ~2 $/mois de stockage, détruit avec l'environnement. **Code** :
-`infra/terraform/envs/dev/rds.tf`, `secrets.tf` (URL de la base),
-`src/llm_testbench/ingest/sql/001_schema.sql`.
+`infra/terraform/envs/dev/rds.tf`, `infra/helm/llm-testbench-api/templates/externalsecret.yaml`
+(l'URL de la base, composée dans le cluster), `src/llm_testbench/ingest/sql/001_schema.sql`.
 
 ---
 
@@ -48,13 +48,15 @@ la base sans qu'un secret ne traverse un fichier.
 - `performance_insights_enabled = false`, `monitoring_interval = 0` : les deux postes
   de coût optionnels du monitoring RDS, désactivés en dev.
 
-**[`secrets.tf`](../../infra/terraform/envs/dev/secrets.tf)**, partie base : Terraform lit
-le secret géré par RDS (`data.aws_secretsmanager_secret_version.rds_master`), compose
-l'URL `postgresql://user:mot-de-passe@hôte:5432/testbench` et l'écrit dans un secret
-`llm-testbench/dev/database-url`. External Secrets (guide 05) la livrera au pod telle
-quelle. **Compromis documenté** : le mot de passe transite par l'état Terraform (chiffré,
-guide 00). La réponse de production : un template External Secrets qui compose l'URL
-dans le cluster, ou l'authentification IAM à la base (`iam_database_authentication_enabled`).
+**L'URL de la base** — Terraform ne la compose pas et ne lit jamais le mot de passe : il
+sort seulement l'adresse de l'instance (`rds_address`) et l'ARN du secret géré par RDS
+(`rds_master_secret_arn`, `outputs.tf`). C'est l'`ExternalSecret` du chart (guide 05) qui,
+dans le cluster, lit `username` et `password` dans ce secret et compose
+`postgresql://user:mot-de-passe@hôte:5432/testbench`. Le mot de passe ne passe ni par l'état
+Terraform, ni par un second secret (ADR 009). Jusqu'au 2026-10-19, Terraform le lisait et
+l'écrivait dans un secret `database-url` : un compromis documenté, retiré. L'autre réponse de
+production, l'authentification IAM à la base (`iam_database_authentication_enabled`), reste
+dans « ce qu'on n'a pas fait ».
 
 **[`001_schema.sql`](../../src/llm_testbench/ingest/sql/001_schema.sql)** : c'est
 l'application, pas Terraform, qui crée l'extension et les tables au démarrage
@@ -113,9 +115,10 @@ Attendu : l'extension `vector` listée, une ligne d'index, ~5 000 chunks.
 
 ## Les pièges
 
-- **Le mot de passe dans l'URL doit être encodé** : RDS génère des caractères spéciaux
-  (`/`, `@`, `%`). `secrets.tf` passe par `urlencode()` ; sans ça, une URL sur trois est
-  invalide — et l'erreur ne dit pas pourquoi.
+- **Le mot de passe dans l'URL doit être encodé** : RDS exclut `/`, `@`, `"` et l'espace
+  de ses mots de passe générés, mais pas `%`, `#`, `?` ni `:`. Le template External Secrets
+  passe par `urlquery` ; sans ça, une URL sur trois est invalide — et l'erreur ne dit pas
+  pourquoi.
 - **`db.t4g.micro` a des crédits CPU** : sous charge soutenue (phase 5), il s'effondre
   quand les crédits sont épuisés. La montée en gamme est une variable.
 - **La famille de paramètres** doit suivre la version majeure : passer en Postgres 17
