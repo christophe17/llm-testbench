@@ -15,8 +15,9 @@ chiffres ».
 
 **Une contribution open source** ciblée dans l'écosystème réellement utilisé.
 
-**CV** en trois blocs : AI Engineering (le banc d'essai et les chiffres) / Production et
-opérations / 20 ans d'ingénierie reformulés en ownership.
+**CV** : tenu par le programme (`~/Roadmaps/program/docs/01-career-strategy.md` §7) et préparé
+par le module R4 de la roadmap Research Engineer ; ce banc fournit les chiffres du bloc
+« production et opérations », pas un CV à part (2026-10-19).
 
 **Préparation d'entretien** : system design IA chronométré, argumentaire build vs buy sur trois
 briques, et **trois histoires d'incident au format situation-action-résultat chiffré**. Elles

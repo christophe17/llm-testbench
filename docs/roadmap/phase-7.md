@@ -7,7 +7,9 @@ journalisation). Reste :
 - injection indirecte par **document** empoisonné dans le corpus (les documents empoisonnés
   viennent du corpus maison de la phase 2.5) ;
 - exfiltration via les citations ;
-- filtrage de sortie ;
+- filtrage de sortie — le nôtre, et en comparaison **Bedrock Guardrails** (PII, sujets
+  interdits, ancrage contextuel) sur le même jeu d'attaques : taux de blocage, faux positifs,
+  latence ajoutée, coût ; optionnel, décidé au plan de phase ;
 - détection et masquage de PII (Presidio) ;
 - red teaming automatisé (garak, promptfoo redteam) dans la CI.
 

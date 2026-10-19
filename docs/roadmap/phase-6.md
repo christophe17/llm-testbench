@@ -16,9 +16,15 @@ publics** : presque personne ne fait cette mesure, c'est exactement ce qui me di
 vs API, **seuil de bascule en volume**.
 
 **Déploiement** GPU sur Kubernetes, autoscaling, cold start. Embeddings et reranker
-self-hosted. Module Terraform GPU **éphémère**, vers un fournisseur spécialisé découplé du
-cloud principal (les quotas GPU sur compte AWS personnel sont lents et chers), destruction
-évidente. ADR sur ce découplage.
+self-hosted. Deux cibles pour le même chart vLLM, mesurées l'une contre l'autre (ADR 009) :
+(a) un module Terraform GPU **éphémère** vers un fournisseur spécialisé découplé du cloud
+principal — le chemin par défaut, destruction évidente ; (b) **un node group GPU sur l'EKS
+existant** (g6, GPU L4, Spot via Karpenter), si le quota « Running On-Demand G and VT
+instances » a été accordé — demandé dès la phase 1 (`STATE.md`), car il prend des jours à des
+semaines. Une ligne de plus dans le tableau : coût par million de tokens, cold start, temps de
+montée, sur chaque cible. C'est le seul endroit où « infra GPU », la mission préférée du
+programme (PD-18), et « LLMOps sur AWS » se rencontrent : l'ADR sur le découplage devient un
+ADR sur le choix de cible, chiffré.
 
 **Gouvernance mesurée** : ligne « coût de la gouvernance » du tableau maître (ADR 006) — ce
 que coûte le refus de router une classe de données vers un backend non conforme.

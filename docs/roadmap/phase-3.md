@@ -56,8 +56,12 @@ latence p95 → coût € », plus l'écart à la littérature.
 
 **Notebooks** : (1) pourquoi le hybrid search sauve les acronymes et le jargon ; (2) le duel des
 stratégies de chunking sur documents bruts ; (3) transformation de requête : quand ça aide,
-quand ça coûte pour rien ; (4) notre pipeline contre **LlamaIndex** out-of-the-box sur le même
-jeu BEIR — où le framework fait gagner du temps, où il plafonne, chiffré (le nôtre d'abord, puis
-la comparaison ; le port LlamaIndex vit dans le matériel de benchmark, pas dans `src/`) ; (5) la
+quand ça coûte pour rien ; (4) notre pipeline contre **LlamaIndex** out-of-the-box **et contre
+Bedrock Knowledge Bases** (le RAG managé d'AWS : ingestion depuis S3, chunking, retrieval et
+génération en quelques clics, sur le magasin vectoriel le moins cher disponible, créé et détruit
+dans la journée) sur le même jeu BEIR — où le framework ou le service managé fait gagner du
+temps, où il plafonne, chiffré (le nôtre d'abord, puis la comparaison ; les deux ports vivent
+dans le matériel de benchmark, pas dans `src/` — règle d'entrée des services AWS, `CLAUDE.md`
+§4) ; (5) la
 matrice d'expériences : régénérer cent index sans tout recalculer — partitions, taux de cache,
 backfill, reprise après échec et lineage visibles en sortie.

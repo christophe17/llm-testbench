@@ -19,17 +19,21 @@ contredit un texte resté en place.
 
 ## 1. Qui je suis et ce que je veux
 
-Développeur, 20 ans d'expérience. Web depuis 2006, puis DevOps, puis Machine Learning classique
+Développeur en activité depuis 2006 : web, puis DevOps, puis Machine Learning classique
 (XGBoost, SVM, PCA, régressions), puis Deep Learning (transformers, CNN, diffusion), puis MLOps.
-Tout appris sur le tas, en freelance.
+Tout appris sur le tas, en freelance. Le profil détaillé (années, parcours, contraintes) est
+tenu par le programme (`~/Roadmaps/program/docs/00-context.md` §1) ; ce brief ne le restate pas.
 
 **Cible.** La stratégie de carrière est tenue hors de ce dépôt, dans
 `~/Roadmaps/program/docs/01-career-strategy.md` (décision PD-8) ; la Suisse (banque, pharma,
 assurance) y est une contrainte. Ce banc sert un positionnement : *AI Engineer qui sait mettre
 en prod et qui mesure*. Le CDI d'AI Engineer en startup / scale-up en France est un repli du
 programme, pas sa cible. Mon avantage n'est pas le deep learning, c'est ma capacité à opérer,
-observer et chiffrer un système. La preuve de production du programme est
-`~/Project/sherpapier` (PD-11) ; ce dépôt est le laboratoire et la référence pédagogique.
+observer et chiffrer un système. Depuis le 2026-10-19 (PD-18), le programme n'a plus de
+projet de production propre : `~/Project/sherpapier` est gelé et AgentCore n'est plus requis.
+Ce banc, une fois ses phases 0 à 8 étudiées, est la preuve pour les missions freelance (ML,
+LLM ou agentiques) ; la preuve de production, c'est la mission elle-même. Ce dépôt reste le
+laboratoire et la référence pédagogique.
 Aucune certification (PD-9).
 
 **Ce que je maîtrise déjà très bien** : Kubernetes, Terraform, CI/CD, Docker, observabilité
@@ -85,7 +89,7 @@ Pour chaque phase, deux livrables couplés.
 
 Du vrai code, testé, typé, déployable.
 
-### B. Un notebook pédagogique, dans `notebooks/`
+### B. Un notebook pédagogique, dans `notebooks/phase-N/`
 
 **Contrat strict — respecte-le à la lettre :**
 
@@ -185,15 +189,28 @@ phase en cours.
   Silicon** — signale toute image sans build `arm64` plutôt que de me faire subir de
   l'émulation.
 - **Cloud : AWS**, `eu-west-3`. EKS, ECR, RDS Postgres avec pgvector, S3, Bedrock comme
-  provider parmi d'autres. Terraform, état distant chiffré, environnements `dev` et `prod`.
+  provider parmi d'autres. Terraform, état distant chiffré, **un seul environnement `dev`,
+  éphémère** : pas d'environnement `prod` tant qu'il n'y a pas d'utilisateurs ; le canary et le
+  shadow de la phase 5 se démontrent dans ce cluster, pas entre deux (ADR 009).
 - **Coût** : le cluster ne tourne pas 24/7. `make infra-up` / `make infra-down`, pas de poste
   dormant (attention à NAT Gateway), coût mensuel estimé documenté par module. Pas de plafond
   de budget a priori, mais chaque poste est estimé avant engagement.
 - Helm, External Secrets + AWS Secrets Manager, HPA, probes, PDB, ressources dimensionnées.
+- **Déploiement** : `make deploy` depuis le poste, et le même déploiement par GitHub Actions
+  avec un rôle OIDC (build arm64, ECR, Helm), déclenché à la main ; la CI de tests reste hors
+  ligne et sans secret (ADR 003, ADR 009, guide 09).
+- **Services AWS, règle d'entrée** (ADR 009) : un service AWS entre quand il est la réponse
+  naturelle d'un bloc déjà prévu par la roadmap (SQS pour la file de la phase 5, ADOT pour le
+  collecteur, Karpenter, Cost Anomaly Detection), ou comme **bras de comparaison mesuré**
+  (Bedrock Knowledge Bases en phase 3, Guardrails en phase 7, AgentCore en phase 4 si la
+  question revient). Jamais comme chemin unique, jamais pour apprendre un service que rien ne
+  justifie. Chaque service AWS a une implémentation locale équivalente derrière la même
+  abstraction (Postgres `SKIP LOCKED` pour SQS, collecteur OTel vanilla pour ADOT).
 - Observabilité par Helm : Prometheus, Grafana, collecteur OTel, Langfuse. Dashboards versionnés
   en JSON. En local, seulement le strict nécessaire.
-- **GPU en phase 6 uniquement**, découplé du cloud principal (module dédié vers un fournisseur
-  spécialisé, éphémère, destruction évidente).
+- **GPU en phase 6 uniquement.** Chemin par défaut : fournisseur spécialisé, module Terraform
+  dédié, éphémère, destruction évidente. Seconde cible si le quota G est accordé : un node group
+  GPU sur l'EKS existant, mesuré contre la première (ADR 009).
 - **Portabilité** : le code applicatif reste agnostique du cloud, le spécifique AWS vit dans
   `infra/`.
 - L'infra ne doit pas devenir le sujet. Tu la génères vite et bien, je la relis, on avance.
@@ -216,7 +233,7 @@ phase en cours.
 │   └── obs/          # instrumentation, coût, traces
 ├── prompts/          # prompts versionnés
 ├── data/             # jeux publics (cache) + golden set maison versionné
-├── notebooks/        # un ou plusieurs par phase
+├── notebooks/        # un sous-dossier par phase : phase-N/NN_slug.ipynb, NN = ordre dans la phase
 ├── infra/            # terraform, helm, k8s
 ├── docs/             # roadmap/, adr/, infra/, decisions.md
 └── tests/

@@ -6,8 +6,8 @@ implémentée ici est mesurée sur des jeux de données publics à vérité de r
 littérature. Le système est déployable et opéré pour de vrai — API, Kubernetes,
 observabilité, coûts — mais son argument est la mesure, pas le cas d'usage.
 
-> 🚧 Projet en construction, phase 0 (fondations). Le tableau maître des résultats
-> apparaîtra à partir de la phase 2.
+> 🚧 Projet en construction : phase 1 (squelette de production) construite, phase 2
+> (l'évaluation) à venir. Le tableau maître des résultats apparaîtra à partir de la phase 2.
 
 ## Ce que ce banc d'essai ne simule pas
 

@@ -17,7 +17,10 @@ tokens, latence, lignes de code. Raison d'être : le filtre ATS/mots-clés des o
 comparatif chiffré que quasi personne ne publie. Garde-fou anti-empilement : ces ports sont des
 **livrables de comparaison**, pas du code de production — `src/` garde une seule implémentation
 (maison + LangGraph), les ports vivent dans le matériel de benchmark. Budget : environ une
-journée par framework, ne pas creuser au-delà.
+journée par framework, ne pas creuser au-delà. **Optionnel, si la question revient (PD-18)** :
+**Bedrock AgentCore** comme port supplémentaire — le runtime d'agents managé d'AWS contre notre
+agent auto-hébergé, même harness, même budget d'une journée ; décidé au plan de la phase, comme
+la phase 6 compare auto-hébergement et API.
 
 **4.2 SQL — le bloc le plus difficile, mesuré sur Spider et BIRD Mini-Dev.** Le schéma complet
 ne tient pas dans le contexte : catalogue de schéma et **retrieval sur le schéma** (du RAG
