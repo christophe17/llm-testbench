@@ -80,6 +80,12 @@ run en 5B et 6) sont intégrées dans `docs/roadmap/phase-3.md`, `phase-5.md`, `
 phase), registre des décisions dans `docs/decisions.md`. Reprise de session : `STATE.md`,
 `JOURNAL.md`, `docs/decisions.md`, 3 derniers ADR, fichier de la phase en cours.
 
+## Rangement des notebooks (2026-10-19)
+
+Un sous-dossier par phase : `notebooks/phase-N/NN_slug.ipynb` (`phase-0/00_visite_guidee`,
+`phase-1/01_appel_llm_robuste`, `phase-1/02_document_vers_index`). CI et `make notebooks-ci`
+exécutent tout le dossier `notebooks/` ; les chemins et `.env` s'ancrent sur `find_repo_root()`.
+
 ## Contraintes actées
 
 - Clés API : OpenAI, Anthropic, OpenRouter (Mistral via OpenRouter).

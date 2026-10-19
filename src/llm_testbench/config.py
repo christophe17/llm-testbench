@@ -74,7 +74,7 @@ def get_settings() -> Settings:
 def find_repo_root(start: Path | None = None) -> Path:
     """Remonte jusqu'à la racine du dépôt (marquée par pyproject.toml).
 
-    Nécessaire aux notebooks, dont le répertoire courant est ``notebooks/``,
+    Nécessaire aux notebooks, dont le répertoire courant est ``notebooks/phase-N/``,
     pour ancrer chemins de cache et fixtures indépendamment d'où on exécute.
     """
     current = (start or Path.cwd()).resolve()

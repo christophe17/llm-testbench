@@ -342,3 +342,25 @@ mécanisme qui *bloquait* une régression : à présenter honnêtement en entret
 
 **Suite** : inchangée — actions Christophe (clés, exécutions complètes, bootstrap AWS), puis
 `GO PHASE 2`.
+
+## 2026-10-19 — Notebooks rangés par phase
+
+**Contexte** : `notebooks/` était à plat, numéroté en séquence globale (00 = phase 0, 01 et
+02 = phase 1). Le lien notebook → phase ne se lisait nulle part dans le nommage, et la roadmap
+réservait déjà des numéros (« notebook 5 » pour Dagster) que seul `STATE.md` rattachait à une
+phase.
+
+**Fait** : un sous-dossier par phase, `notebooks/phase-N/NN_slug.ipynb`, fichiers déplacés par
+`git mv` sans renommage. Makefile et CI passent le dossier `notebooks/` entier à nbmake : tout
+notebook ajouté est exécuté par la CI sans toucher à la liste. Les trois notebooks réexécutés
+en mode échantillon (le 2 sur un conteneur pgvector jetable, le cluster k3d étant éteint).
+
+**Incidents / surprises** : les notebooks 1 et 2 cherchaient `.env` dans `Path.cwd().parent`,
+c'est-à-dire la racine seulement tant qu'ils vivaient dans `notebooks/`. Un niveau plus bas,
+le fichier n'aurait plus été trouvé et la section « vrai provider » se serait désactivée sans
+erreur — la CI, en mode échantillon, ne l'aurait jamais vu. Ils s'ancrent désormais sur
+`find_repo_root()` comme leurs autres chemins. Leçon : un chemin relatif au répertoire
+courant dans un notebook est une dépendance cachée à l'emplacement du fichier.
+
+**Suite** : inchangée — actions Christophe (clés, exécutions complètes, bootstrap AWS), puis
+`GO PHASE 2`.
