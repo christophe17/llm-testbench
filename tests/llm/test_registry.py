@@ -24,9 +24,9 @@ def test_real_config_declares_the_six_backend_roles(registry: Registry) -> None:
 
 
 def test_default_generator_resolves(registry: Registry) -> None:
-    assert registry.defaults.generator == ModelRef(backend="anthropic", model="claude-sonnet-5")
+    assert registry.defaults.generator == ModelRef(backend="anthropic", model="claude-sonnet-5-5")
     ref, config = registry.resolve(str(registry.defaults.generator))
-    assert ref.model == "claude-sonnet-5"
+    assert ref.model == "claude-sonnet-5-5"
     assert config.api_key_env == "ANTHROPIC_API_KEY"
 
 
