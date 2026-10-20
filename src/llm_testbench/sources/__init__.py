@@ -1,7 +1,7 @@
-"""Sources interrogeables par le système (ADR 007) : une interface, plusieurs origines.
+"""Sources the system can query (ADR 007): one interface, several origins.
 
-Phase 1 : documents (pgvector). Phase 4 : SQL, API, données structurées, images — mêmes
-types de provenance et de citation, mêmes capacités déclarées.
+Phase 1: documents (pgvector). Phase 4: SQL, API, structured data, images — same
+provenance and citation types, same declared capabilities.
 """
 
 from llm_testbench.sources.types import (

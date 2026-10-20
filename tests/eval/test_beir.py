@@ -10,18 +10,18 @@ def loader(offline_settings: Settings) -> BeirLoader:
 
 
 def test_unknown_beir_dataset_rejected() -> None:
-    with pytest.raises(ValueError, match="non branché"):
+    with pytest.raises(ValueError, match="not wired"):
         BeirLoader("nfcorpus")
 
 
 def test_full_test_split(loader: BeirLoader) -> None:
     ds = loader.load("test")
-    # 3 requêtes jugées en test ; q13 (train) et q99 (jamais jugée) sont écartées.
+    # 3 queries judged in test; q13 (train) and q99 (never judged) are dropped.
     assert sorted(q.query_id for q in ds.queries) == ["1", "3", "5"]
-    # Corpus complet en mode non échantillonné, distracteur compris.
+    # Full corpus in non-sampled mode, distractor included.
     assert len(ds.documents) == 6
     assert ds.sampled is False
-    # Les ids qrels, entiers côté source, sont normalisés en str.
+    # The qrels ids, integers on the source side, are normalized to str.
     assert ds.relevant_doc_ids("1") == {"4983", "5836"}
 
 
@@ -34,9 +34,9 @@ def test_train_split_is_disjoint(loader: BeirLoader) -> None:
 def test_sampling_truncates_and_flags(loader: BeirLoader) -> None:
     ds = loader.load("test", max_queries=2)
     assert ds.sampled is True
-    # Ordre du fichier queries, donc déterministe.
+    # Order of the queries file, hence deterministic.
     assert [q.query_id for q in ds.queries] == ["1", "3"]
-    # Le corpus échantillonné ne garde que les documents jugés par les requêtes retenues.
+    # The sampled corpus keeps only the documents judged by the retained queries.
     assert sorted(d.doc_id for d in ds.documents) == ["19238", "4983", "5836"]
     assert "5" not in ds.qrels
 
@@ -54,7 +54,7 @@ def test_missing_fixture_split_raises(loader: BeirLoader) -> None:
 
 @pytest.mark.network
 def test_real_scifact_test_split(tmp_path_factory: pytest.TempPathFactory) -> None:
-    """Smoke test contre le vrai dépôt HF — lancé à la main via `make test-network`."""
+    """Smoke test against the real HF repository — run by hand via `make test-network`."""
     settings = Settings(data_dir=tmp_path_factory.mktemp("hf-cache"))
     ds = BeirLoader("scifact", settings=settings).load("test")
     assert len(ds.documents) == 5183

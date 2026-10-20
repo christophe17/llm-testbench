@@ -1,11 +1,11 @@
-"""Simulateurs pour les tests et les notebooks : le vrai SDK, un faux réseau.
+"""Simulators for the tests and notebooks: the real SDK, a fake network.
 
-Plutôt que de remplacer nos classes par des doublures, on remplace **le réseau** : un
-transport HTTP scripté renvoie les réponses qu'on décide (un message, un flux SSE, un
-429 avec ``Retry-After``, un 529, une coupure, un délai). Tout le reste — le SDK
-officiel, la traduction des erreurs, le retry, le breaker, le budget, la trace — est le
-code de production, exécuté tel quel. C'est ce qui rend les scénarios de panne du
-notebook 1 crédibles : on regarde le vrai chemin, pas une maquette.
+Rather than replacing our classes with test doubles, we replace **the network**: a
+scripted HTTP transport returns the responses we decide (a message, an SSE stream, a
+429 with ``Retry-After``, a 529, an outage, a delay). Everything else — the official
+SDK, the error translation, the retry, the breaker, the budget, the trace — is the
+production code, executed as is. This is what makes the failure scenarios of
+notebook 1 credible: we look at the real path, not a mock-up.
 """
 
 import asyncio
@@ -27,8 +27,8 @@ from llm_testbench.llm.types import Usage
 
 @dataclass(frozen=True)
 class Step:
-    """Une réponse HTTP scriptée. ``exception`` prime sur le reste ; ``delay_s`` attend
-    avant de répondre (pour provoquer un délai côté client)."""
+    """A scripted HTTP response. ``exception`` takes precedence over the rest; ``delay_s``
+    waits before responding (to trigger a client-side timeout)."""
 
     status: int = 200
     json_body: dict[str, Any] | None = None
@@ -36,11 +36,11 @@ class Step:
     headers: dict[str, str] = field(default_factory=dict)
     delay_s: float = 0.0
     exception: str | None = None
-    """``"connect"`` (connexion refusée) ou ``"timeout"`` (lecture expirée)."""
+    """``"connect"`` (connection refused) or ``"timeout"`` (read timed out)."""
 
 
 def anthropic_message(
-    text: str = "Bonjour.",
+    text: str = "Hello.",
     *,
     model: str = "claude-sonnet-5",
     input_tokens: int = 120,
@@ -97,10 +97,10 @@ def anthropic_sse(parts: Sequence[str], *, model: str = "claude-sonnet-5") -> st
 
 
 class ScriptedTransport:
-    """Transport httpx2 qui rejoue une liste de :class:`Step` et enregistre chaque requête.
+    """httpx2 transport that replays a list of :class:`Step` and records each request.
 
-    La dernière étape se répète si le script est épuisé (``repeat_last=True``) : pratique
-    pour « le provider est en panne » sans compter les tentatives à l'avance.
+    The last step repeats once the script is exhausted (``repeat_last=True``): handy
+    for "the provider is down" without counting the attempts in advance.
     """
 
     def __init__(self, steps: Sequence[Step], *, repeat_last: bool = True) -> None:
@@ -117,15 +117,15 @@ class ScriptedTransport:
         self.requests.append(json.loads(request.content or b"{}"))
         self.headers.append(dict(request.headers))
         if not self._steps:
-            raise RuntimeError("script épuisé")
+            raise RuntimeError("script exhausted")
         keep_last = self._repeat_last and len(self._steps) == 1
         step = self._steps[0] if keep_last else self._steps.pop(0)
         if step.delay_s:
             await asyncio.sleep(step.delay_s)
         if step.exception == "connect":
-            raise httpx2.ConnectError("connexion refusée (simulée)", request=request)
+            raise httpx2.ConnectError("connection refused (simulated)", request=request)
         if step.exception == "timeout":
-            raise httpx2.ReadTimeout("lecture expirée (simulée)", request=request)
+            raise httpx2.ReadTimeout("read timed out (simulated)", request=request)
         if step.sse_body is not None:
             return httpx2.Response(
                 step.status,
@@ -147,7 +147,7 @@ class ScriptedTransport:
 def scripted_anthropic_provider(
     steps: Sequence[Step], *, backend: str = "anthropic", repeat_last: bool = True
 ) -> tuple[AnthropicProvider, ScriptedTransport]:
-    """Un vrai :class:`AnthropicProvider` (SDK officiel) branché sur un réseau scripté."""
+    """A real :class:`AnthropicProvider` (official SDK) wired to a scripted network."""
     script = ScriptedTransport(steps, repeat_last=repeat_last)
     client = anthropic.AsyncAnthropic(
         api_key="scripted",
@@ -158,8 +158,8 @@ def scripted_anthropic_provider(
 
 
 class ToyEmbedder:
-    """Embeddings jouets, déterministes, à trois dimensions : assez pour montrer le cache
-    sémantique (deux formulations d'une même question tombent au même endroit)."""
+    """Toy embeddings, deterministic, three-dimensional: enough to show the semantic
+    cache (two phrasings of the same question land in the same place)."""
 
     backend = "openai"
 
@@ -169,7 +169,7 @@ class ToyEmbedder:
     @staticmethod
     def vector(text: str) -> tuple[float, ...]:
         lowered = text.lower()
-        themes = ("capitale", "recette", "météo")
+        themes = ("capital", "recipe", "weather")
         raw = [1.0 if theme in lowered else 0.05 for theme in themes]
         norm = sum(x * x for x in raw) ** 0.5
         return tuple(x / norm for x in raw)
@@ -186,19 +186,19 @@ class ToyEmbedder:
 
 
 class HashingEmbedder:
-    """Embeddings « sac de mots hachés » : déterministes, hors ligne, lexicaux.
+    """Embeddings as a "bag of hashed words": deterministic, offline, lexical.
 
-    Chaque mot est haché vers une dimension (avec un signe), le vecteur est normalisé.
-    Deux textes qui partagent des mots ont un cosinus élevé ; aucune sémantique (« voiture »
-    et « automobile » sont orthogonaux). C'est l'embedding le plus rustique qui soit — et
-    c'est exactement ce que les modèles appris viennent améliorer (notebook 2, partie 5).
+    Each word is hashed to a dimension (with a sign), the vector is normalized.
+    Two texts that share words have a high cosine; no semantics ("car"
+    and "automobile" are orthogonal). It is the crudest embedding there is — and
+    it is exactly what learned models come to improve (notebook 2, part 5).
     """
 
     backend = "openai"
 
     def __init__(self, dimensions: int = 256) -> None:
-        # Peu de dimensions = collisions (deux mots dans la même case, signes opposés
-        # qui s'annulent) : 256 suffit pour des textes courts.
+        # Few dimensions = collisions (two words in the same slot, opposite signs
+        # that cancel out): 256 is enough for short texts.
         self.dimensions = dimensions
         self.calls: list[EmbeddingRequest] = []
 

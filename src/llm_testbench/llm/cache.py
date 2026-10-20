@@ -1,19 +1,19 @@
-"""Cache exact et cache sémantique des complétions (ADR 006).
+"""Exact cache and semantic cache for completions (ADR 006).
 
-**Exact** : la clé est l'empreinte canonique de *tout* ce qui influence la réponse —
-backend, modèle, messages, paramètres. Deux requêtes identiques au caractère près
-partagent une réponse ; tout le reste est un miss. Les métadonnées de trace n'entrent pas
-dans la clé : le même prompt tracé sous deux noms reste le même prompt.
+**Exact**: the key is the canonical fingerprint of *everything* that influences the answer —
+backend, model, messages, parameters. Two requests identical down to the character
+share an answer; everything else is a miss. Trace metadata does not enter
+the key: the same prompt traced under two names remains the same prompt.
 
-**Sémantique** : on compare l'embedding du message utilisateur à ceux des requêtes
-passées, dans un **espace de noms** qui fige tout le reste (backend, modèle, system
-prompt, paramètres). Sans cet espace de noms, la question « résume ce texte » servie à
-un autre system prompt renverrait la mauvaise réponse avec une similarité parfaite.
-Réservé aux requêtes à un seul tour : avec un historique, la « même question » n'a plus
-la même réponse.
+**Semantic**: we compare the embedding of the user message with those of past
+requests, within a **namespace** that freezes everything else (backend, model, system
+prompt, parameters). Without this namespace, the question "summarize this text" served to
+another system prompt would return the wrong answer with a perfect similarity.
+Reserved for single-turn requests: with a history, the "same question" no longer has
+the same answer.
 
-Le backend mémoire sert aux tests et au notebook ; Postgres/pgvector arrive avec
-l'ingestion (même base, même extension).
+The in-memory backend serves the tests and the notebook; Postgres/pgvector arrives with
+ingestion (same database, same extension).
 """
 
 import hashlib
@@ -55,8 +55,8 @@ def exact_key(request: CompletionRequest) -> str:
 
 
 def semantic_namespace(request: CompletionRequest) -> str | None:
-    """Espace de noms du cache sémantique, ou ``None`` si la requête n'y est pas éligible
-    (plus d'un tour de conversation)."""
+    """Namespace of the semantic cache, or ``None`` if the request is not eligible
+    (more than one conversation turn)."""
     turns = request.turns
     if len(turns) != 1 or turns[0].role is not Role.USER:
         return None
@@ -65,7 +65,7 @@ def semantic_namespace(request: CompletionRequest) -> str | None:
 
 def cosine_similarity(a: Sequence[float], b: Sequence[float]) -> float:
     if len(a) != len(b):
-        raise ValueError(f"dimensions différentes : {len(a)} et {len(b)}")
+        raise ValueError(f"mismatched dimensions: {len(a)} and {len(b)}")
     dot = sum(x * y for x, y in zip(a, b, strict=True))
     norm = math.sqrt(sum(x * x for x in a)) * math.sqrt(sum(y * y for y in b))
     return dot / norm if norm else 0.0

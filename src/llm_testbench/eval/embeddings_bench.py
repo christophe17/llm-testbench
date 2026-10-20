@@ -1,13 +1,13 @@
-"""Comparaison chiffrée de modèles d'embeddings sur SciFact, via la bibliothèque ``mteb``.
+"""Measured comparison of embedding models on SciFact, via the ``mteb`` library.
 
-Pourquoi ``mteb`` ici, avant notre harness (phase 2) : c'est l'implémentation de référence
-des scores publiés. Les nDCG@10 obtenus deviennent un repère que **notre** harness devra
-reproduire en phase 2 — un contrôle croisé gratuit. Les modèles ouverts passent par les
-encodeurs de ``mteb`` ; le modèle d'API passe par **notre** ``LLMClient.embed`` (gouvernance,
-coût, traces), grâce à un adaptateur qui respecte le protocole d'encodeur de ``mteb``.
+Why ``mteb`` here, before our harness (phase 2): it is the reference implementation of
+the published scores. The nDCG@10 values obtained become a reference point that **our**
+harness will have to reproduce in phase 2 — a free cross-check. Open models go through
+the ``mteb`` encoders; the API model goes through **our** ``LLMClient.embed`` (governance,
+cost, traces), thanks to an adapter that follows the ``mteb`` encoder protocol.
 
-Dépendances lourdes (``torch``, ``sentence-transformers``) : groupe ``bench`` de uv, importées
-paresseusement pour que le reste du projet ne les paie pas.
+Heavy dependencies (``torch``, ``sentence-transformers``): uv ``bench`` group, imported
+lazily so that the rest of the project does not pay for them.
 """
 
 import argparse
@@ -32,12 +32,12 @@ METRIC = "ndcg_at_10"
 
 PUBLISHED_SCIFACT: dict[str, tuple[float | None, str]] = {
     "BM25 (Anserini)": (0.665, "Thakur et al. 2021, BEIR, table 2"),
-    "BAAI/bge-base-en-v1.5": (0.7404, "carte de modèle HF, résultats MTEB, relevé le 2026-09-03"),
-    "intfloat/e5-base-v2": (0.7194, "carte de modèle HF, résultats MTEB, relevé le 2026-09-03"),
-    "sentence-transformers/all-MiniLM-L6-v2": (None, "pas de score SciFact sur la carte HF"),
-    "openai/text-embedding-3-small": (None, "OpenAI ne publie pas de score par tâche"),
+    "BAAI/bge-base-en-v1.5": (0.7404, "HF model card, MTEB results, read on 2026-09-03"),
+    "intfloat/e5-base-v2": (0.7194, "HF model card, MTEB results, read on 2026-09-03"),
+    "sentence-transformers/all-MiniLM-L6-v2": (None, "no SciFact score on the HF card"),
+    "openai/text-embedding-3-small": (None, "OpenAI does not publish per-task scores"),
 }
-"""Scores nDCG@10 publiés, avec leur source. ``None`` = pas de repère trouvé, dit tel quel."""
+"""Published nDCG@10 scores, with their source. ``None`` = no reference found, said as is."""
 
 
 class ModelScore(BaseModel):
@@ -50,7 +50,7 @@ class ModelScore(BaseModel):
     dimensions: int | None = None
     elapsed_s: float = Field(ge=0)
     cost_usd: float | None = None
-    """Coût des embeddings d'API (corpus + requêtes) ; ``None`` pour un modèle local."""
+    """Cost of the API embeddings (corpus + queries); ``None`` for a local model."""
     published_ndcg_at_10: float | None = None
     published_source: str = ""
     backend: str = "local"
@@ -73,8 +73,8 @@ class BenchmarkReport(BaseModel):
 
     def table(self) -> str:
         header = (
-            f"{'modèle':<42} {'nDCG@10':>8} {'publié':>8} {'écart':>7} {'dim':>5} "
-            f"{'durée':>7} {'coût':>9}"
+            f"{'model':<42} {'nDCG@10':>8} {'published':>9} {'gap':>7} {'dim':>5} "
+            f"{'time':>7} {'cost':>9}"
         )
         rows = [header]
         for s in self.scores:
@@ -82,20 +82,20 @@ class BenchmarkReport(BaseModel):
                 f"{s.published_ndcg_at_10:.3f}" if s.published_ndcg_at_10 is not None else "—"
             )
             gap = f"{s.gap_to_published:+.3f}" if s.gap_to_published is not None else "—"
-            cost = f"{s.cost_usd:.4f} $" if s.cost_usd is not None else "local"
+            cost = f"${s.cost_usd:.4f}" if s.cost_usd is not None else "local"
             rows.append(
-                f"{s.model:<42} {s.ndcg_at_10:>8.3f} {published:>8} {gap:>7} "
+                f"{s.model:<42} {s.ndcg_at_10:>8.3f} {published:>9} {gap:>7} "
                 f"{s.dimensions or '?':>5} {s.elapsed_s:>6.0f}s {cost:>9}"
             )
         return "\n".join(rows)
 
 
 class ClientEncoder:
-    """Adaptateur : le protocole d'encodeur de ``mteb`` au-dessus de ``LLMClient.embed``.
+    """Adapter: the ``mteb`` encoder protocol on top of ``LLMClient.embed``.
 
-    Chaque lot passe par la façade : gouvernance vérifiée (classe de données ``public`` :
-    ce sont des jeux publics), coût calculé, span émis. Le coût total est accumulé pour le
-    rapport — c'est la ligne « combien coûte d'indexer SciFact avec ce modèle ».
+    Each batch goes through the facade: governance checked (data class ``public``: these
+    are public datasets), cost computed, span emitted. The total cost is accumulated for
+    the report — it is the "how much does indexing SciFact with this model cost" line.
     """
 
     def __init__(
@@ -152,7 +152,7 @@ class ClientEncoder:
         return np.asarray(result.vectors, dtype=np.float32)
 
     def encode(self, inputs: Iterable[dict[str, Any]], **_: Any) -> np.ndarray:
-        """``inputs`` est un DataLoader de lots ``{"text": [...], ...}`` (protocole mteb)."""
+        """``inputs`` is a DataLoader of ``{"text": [...], ...}`` batches (mteb protocol)."""
         batches = [self._embed_texts(list(batch["text"])) for batch in inputs]
         return np.concatenate(batches, axis=0) if batches else np.zeros((0, 0), dtype=np.float32)
 
@@ -170,10 +170,10 @@ def run_scifact(
     batch_size: int = 64,
     api_dimensions: int | None = None,
 ) -> BenchmarkReport:
-    """Évalue chaque modèle sur SciFact (test, 300 requêtes, 5 183 documents).
+    """Evaluate each model on SciFact (test, 300 queries, 5,183 documents).
 
-    Un nom ``backend/modèle`` (ex. ``openai/text-embedding-3-small``) passe par ``client`` ;
-    tout autre nom est un modèle ``mteb`` (Hugging Face), chargé localement.
+    A ``backend/model`` name (e.g. ``openai/text-embedding-3-small``) goes through ``client``;
+    any other name is an ``mteb`` model (Hugging Face), loaded locally.
     """
     import mteb
 
@@ -184,10 +184,10 @@ def run_scifact(
         is_api = "/" in name and name.split("/", 1)[0] in {"openai", "openrouter", "local"}
         if is_api:
             if client is None:
-                raise ValueError(f"{name!r} demande un LLMClient (modèle d'API)")
+                raise ValueError(f"{name!r} requires an LLMClient (API model)")
             encoder = ClientEncoder(client, name, dimensions=api_dimensions)
-            # cast : le protocole d'encodeur de mteb est typé plus finement que notre adaptateur,
-            # et mteb est absent des environnements sans le groupe `bench` (CI).
+            # cast: the mteb encoder protocol is typed more finely than our adapter, and mteb
+            # is absent from environments without the `bench` group (CI).
             result = mteb.evaluate(
                 cast(Any, encoder),
                 [task],
@@ -198,8 +198,8 @@ def run_scifact(
             cost, backend, dims = encoder.cost_usd, encoder._model.backend, api_dimensions
         else:
             model = mteb.get_model(name, device=device)
-            # Toujours ré-encoder : mteb met ses résultats en cache, et un temps mesuré sur
-            # un cache n'est pas un temps d'indexation.
+            # Always re-encode: mteb caches its results, and a time measured on a cache is
+            # not an indexing time.
             result = mteb.evaluate(
                 model,
                 [task],
@@ -211,7 +211,7 @@ def run_scifact(
             meta = getattr(model, "mteb_model_meta", None)
             dims = getattr(meta, "embed_dim", None) if meta is not None else None
         metrics = _score(result.task_results[0])
-        published, source = PUBLISHED_SCIFACT.get(name, (None, "pas de repère relevé"))
+        published, source = PUBLISHED_SCIFACT.get(name, (None, "no reference recorded"))
         scores.append(
             ModelScore(
                 model=name,
@@ -246,10 +246,10 @@ DEFAULT_MODELS = (
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Compare des modèles d'embeddings sur SciFact.")
+    parser = argparse.ArgumentParser(description="Compare embedding models on SciFact.")
     parser.add_argument("--models", nargs="+", default=list(DEFAULT_MODELS))
     parser.add_argument("--output", type=Path, default=Path("data/results/embeddings_scifact.json"))
-    parser.add_argument("--device", default=None, help="cpu, mps, cuda (modèles locaux)")
+    parser.add_argument("--device", default=None, help="cpu, mps, cuda (local models)")
     parser.add_argument("--batch-size", type=int, default=64)
     args = parser.parse_args(argv)
     api_backends = {"openai", "openrouter", "local"}

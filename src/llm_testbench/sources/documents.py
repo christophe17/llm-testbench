@@ -1,9 +1,9 @@
-"""``DocumentSource`` : la source documentaire sur pgvector (ADR 007).
+"""``DocumentSource``: the document source on pgvector (ADR 007).
 
-La seule implémentation de :class:`Source` en phase 1. Une recherche = un embedding de
-la question (gouverné, facturé, tracé comme tout appel) puis une recherche cosinus dans
-l'index. Chaque résultat porte une provenance complète : le lecteur peut ouvrir le
-document, la section et la plage de caractères cités, et vérifier l'empreinte.
+The only implementation of :class:`Source` in phase 1. A search = an embedding of the
+question (governed, billed, traced like any call) then a cosine search in the index.
+Each result carries a complete provenance: the reader can open the cited document,
+section and character range, and check the fingerprint.
 """
 
 from llm_testbench.ingest.store import IndexSpec, PgVectorStore
@@ -73,7 +73,7 @@ class DocumentSource:
             provenance=Provenance(
                 source_key=self.key,
                 document_id=document_id,
-                locator="document entier",
+                locator="whole document",
                 title=stored.title or None,
                 uri=stored.uri,
                 checksum=stored.checksum,

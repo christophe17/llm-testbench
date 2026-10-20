@@ -1,12 +1,12 @@
-"""Petits utilitaires partagés par les providers."""
+"""Small utilities shared by the providers."""
 
 import time
 from collections.abc import Mapping
 
 
 def retry_after_seconds(headers: Mapping[str, str] | None) -> float | None:
-    """Lit un en-tête ``Retry-After`` numérique (secondes). Le format date HTTP est ignoré :
-    il est rare chez les providers LLM et un mauvais calcul vaudrait pire qu'un backoff."""
+    """Reads a numeric ``Retry-After`` header (seconds). The HTTP date format is ignored:
+    it is rare among LLM providers and a miscalculation would be worse than a backoff."""
     if headers is None:
         return None
     raw = headers.get("retry-after")

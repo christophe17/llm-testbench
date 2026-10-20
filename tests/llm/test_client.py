@@ -34,9 +34,9 @@ EMBED = ModelRef.parse("openai/text-embedding-3-small")
 
 
 def request(
-    user: str = "Quelle est la capitale de la France ?",
+    user: str = "What is the capital of France?",
     *,
-    system: str = "Réponds en un mot.",
+    system: str = "Answer in one word.",
     data_class: DataClass = DataClass.PUBLIC,
     **overrides: object,
 ) -> CompletionRequest:
@@ -57,7 +57,7 @@ async def drain(stream: AsyncIterator[StreamChunk]) -> list[StreamChunk]:
     return [chunk async for chunk in stream]
 
 
-# ------------------------------------------------------------------ chemin nominal
+# ------------------------------------------------------------------ happy path
 
 
 async def test_complete_prices_the_call_and_traces_it(
@@ -67,8 +67,8 @@ async def test_complete_prices_the_call_and_traces_it(
 
     completion = await client.complete(request())
 
-    assert completion.text == "réponse"
-    assert completion.cost_usd == pytest.approx(0.002 + 0.005)  # 1 000 in + 500 out, Sonnet 5
+    assert completion.text == "answer"
+    assert completion.cost_usd == pytest.approx(0.002 + 0.005)  # 1,000 in + 500 out, Sonnet 5
     assert completion.attempts == 1
     assert not completion.cached
     assert len(fake.calls) == 1
@@ -105,7 +105,7 @@ async def test_unknown_model_price_yields_unknown_cost(
     assert dict(last_span(spans).attributes or {})[Bench.COST_KNOWN] is False
 
 
-# ------------------------------------------------------------------ refus avant l'appel
+# ------------------------------------------------------------------ refusal before the call
 
 
 async def test_governance_refuses_before_any_provider_call(
@@ -118,7 +118,7 @@ async def test_governance_refuses_before_any_provider_call(
     span = last_span(spans)
     attributes = dict(span.attributes or {})
     assert attributes[Bench.GOVERNANCE_ALLOWED] is False
-    assert any("région" in r for r in attributes[Bench.GOVERNANCE_REASONS])  # type: ignore[union-attr]
+    assert any("region" in r for r in attributes[Bench.GOVERNANCE_REASONS])  # type: ignore[union-attr]
     assert span.status.status_code is StatusCode.ERROR
 
 
@@ -129,12 +129,12 @@ async def test_budget_refuses_on_estimate_and_records_real_usage(
     client, fake = make_client(budget=budget)
     await client.complete(request())
     assert budget.spent_in_window() == 1_500
-    with pytest.raises(BudgetExceededError, match="déjà consommés"):
+    with pytest.raises(BudgetExceededError, match="already spent"):
         await client.complete(request(max_output_tokens=600))
     assert len(fake.calls) == 1
 
 
-# ------------------------------------------------------------------ pannes
+# ------------------------------------------------------------------ failures
 
 
 async def test_retry_then_success_counts_attempts(
@@ -164,7 +164,7 @@ async def test_circuit_opens_after_repeated_failures_and_fails_fast(
     )
     with pytest.raises(CircuitOpenError):
         await client.complete(request())
-    assert len(fake.calls) == 2  # le 3e essai n'est jamais parti
+    assert len(fake.calls) == 2  # the 3rd attempt never went out
     with pytest.raises(CircuitOpenError):
         await client.complete(request())
     assert len(fake.calls) == 2
@@ -212,22 +212,22 @@ async def test_semantic_cache_serves_paraphrases_within_the_same_namespace(
     embedder = FakeEmbedder()
     client.register_embedder("openai", embedder)
 
-    await client.complete(request("Quelle est la capitale de la France ?"))
-    hit = await client.complete(request("Capitale de la France ?"))
+    await client.complete(request("What is the capital of France?"))
+    hit = await client.complete(request("Capital of France?"))
     assert len(fake.calls) == 1
     assert hit.cached
     attributes = dict(last_span(spans).attributes or {})
     assert attributes[Bench.CACHE_KIND] == "semantic"
     assert attributes[Bench.CACHE_SIMILARITY] == pytest.approx(1.0)
 
-    await client.complete(request("Capitale de la France ?", system="Réponds en latin."))
-    assert len(fake.calls) == 2  # autre system prompt = autre espace de noms
+    await client.complete(request("Capital of France?", system="Answer in Latin."))
+    assert len(fake.calls) == 2  # other system prompt = other namespace
 
     assert all(call.data_class is DataClass.PUBLIC for call in embedder.calls)
     assert len(embedder.calls) == 3
 
 
-# ------------------------------------------------------------------ flux et embeddings
+# ------------------------------------------------------------------ streams and embeddings
 
 
 async def test_stream_passes_chunks_and_prices_usage(
@@ -236,7 +236,7 @@ async def test_stream_passes_chunks_and_prices_usage(
     budget = TokenBudget()
     client, _ = make_client(budget=budget)
     chunks = await drain(client.stream(request()))
-    assert "".join(c.text for c in chunks) == "Bonjour"
+    assert "".join(c.text for c in chunks) == "Hello"
     usage_chunk = next(c for c in chunks if c.kind == "usage")
     assert usage_chunk.cost_usd == pytest.approx(10 * 2e-6 + 5 * 10e-6)
     assert chunks[-1].finish_reason is FinishReason.STOP

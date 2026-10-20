@@ -1,16 +1,16 @@
-"""Provider compatible OpenAI sur le SDK officiel — OpenAI, OpenRouter, Mistral, vLLM, Ollama.
+"""OpenAI-compatible provider on the official SDK — OpenAI, OpenRouter, Mistral, vLLM, Ollama.
 
-Un seul code pour cinq backends, mais pas un seul comportement :
+One codebase for five backends, but not one behavior:
 
-- **``max_tokens`` ou ``max_completion_tokens``** : OpenAI a déprécié le premier au profit
-  du second ; les serveurs compatibles ne connaissent souvent que le premier. Le choix
-  dépend de l'URL de base.
-- **Usage en streaming** : il faut le demander (``stream_options.include_usage``), et il
-  arrive dans un dernier morceau sans contenu. Certains serveurs compatibles ne le
-  renvoient pas : l'usage est alors déclaré non rapporté, jamais nul.
-- **Tokens cachés** : OpenAI les inclut dans ``prompt_tokens`` ; on les soustrait pour que
-  ``input_tokens`` compte uniquement ce qui est facturé plein tarif.
-- **Le SDK ne retente pas** (``max_retries=0``).
+- **``max_tokens`` or ``max_completion_tokens``**: OpenAI deprecated the former in favor
+  of the latter; compatible servers often only know the former. The choice
+  depends on the base URL.
+- **Usage when streaming**: it must be requested (``stream_options.include_usage``), and it
+  arrives in a last chunk with no content. Some compatible servers do not
+  return it: usage is then declared not reported, never zero.
+- **Cached tokens**: OpenAI includes them in ``prompt_tokens``; we subtract them so that
+  ``input_tokens`` counts only what is billed at full price.
+- **The SDK does not retry** (``max_retries=0``).
 """
 
 from collections.abc import AsyncIterator
@@ -41,7 +41,7 @@ _FINISH = {
 
 MaxTokensParam = Literal["max_tokens", "max_completion_tokens"]
 _PLACEHOLDER_KEY = "not-needed"
-"""Les serveurs locaux (Ollama, vLLM sans auth) exigent un en-tête, pas une vraie clé."""
+"""Local servers (Ollama, vLLM without auth) require a header, not a real key."""
 
 
 def _finish(reason: str | None) -> FinishReason:
@@ -77,7 +77,7 @@ def _translate_openai_error(backend: str, error: Exception) -> LLMError:
                 str(error), backend=backend, status_code=error.status_code
             )
         return InvalidRequestError(str(error), backend=backend, status_code=error.status_code)
-    return ProviderUnavailableError(f"erreur inattendue : {error!r}", backend=backend)
+    return ProviderUnavailableError(f"unexpected error: {error!r}", backend=backend)
 
 
 class OpenAICompatibleProvider:
@@ -100,7 +100,7 @@ class OpenAICompatibleProvider:
         if api_key is None:
             if config.api_key_env is not None:
                 raise MissingCredentialsError(
-                    f"backend {backend!r} : variable d'environnement {config.api_key_env} absente"
+                    f"backend {backend!r}: environment variable {config.api_key_env} missing"
                 )
             api_key = _PLACEHOLDER_KEY
         client = openai.AsyncOpenAI(api_key=api_key, base_url=config.base_url, max_retries=0)
@@ -112,7 +112,7 @@ class OpenAICompatibleProvider:
             max_tokens_param="max_completion_tokens" if is_openai else "max_tokens",
         )
 
-    # ------------------------------------------------------------------ traduction
+    # ------------------------------------------------------------------ translation
 
     def build_params(self, request: CompletionRequest, *, stream: bool = False) -> dict[str, Any]:
         params: dict[str, Any] = {
@@ -143,7 +143,7 @@ class OpenAICompatibleProvider:
     def translate_error(self, error: Exception) -> LLMError:
         return _translate_openai_error(self.backend, error)
 
-    # ------------------------------------------------------------------ appels
+    # ------------------------------------------------------------------ calls
 
     async def complete(self, request: CompletionRequest) -> Completion:
         params = self.build_params(request)
@@ -190,7 +190,7 @@ class OpenAICompatibleProvider:
 
 
 class OpenAIEmbeddingProvider:
-    """Embeddings via l'endpoint ``/embeddings`` compatible OpenAI (OpenAI, vLLM, Ollama)."""
+    """Embeddings via the OpenAI-compatible ``/embeddings`` endpoint (OpenAI, vLLM, Ollama)."""
 
     def __init__(self, *, backend: str, client: openai.AsyncOpenAI) -> None:
         self.backend = backend
@@ -202,7 +202,7 @@ class OpenAIEmbeddingProvider:
         if api_key is None:
             if config.api_key_env is not None:
                 raise MissingCredentialsError(
-                    f"backend {backend!r} : variable d'environnement {config.api_key_env} absente"
+                    f"backend {backend!r}: environment variable {config.api_key_env} missing"
                 )
             api_key = _PLACEHOLDER_KEY
         client = openai.AsyncOpenAI(api_key=api_key, base_url=config.base_url, max_retries=0)

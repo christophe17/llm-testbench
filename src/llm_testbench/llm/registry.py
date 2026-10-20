@@ -1,9 +1,9 @@
-"""Registre des backends LLM, chargé depuis ``config/llm_backends.toml`` (ADR 006).
+"""Registry of LLM backends, loaded from ``config/llm_backends.toml`` (ADR 006).
 
-Le registre ne crée aucun client réseau : il décrit. Il sait résoudre une référence
-``backend/modèle`` vers la configuration du backend, lire la clé API dans l'environnement,
-et refuser ce qui n'existe pas ou est désactivé. La politique de gouvernance consomme ses
-métadonnées.
+The registry creates no network client: it describes. It can resolve a
+``backend/model`` reference to the backend configuration, read the API key from the
+environment, and refuse what does not exist or is disabled. The governance policy consumes
+its metadata.
 """
 
 import os
@@ -29,9 +29,9 @@ class BackendKind(StrEnum):
 
 class StructuredOutputMode(StrEnum):
     NATIVE = "native"
-    """Le backend impose un schéma JSON lui-même (sortie garantie conforme au schéma)."""
+    """The backend enforces a JSON schema itself (output guaranteed to match the schema)."""
     PROMPT = "prompt"
-    """Le schéma est demandé dans le prompt, la validation se fait après coup."""
+    """The schema is requested in the prompt, validation happens afterwards."""
 
 
 class BackendConfig(BaseModel):
@@ -46,7 +46,7 @@ class BackendConfig(BaseModel):
     governance: BackendGovernance
 
     def api_key(self) -> str | None:
-        """Clé lue dans l'environnement au moment de l'appel — jamais stockée."""
+        """Key read from the environment at call time — never stored."""
         if self.api_key_env is None:
             return None
         return os.environ.get(self.api_key_env) or None
@@ -77,8 +77,8 @@ class Registry(BaseModel):
             ref: ModelRef | None = getattr(self.defaults, label)
             if ref is not None and ref.backend not in self.backends:
                 raise ValueError(
-                    f"defaults.{label} référence un backend inconnu : {ref.backend!r} "
-                    f"(connus : {sorted(self.backends)})"
+                    f"defaults.{label} references an unknown backend: {ref.backend!r} "
+                    f"(known: {sorted(self.backends)})"
                 )
         return self
 
@@ -97,15 +97,15 @@ class Registry(BaseModel):
             return self.backends[name]
         except KeyError:
             raise UnknownBackendError(
-                f"backend inconnu : {name!r} (connus : {sorted(self.backends)})"
+                f"unknown backend: {name!r} (known: {sorted(self.backends)})"
             ) from None
 
     def resolve(self, ref: ModelRef | str) -> tuple[ModelRef, BackendConfig]:
-        """Référence → (référence parsée, configuration du backend), ou une erreur claire."""
+        """Reference → (parsed reference, backend configuration), or a clear error."""
         model_ref = ModelRef.parse(ref) if isinstance(ref, str) else ref
         config = self.get(model_ref.backend)
         if not config.enabled:
             raise BackendDisabledError(
-                f"backend {model_ref.backend!r} désactivé dans {BACKENDS_FILENAME}"
+                f"backend {model_ref.backend!r} disabled in {BACKENDS_FILENAME}"
             )
         return model_ref, config

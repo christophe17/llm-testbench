@@ -1,2 +1,2 @@
-"""API FastAPI : ``/chat`` avec citations obligatoires et refus explicite, en JSON et en
-flux SSE annulable, sur la couche LLM (ADR 006) et la source documentaire (ADR 007)."""
+"""FastAPI API: ``/chat`` with mandatory citations and explicit refusal, as JSON and as a
+cancellable SSE stream, on top of the LLM layer (ADR 006) and the document source (ADR 007)."""

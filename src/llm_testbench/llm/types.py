@@ -1,8 +1,8 @@
-"""Types communs de la couche LLM : requête, réponse, usage, flux.
+"""Common types of the LLM layer: request, response, usage, stream.
 
-Ils sont **indépendants des SDK** : c'est le contrat que les providers traduisent. Tout
-est figé (``frozen``) : une requête ne se modifie pas en route, elle se dérive
-(:meth:`CompletionRequest.with_messages`), ce qui rend le cache et la trace fiables.
+They are **SDK-independent**: this is the contract that the providers translate. Everything
+is frozen (``frozen``): a request is not modified along the way, it is derived
+(:meth:`CompletionRequest.with_messages`), which makes the cache and the trace reliable.
 """
 
 from enum import StrEnum
@@ -27,8 +27,8 @@ class Message(BaseModel):
 
 
 class ModelRef(BaseModel):
-    """Référence ``backend/modèle``. Le backend est une entrée de la configuration ; le
-    modèle est libre et peut lui-même contenir des ``/`` (OpenRouter :
+    """``backend/model`` reference. The backend is an entry of the configuration; the
+    model is free-form and may itself contain ``/`` (OpenRouter:
     ``openrouter/mistralai/mistral-large``)."""
 
     model_config = ConfigDict(frozen=True)
@@ -40,9 +40,7 @@ class ModelRef(BaseModel):
     def parse(cls, ref: str) -> "ModelRef":
         backend, sep, model = ref.partition("/")
         if not sep or not backend or not model:
-            raise ValueError(
-                f"référence de modèle attendue sous la forme backend/modèle, reçu {ref!r}"
-            )
+            raise ValueError(f"model reference expected in the form backend/model, got {ref!r}")
         return cls(backend=backend, model=model)
 
     def __str__(self) -> str:
@@ -55,32 +53,32 @@ class CompletionRequest(BaseModel):
     model: ModelRef
     messages: tuple[Message, ...] = Field(min_length=1)
     data_class: DataClass
-    """Obligatoire, sans défaut : le défaut implicite serait la première faille."""
+    """Required, with no default: the implicit default would be the first hole."""
 
     max_output_tokens: int = Field(default=1024, ge=1)
     temperature: float | None = Field(default=None, ge=0.0, le=2.0)
-    """``None`` : défaut du provider. ``0`` ne garantit pas le déterminisme (phase 5B)."""
+    """``None``: provider default. ``0`` does not guarantee determinism (phase 5B)."""
 
     stop: tuple[str, ...] = ()
     seed: int | None = None
     json_schema: dict[str, Any] | None = None
-    """Schéma JSON attendu en sortie. Le provider l'impose nativement s'il sait, sinon la
-    façade l'injecte dans le prompt et valide après coup (``structured.py``)."""
+    """JSON schema expected as output. The provider enforces it natively if it can, otherwise
+    the facade injects it into the prompt and validates afterwards (``structured.py``)."""
 
     reasoning_effort: Literal["low", "medium", "high"] | None = None
-    """Effort de raisonnement, quand le backend a ce réglage (``output_config.effort`` chez
-    Anthropic, ``reasoning_effort`` chez OpenAI). ``None`` : défaut du provider."""
+    """Reasoning effort, when the backend has this setting (``output_config.effort`` at
+    Anthropic, ``reasoning_effort`` at OpenAI). ``None``: provider default."""
 
     timeout_s: float | None = Field(default=None, gt=0)
     metadata: dict[str, str] = Field(default_factory=dict)
-    """Informations de trace (nom/version/empreinte du prompt…). Hors clé de cache."""
+    """Trace information (prompt name/version/fingerprint…). Not part of the cache key."""
 
     @field_validator("messages")
     @classmethod
     def _system_only_first(cls, messages: tuple[Message, ...]) -> tuple[Message, ...]:
         for index, message in enumerate(messages):
             if message.role is Role.SYSTEM and index != 0:
-                raise ValueError("un message system n'est admis qu'en première position")
+                raise ValueError("a system message is only allowed in first position")
         return messages
 
     @property
@@ -90,7 +88,7 @@ class CompletionRequest(BaseModel):
 
     @property
     def turns(self) -> tuple[Message, ...]:
-        """Les messages hors system, dans l'ordre."""
+        """The non-system messages, in order."""
         return tuple(m for m in self.messages if m.role is not Role.SYSTEM)
 
     def with_messages(self, messages: tuple[Message, ...]) -> "CompletionRequest":
@@ -98,12 +96,12 @@ class CompletionRequest(BaseModel):
 
 
 class Usage(BaseModel):
-    """Tokens consommés, normalisés entre providers.
+    """Tokens consumed, normalized across providers.
 
-    ``input_tokens`` compte les tokens d'entrée **non servis par le cache** (facturés plein
-    tarif). Anthropic les rapporte ainsi nativement ; OpenAI inclut les tokens cachés dans
-    ``prompt_tokens``, et le provider fait la soustraction. Sans cette normalisation, le
-    coût par requête de la phase 5 comparerait des choses différentes.
+    ``input_tokens`` counts the input tokens **not served by the cache** (billed at full
+    price). Anthropic reports them this way natively; OpenAI includes cached tokens in
+    ``prompt_tokens``, and the provider does the subtraction. Without this normalization, the
+    per-request cost of phase 5 would compare different things.
     """
 
     model_config = ConfigDict(frozen=True)
@@ -133,7 +131,7 @@ class Usage(BaseModel):
 class FinishReason(StrEnum):
     STOP = "stop"
     LENGTH = "length"
-    """``max_output_tokens`` atteint : la réponse est tronquée, pas terminée."""
+    """``max_output_tokens`` reached: the answer is truncated, not finished."""
     CONTENT_FILTER = "content_filter"
     REFUSAL = "refusal"
     TOOL_USE = "tool_use"
@@ -145,23 +143,23 @@ class Completion(BaseModel):
 
     text: str
     model: str
-    """Identifiant exact renvoyé par le provider — pas celui demandé. Un provider peut
-    servir une autre révision que celle qu'on croit (runbook phase 5)."""
+    """Exact identifier returned by the provider — not the one requested. A provider may
+    serve a different revision than the one we think (phase 5 runbook)."""
     backend: str
     usage: Usage
     finish_reason: FinishReason
     latency_ms: float = 0.0
     cost_usd: float | None = None
-    """``None`` = prix inconnu, jamais 0 par défaut."""
+    """``None`` = unknown price, never 0 by default."""
     cached: bool = False
     attempts: int = 1
     provider_message_id: str | None = None
     usage_reported: bool = True
-    """False si le provider n'a pas renvoyé d'usage : le coût est alors inconnu, pas nul."""
+    """False if the provider returned no usage: the cost is then unknown, not zero."""
 
 
 class StreamChunk(BaseModel):
-    """Élément d'un flux : du texte, puis l'usage, puis la fin (dans cet ordre)."""
+    """Element of a stream: text, then usage, then the end (in this order)."""
 
     model_config = ConfigDict(frozen=True)
 

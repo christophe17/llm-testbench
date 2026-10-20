@@ -46,7 +46,7 @@ def test_backoff_grows_then_caps_and_jitter_is_bounded() -> None:
     assert 0.75 <= delays[0] <= 1.25
     assert 1.5 <= delays[1] <= 2.5
     assert 3.0 <= delays[2] <= 5.0
-    assert 3.75 <= delays[3] <= 6.25  # 8 s brut, plafonné à 5 s avant la gigue
+    assert 3.75 <= delays[3] <= 6.25  # 8 s raw, capped at 5 s before jitter
 
 
 def test_retry_after_from_provider_is_honoured_but_capped() -> None:
@@ -118,7 +118,7 @@ def test_breaker_opens_after_threshold_and_half_opens_after_timeout() -> None:
     breaker = CircuitBreaker(backend="b", failure_threshold=2, recovery_timeout_s=30, clock=clock)
     assert breaker.state is CircuitState.CLOSED
     breaker.record_failure()
-    breaker.before_call()  # encore fermé
+    breaker.before_call()  # still closed
     breaker.record_failure()
     assert breaker.state is CircuitState.OPEN
     with pytest.raises(CircuitOpenError) as info:
@@ -127,9 +127,9 @@ def test_breaker_opens_after_threshold_and_half_opens_after_timeout() -> None:
 
     clock.now += 31
     assert breaker.state is CircuitState.HALF_OPEN
-    breaker.before_call()  # l'appel d'essai passe…
+    breaker.before_call()  # the trial call goes through…
     with pytest.raises(CircuitOpenError):
-        breaker.before_call()  # …mais un seul à la fois
+        breaker.before_call()  # …but only one at a time
     breaker.record_success()
     assert breaker.state is CircuitState.CLOSED
     assert breaker.snapshot()["consecutive_failures"] == 0

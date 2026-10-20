@@ -1,9 +1,9 @@
-"""La façade ``LLMClient`` : l'ordre des maillons est le contrat (ADR 006).
+"""The ``LLMClient`` facade: the order of the links is the contract (ADR 006).
 
-Pour une complétion : **gouvernance** (refus avant tout appel) → **budget** (refus sur
-estimation) → **cache** exact puis sémantique → **circuit breaker** → **retry** →
-**provider** (avec délai) → **budget** (comptabilisation réelle) → **coût** → **trace**.
-Chaque maillon est un objet injectable : le notebook 1 les fait tomber un par un.
+For a completion: **governance** (refusal before any call) → **budget** (refusal on an
+estimate) → exact then semantic **cache** → **circuit breaker** → **retry** →
+**provider** (with timeout) → **budget** (actual accounting) → **cost** → **trace**.
+Each link is an injectable object: notebook 1 knocks them down one by one.
 """
 
 import asyncio
@@ -51,7 +51,7 @@ BreakerFactory = Callable[[str], CircuitBreaker]
 class SemanticCacheConfig:
     embedding_model: ModelRef
     min_similarity: float = 0.95
-    """Seuil élevé à dessein : un faux positif sert une réponse à une autre question."""
+    """Deliberately high threshold: a false positive serves the answer to another question."""
 
 
 class LLMClient:
@@ -103,10 +103,10 @@ class LLMClient:
         kwargs.update(overrides)
         return cls(**kwargs)  # type: ignore[arg-type]
 
-    # ------------------------------------------------------------------ composants
+    # ------------------------------------------------------------------ components
 
     def register_provider(self, backend: str, provider: LLMProvider) -> None:
-        """Injecte un provider (tests, notebook : provider simulé qui tombe en panne)."""
+        """Injects a provider (tests, notebook: a simulated provider that fails)."""
         self._providers[backend] = provider
 
     def register_embedder(self, backend: str, provider: EmbeddingProvider) -> None:
@@ -131,7 +131,7 @@ class LLMClient:
         ref, config = self.registry.resolve(model)
         return self.provider_for(ref.backend, config).native_json_schema
 
-    # ------------------------------------------------------------------ maillons
+    # ------------------------------------------------------------------ links
 
     def _govern(
         self, span: Span, data_class: DataClass, backend: str, config: BackendConfig
@@ -147,7 +147,7 @@ class LLMClient:
     async def _guarded[T](
         self, backend: str, timeout_s: float | None, call: Callable[[], Awaitable[T]]
     ) -> tuple[T, RetryReport]:
-        """Breaker + retry + délai autour d'un appel provider."""
+        """Breaker + retry + timeout around a provider call."""
         report = RetryReport()
         timeout = timeout_s if timeout_s is not None else self.default_timeout_s
 
@@ -197,7 +197,7 @@ class LLMClient:
     async def _cache_lookup(
         self, span: Span, request: CompletionRequest, key: str, namespace: str | None
     ) -> tuple[Completion | None, tuple[float, ...] | None]:
-        """Retourne (hit, vecteur du message utilisateur s'il a été calculé)."""
+        """Returns (hit, vector of the user message if it was computed)."""
         assert self.cache is not None
         hit = await self.cache.get(key)
         if hit is not None:
@@ -274,8 +274,8 @@ class LLMClient:
             return completion
 
     async def stream(self, request: CompletionRequest) -> AsyncIterator[StreamChunk]:
-        """Flux sans cache et sans retry après le premier morceau : rejouer un flux entamé
-        dupliquerait du texte déjà envoyé au client. Le breaker, lui, est consulté."""
+        """Stream without cache and without retry after the first chunk: replaying a started
+        stream would duplicate text already sent to the client. The breaker is consulted."""
         with self._tracer.start_as_current_span(f"chat {request.model}") as span:
             self._request_attributes(span, request, "chat")
             ref, config = self.registry.resolve(request.model)

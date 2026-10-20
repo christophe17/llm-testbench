@@ -13,7 +13,7 @@ def test_model_ref_parse_splits_on_first_slash_only() -> None:
 
 @pytest.mark.parametrize("bad", ["claude-sonnet-5", "/x", "anthropic/", ""])
 def test_model_ref_parse_rejects_malformed(bad: str) -> None:
-    with pytest.raises(ValueError, match="backend/modèle"):
+    with pytest.raises(ValueError, match="backend/model"):
         ModelRef.parse(bad)
 
 
@@ -28,7 +28,7 @@ def test_completion_request_requires_an_explicit_data_class() -> None:
 
 
 def test_completion_request_rejects_system_message_not_first() -> None:
-    with pytest.raises(ValidationError, match="première position"):
+    with pytest.raises(ValidationError, match="first position"):
         CompletionRequest(
             model=ModelRef.parse("anthropic/claude-sonnet-5"),
             messages=(

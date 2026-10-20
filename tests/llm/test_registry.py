@@ -31,7 +31,7 @@ def test_default_generator_resolves(registry: Registry) -> None:
 
 
 def test_unknown_backend_is_a_typed_error(registry: Registry) -> None:
-    with pytest.raises(UnknownBackendError, match="connus"):
+    with pytest.raises(UnknownBackendError, match="known"):
         registry.resolve("nowhere/model")
 
 
@@ -55,5 +55,5 @@ def test_api_key_is_read_from_environment_at_call_time(
 def test_defaults_must_point_to_declared_backends() -> None:
     data = Registry.load(BACKENDS_TOML).model_dump()
     data["defaults"]["generator"] = "ghost/model"
-    with pytest.raises(ValueError, match="backend inconnu"):
+    with pytest.raises(ValueError, match="unknown backend"):
         Registry.model_validate(data)

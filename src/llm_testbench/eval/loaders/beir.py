@@ -1,20 +1,20 @@
-"""Loader BEIR — jeu de référence de la phase 0 : SciFact.
+"""BEIR loader — reference dataset of phase 0: SciFact.
 
-Particularités de la distribution BEIR sur Hugging Face (vérifiées le 2026-08-26) :
+Specifics of the BEIR distribution on Hugging Face (verified on 2026-08-26):
 
-- chaque jeu vit dans DEUX dépôts : ``BeIR/<jeu>`` (configs ``corpus`` et
-  ``queries``) et ``BeIR/<jeu>-qrels`` (splits ``train``/``test``). Le loader
-  joint donc trois tables ;
-- les dépôts sont en Parquet natif — chargement sans script, compatible
-  ``datasets`` >= 3 ;
-- le fichier queries contient PLUS de requêtes que le split n'en juge
-  (SciFact : 1 109 requêtes, 300 jugées en test). Les requêtes sans qrels dans
-  le split demandé sont écartées — sinon tout calcul de recall serait faussé.
+- each dataset lives in TWO repositories: ``BeIR/<dataset>`` (configs ``corpus`` and
+  ``queries``) and ``BeIR/<dataset>-qrels`` (splits ``train``/``test``). The loader
+  therefore joins three tables;
+- the repositories are native Parquet — loading without a script, compatible with
+  ``datasets`` >= 3;
+- the queries file contains MORE queries than the split judges (SciFact: 1,109
+  queries, 300 judged in test). Queries without qrels in the requested split are
+  dropped — otherwise any recall computation would be skewed.
 
-Mode échantillon : on garde les ``max_queries`` premières requêtes jugées (ordre
-du fichier, donc déterministe) et uniquement les documents qu'elles jugent. Le
-corpus n'a alors plus de distracteurs : la mécanique est vérifiable, un score de
-retrieval n'y voudrait rien dire — d'où le marquage ``sampled=True``.
+Sample mode: we keep the first ``max_queries`` judged queries (file order, hence
+deterministic) and only the documents they judge. The corpus then has no
+distractors left: the mechanics can be checked, a retrieval score would mean
+nothing there — hence the ``sampled=True`` marking.
 """
 
 import json
@@ -25,13 +25,13 @@ from llm_testbench.config import Settings, get_settings
 from llm_testbench.eval.loaders.base import RetrievalLoader
 from llm_testbench.eval.types import DatasetInfo, Document, Qrels, Query, RetrievalDataset
 
-# Seul jeu branché en phase 0. En ajouter un = une entrée ici + ses fixtures + ses tests.
+# Only dataset wired in phase 0. Adding one = an entry here + its fixtures + its tests.
 BEIR_DATASETS: dict[str, DatasetInfo] = {
     "scifact": DatasetInfo(
         key="beir/scifact",
         name="SciFact (BEIR)",
         homepage="https://github.com/allenai/scifact",
-        license="cc-by-sa-4.0 (revendication de l'empaquetage BEIR, cf. ADR 001)",
+        license="cc-by-sa-4.0 (claim of the BEIR packaging, see ADR 001)",
         source="hf:BeIR/scifact + hf:BeIR/scifact-qrels",
     ),
 }
@@ -43,7 +43,7 @@ class BeirLoader(RetrievalLoader):
     def __init__(self, dataset: str = "scifact", settings: Settings | None = None) -> None:
         if dataset not in BEIR_DATASETS:
             raise ValueError(
-                f"jeu BEIR non branché : {dataset!r} (connus : {sorted(BEIR_DATASETS)})"
+                f"BEIR dataset not wired: {dataset!r} (known: {sorted(BEIR_DATASETS)})"
             )
         self._dataset = dataset
         self._settings = settings if settings is not None else get_settings()
@@ -94,14 +94,14 @@ class BeirLoader(RetrievalLoader):
 
 def _read_json_rows(path: Path) -> list[Row]:
     if not path.is_file():
-        raise FileNotFoundError(f"fixture absente : {path}")
+        raise FileNotFoundError(f"missing fixture: {path}")
     rows = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(rows, list):
-        raise ValueError(f"fixture invalide (liste attendue) : {path}")
+        raise ValueError(f"invalid fixture (list expected): {path}")
     return rows
 
 
-# ---------------------------------------------------------------------- jointure
+# -------------------------------------------------------------------------- join
 
 
 def build_retrieval_dataset(
@@ -112,14 +112,14 @@ def build_retrieval_dataset(
     qrels_rows: list[Row],
     max_queries: int | None = None,
 ) -> RetrievalDataset:
-    """Joint corpus + requêtes + qrels en un jeu validé.
+    """Join corpus + queries + qrels into a validated dataset.
 
-    Pure et indépendante de la source des lignes : c'est elle que les tests
-    hors ligne couvrent, la même qui tourne sur les données réelles.
+    Pure and independent of the source of the rows: it is what the offline tests
+    cover, the same function that runs on the real data.
     """
     qrels: Qrels = {}
     for row in qrels_rows:
-        # Les ids qrels arrivent parfois typés int côté HF : tout passe en str.
+        # The qrels ids sometimes arrive typed as int on the HF side: everything becomes str.
         query_id, doc_id = str(row["query-id"]), str(row["corpus-id"])
         qrels.setdefault(query_id, {})[doc_id] = int(row["score"])
 

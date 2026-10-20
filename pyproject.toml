@@ -1,7 +1,7 @@
 [project]
 name = "llm-testbench"
 version = "0.1.0"
-description = "Banc d'essai LLM chiffré : chaque technique mesurée sur des jeux publics à vérité de référence"
+description = "Measured LLM testbench: every technique measured on public datasets with ground truth"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { text = "MIT" }
@@ -62,17 +62,17 @@ select = [
     "SIM",       # simplify
     "RUF",       # ruff-specific
     "PT",        # pytest style
-    "T20",       # no print in src (notebooks n'y passent pas)
+    "T20",       # no print in src (notebooks are not subject to it)
 ]
 
-# Typographie française assumée dans les libellés et messages : « », ›, – ne sont pas des
-# fautes de frappe pour >, - (RUF001/RUF003).
-allowed-confusables = ["›", "–", "«", "»", "’", "×", "−"]
+# Typography accepted in labels and messages: ›, –, ×, − are not typos for >, -, x, -
+# (RUF001/RUF003).
+allowed-confusables = ["›", "–", "×", "−"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
-# Dans les notebooks, print est le mode d'affichage normal et les cellules de
-# lecture guidée dépassent parfois 100 colonnes.
+# In notebooks, print is the normal display mode and the guided-reading cells
+# sometimes exceed 100 columns.
 "*.ipynb" = ["T20", "E501"]
 
 [tool.mypy]
@@ -90,6 +90,6 @@ testpaths = ["tests"]
 addopts = "-q --strict-markers"
 asyncio_mode = "auto"
 markers = [
-    "network: tests nécessitant le réseau (exclus par défaut, `make test-network`)",
-    "db: tests nécessitant Postgres/pgvector (sautés sans LLM_TESTBENCH_DATABASE_URL)",
+    "network: tests requiring the network (excluded by default, `make test-network`)",
+    "db: tests requiring Postgres/pgvector (skipped without LLM_TESTBENCH_DATABASE_URL)",
 ]

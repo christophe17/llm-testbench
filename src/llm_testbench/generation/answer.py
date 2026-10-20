@@ -1,16 +1,16 @@
-"""Du contexte à la réponse citée (ADR 007).
+"""From the context to the cited answer (ADR 007).
 
-Trois responsabilités, volontairement séparées du transport (JSON ou SSE) :
+Three responsibilities, deliberately separate from the transport (JSON or SSE):
 
-- **rendre le contexte** : des preuves numérotées, avec leur provenance visible, dans
-  l'ordre du retrieval ;
-- **construire la requête** à partir du prompt versionné ``chat_answer`` (son empreinte
-  voyage dans les métadonnées de trace) ;
-- **parser la réponse** : extraire les numéros cités, les rapprocher des preuves,
-  repérer les numéros inventés, et reconnaître le refus par sa phrase-sentinelle.
+- **render the context**: numbered evidence, with its provenance visible, in retrieval
+  order;
+- **build the request** from the versioned ``chat_answer`` prompt (its fingerprint
+  travels in the trace metadata);
+- **parse the answer**: extract the cited numbers, match them to the evidence, spot
+  invented numbers, and recognize the refusal by its sentinel sentence.
 
-Le refus est une **phrase exacte** plutôt qu'un champ JSON pour rester compatible avec
-le streaming ; c'est un choix mesurable (taux de refus correct et abusif, phase 2).
+The refusal is an **exact sentence** rather than a JSON field to stay compatible with
+streaming; it is a measurable choice (correct and abusive refusal rates, phase 2).
 """
 
 import re
@@ -24,7 +24,7 @@ from llm_testbench.llm.prompts import PromptRegistry
 from llm_testbench.llm.types import CompletionRequest, Message, ModelRef, Role
 from llm_testbench.sources.types import Citation, Evidence
 
-REFUSAL_SENTINEL = "Je ne peux pas répondre à cette question à partir des documents fournis."
+REFUSAL_SENTINEL = "I cannot answer this question from the provided documents."
 PROMPT_NAME = "chat_answer"
 
 _CITATION = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
@@ -40,11 +40,11 @@ _REFUSAL_KEY = _normalize(REFUSAL_SENTINEL)
 
 
 def render_context(evidence: Sequence[Evidence]) -> str:
-    """Les preuves telles que le modèle les voit : numéro, provenance lisible, texte."""
+    """The evidence as the model sees it: number, readable provenance, text."""
     blocks = []
     for index, item in enumerate(evidence, start=1):
         blocks.append(f"[{index}] {item.provenance.label()}\n{item.text}")
-    return "\n\n".join(blocks) if blocks else "(aucun extrait)"
+    return "\n\n".join(blocks) if blocks else "(no excerpts)"
 
 
 class ParsedAnswer(BaseModel):
@@ -53,9 +53,9 @@ class ParsedAnswer(BaseModel):
     text: str
     refused: bool
     citations: tuple[Citation, ...] = ()
-    """Les preuves effectivement citées, dans l'ordre de première apparition."""
+    """The evidence actually cited, in order of first appearance."""
     unknown_indexes: tuple[int, ...] = ()
-    """Numéros cités qui ne correspondent à aucune preuve : une hallucination de citation."""
+    """Cited numbers that match no evidence: a citation hallucination."""
 
     @property
     def cited_indexes(self) -> tuple[int, ...]:
@@ -63,8 +63,8 @@ class ParsedAnswer(BaseModel):
 
 
 def is_refusal(text: str) -> bool:
-    """Le refus est reconnu à l'accent, à la casse et à la ponctuation près, mais il doit
-    être la réponse entière : un refus noyé dans une réponse n'en est pas un."""
+    """The refusal is recognized up to accents, case and punctuation, but it must be the
+    whole answer: a refusal buried in an answer is not one."""
     return _normalize(text) == _REFUSAL_KEY
 
 

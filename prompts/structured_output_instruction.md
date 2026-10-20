@@ -1,9 +1,9 @@
 ---
 name: structured_output_instruction
-version: 1
-description: Consigne ajoutée au system prompt quand le backend ne sait pas imposer un schéma JSON lui-même.
+version: 2
+description: Instruction added to the system prompt when the backend cannot enforce a JSON schema itself.
 ---
-Réponds uniquement avec un objet JSON valide, conforme au schéma JSON ci-dessous. Aucun texte avant ou après, aucun bloc de code, aucune explication.
+Respond only with a valid JSON object that conforms to the JSON schema below. No text before or after, no code block, no explanation.
 
-Schéma JSON attendu :
+Expected JSON schema:
 {{ schema_json }}

@@ -1,7 +1,7 @@
-"""Coût d'un appel à partir de l'usage et d'une table de prix datée (ADR 006).
+"""Cost of a call from the usage and a dated price table (ADR 006).
 
-Règle : un modèle sans prix connu donne ``None``, jamais une estimation. Un chiffre absent
-se voit ; un chiffre inventé se propage jusqu'au tableau maître.
+Rule: a model with no known price yields ``None``, never an estimate. A missing number
+is visible; an invented number propagates all the way to the master table.
 """
 
 import datetime as dt
@@ -18,8 +18,8 @@ _TOKENS_PER_UNIT = 1_000_000
 
 
 class ModelPrice(BaseModel):
-    """USD par million de tokens. Les prix de cache sont optionnels : s'ils manquent alors
-    que l'usage en contient, le coût devient inconnu plutôt qu'approximatif."""
+    """USD per million tokens. Cache prices are optional: if they are missing while
+    the usage contains cache tokens, the cost becomes unknown rather than approximate."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -47,8 +47,8 @@ class PricingTable(BaseModel):
         return cls.load(settings.resolved_config_dir() / PRICING_FILENAME)
 
     def price_for(self, model: str) -> ModelPrice | None:
-        """Correspondance exacte, sinon sur le dernier segment (``anthropic/claude-x`` chez
-        OpenRouter → ``claude-x``). Jamais de correspondance floue au-delà."""
+        """Exact match, otherwise on the last segment (``anthropic/claude-x`` at
+        OpenRouter → ``claude-x``). Never any fuzzy match beyond that."""
         if model in self.models:
             return self.models[model]
         _, _, tail = model.rpartition("/")

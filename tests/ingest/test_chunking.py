@@ -6,20 +6,20 @@ from llm_testbench.ingest.chunking import Chunk, RecursiveChunker
 from llm_testbench.ingest.parsing import parse_sections, parse_text
 
 PARAGRAPHS = [
-    "Le retrieval cherche les documents utiles. " * 6,
-    "Le chunking découpe les documents en morceaux indexables. " * 6,
-    "Les embeddings projettent le texte dans un espace vectoriel. " * 6,
+    "Retrieval looks for the useful documents. " * 6,
+    "Chunking splits the documents into indexable pieces. " * 6,
+    "Embeddings project the text into a vector space. " * 6,
 ]
 TEXT = "\n\n".join(p.strip() for p in PARAGRAPHS)
 
 
 def test_short_text_is_a_single_chunk() -> None:
-    assert RecursiveChunker(chunk_size=100, chunk_overlap=0).split_text("court") == ["court"]
+    assert RecursiveChunker(chunk_size=100, chunk_overlap=0).split_text("short") == ["short"]
     assert RecursiveChunker().split_text("   \n  ") == []
 
 
 def test_chunks_respect_size_and_prefer_paragraph_boundaries() -> None:
-    # Le plus long paragraphe fait 366 caractères : à 400, chaque paragraphe tient entier.
+    # The longest paragraph is 318 characters: at 400, each paragraph fits whole.
     chunker = RecursiveChunker(chunk_size=400, chunk_overlap=0)
     pieces = chunker.split_text(TEXT)
     assert len(pieces) == 3
@@ -54,19 +54,19 @@ def test_no_text_is_lost() -> None:
 def test_chunk_positions_are_exact_slices_of_their_section() -> None:
     document = parse_sections(
         "doc",
-        [("Intro", PARAGRAPHS[0].strip()), ("Corps", TEXT)],
-        title="Papier",
+        [("Intro", PARAGRAPHS[0].strip()), ("Body", TEXT)],
+        title="Paper",
     )
     chunks = RecursiveChunker(chunk_size=150, chunk_overlap=30).chunk(document)
     assert [c.ordinal for c in chunks] == list(range(len(chunks)))
     assert chunks[0].chunk_id == "doc#0000"
-    assert {c.section_title for c in chunks} == {"Intro", "Corps"}
+    assert {c.section_title for c in chunks} == {"Intro", "Body"}
     for chunk in chunks:
         section = document.sections[chunk.section_order]
         assert section.text[chunk.start_char : chunk.end_char] == chunk.text
         assert chunk.token_estimate >= 1
         assert len(chunk.checksum) == 64
-    assert "section « Intro »" in chunks[0].locator()
+    assert 'section "Intro"' in chunks[0].locator()
 
 
 def test_chunking_is_deterministic() -> None:
@@ -78,7 +78,7 @@ def test_chunking_is_deterministic() -> None:
 def test_invalid_configurations_are_rejected() -> None:
     with pytest.raises(ValueError, match="chunk_overlap"):
         RecursiveChunker(chunk_size=10, chunk_overlap=10)
-    with pytest.raises(ValueError, match="dernier séparateur"):
+    with pytest.raises(ValueError, match="last separator"):
         RecursiveChunker(separators=("\n",))
 
 

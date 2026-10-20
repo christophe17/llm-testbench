@@ -1,4 +1,4 @@
-"""Providers simulés pour tester la façade sans SDK ni réseau."""
+"""Simulated providers to test the facade without SDK or network."""
 
 import asyncio
 from collections.abc import AsyncIterator
@@ -14,7 +14,7 @@ from llm_testbench.llm.types import (
 
 
 def make_completion(
-    text: str = "réponse",
+    text: str = "answer",
     *,
     model: str = "claude-sonnet-5",
     input_tokens: int = 1_000,
@@ -33,7 +33,7 @@ def make_completion(
 
 
 class FakeProvider:
-    """Rejoue un scénario : chaque appel consomme le prochain élément (réponse ou erreur)."""
+    """Replays a scenario: each call consumes the next item (response or error)."""
 
     def __init__(
         self,
@@ -62,7 +62,7 @@ class FakeProvider:
         self.calls.append(request)
         if self._script and isinstance(self._script[0], Exception):
             raise self._script.pop(0)
-        for part in ("Bon", "jour"):
+        for part in ("Hel", "lo"):
             yield StreamChunk(kind="text", text=part)
         yield StreamChunk(
             kind="usage", usage=Usage(input_tokens=10, output_tokens=5), model="claude-sonnet-5"
@@ -71,8 +71,8 @@ class FakeProvider:
 
 
 def toy_vector(text: str) -> tuple[float, ...]:
-    """Deux « sens » seulement : les paraphrases d'une même question partagent un vecteur."""
-    return (1.0, 0.0) if "capitale" in text.lower() else (0.0, 1.0)
+    """Only two "meanings": paraphrases of the same question share a vector."""
+    return (1.0, 0.0) if "capital" in text.lower() else (0.0, 1.0)
 
 
 class FakeEmbedder:

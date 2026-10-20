@@ -1,17 +1,17 @@
-"""Sortie structurée : schéma imposé quand on peut, validée toujours, réparée au besoin.
+"""Structured output: schema enforced when possible, always validated, repaired if needed.
 
-Trois cas de figure, du meilleur au pire :
+Three scenarios, from best to worst:
 
-1. le backend impose le schéma (``native_json_schema``) : le JSON arrive conforme, la
-   validation Pydantic ne fait que confirmer — et attrape les validateurs métier que le
-   schéma JSON ne sait pas exprimer ;
-2. le backend ne sait pas : on ajoute la consigne au system prompt, on extrait le JSON
-   de la réponse (les modèles adorent les blocs de code), on valide ;
-3. c'est invalide : on renvoie l'erreur de validation au modèle, au plus ``max_repairs``
-   fois, puis on abandonne avec une erreur typée qui garde le texte brut.
+1. the backend enforces the schema (``native_json_schema``): the JSON arrives compliant, the
+   Pydantic validation only confirms — and catches the business validators that the
+   JSON schema cannot express;
+2. the backend cannot: we add the instruction to the system prompt, extract the JSON
+   from the answer (models love code blocks), and validate;
+3. it is invalid: we send the validation error back to the model, at most ``max_repairs``
+   times, then give up with a typed error that keeps the raw text.
 
-Chaque tentative est un appel LLM complet, tracé et facturé : le taux de réparation est
-un chiffre du banc, pas un détail d'implémentation.
+Each attempt is a full LLM call, traced and billed: the repair rate is
+a testbench number, not an implementation detail.
 """
 
 import json
@@ -29,7 +29,7 @@ _FENCE = re.compile(r"```(?:json)?\s*(.*?)```", re.DOTALL)
 
 
 def extract_json(text: str) -> str:
-    """Isole le JSON d'une réponse : brut, dans un bloc de code, ou noyé dans du texte."""
+    """Isolates the JSON of an answer: raw, in a code block, or buried in text."""
     candidate = text.strip()
     fenced = _FENCE.search(candidate)
     if fenced is not None:
@@ -48,10 +48,10 @@ def extract_json(text: str) -> str:
 class StructuredResult[T: BaseModel]:
     value: T
     completion: Completion
-    """La complétion qui a produit la valeur valide (la dernière)."""
+    """The completion that produced the valid value (the last one)."""
     attempts: int
     repairs: tuple[str, ...]
-    """Les erreurs de validation rencontrées avant d'y arriver, dans l'ordre."""
+    """The validation errors encountered before getting there, in order."""
 
 
 class StructuredOutputs:
@@ -61,7 +61,7 @@ class StructuredOutputs:
         self.max_repairs = max_repairs
 
     def prepare(self, request: CompletionRequest, schema: type[BaseModel]) -> CompletionRequest:
-        """La requête telle qu'elle partira : schéma natif, ou consigne dans le system."""
+        """The request as it will go out: native schema, or instruction in the system prompt."""
         json_schema = schema.model_json_schema()
         prepared = request.model_copy(update={"json_schema": json_schema})
         if self._client.native_json_schema(request.model):
@@ -92,7 +92,7 @@ class StructuredOutputs:
             repairs.append(message)
             if attempt > self.max_repairs:
                 raise StructuredOutputError(
-                    f"sortie structurée invalide après {attempt} tentative(s)",
+                    f"invalid structured output after {attempt} attempt(s)",
                     attempts=attempt,
                     raw_text=completion.text,
                     last_error=message,

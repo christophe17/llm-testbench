@@ -64,9 +64,9 @@ async def test_last_step_repeats_and_exceptions_are_translated() -> None:
 
 async def test_toy_embedder_groups_paraphrases() -> None:
     embedder = ToyEmbedder()
-    a = embedder.vector("Quelle est la capitale de la France ?")
-    b = embedder.vector("Capitale de la France ?")
-    c = embedder.vector("Une recette de crêpes")
+    a = embedder.vector("What is the capital of France?")
+    b = embedder.vector("Capital of France?")
+    c = embedder.vector("A recipe for crepes")
     assert a == b
     assert a != c
     result = await embedder.embed(
@@ -81,13 +81,13 @@ def test_hashing_embedder_is_lexical_deterministic_and_normalised() -> None:
     embedder = HashingEmbedder(dimensions=1024)
     a = embedder.vector("retrieval finds relevant documents")
     b = embedder.vector("documents relevant to retrieval")
-    c = embedder.vector("crêpes farine œufs lait")
+    c = embedder.vector("crepes flour eggs milk")
 
     def dot(x: tuple[float, ...], y: tuple[float, ...]) -> float:
         return sum(p * q for p, q in zip(x, y, strict=True))
 
-    assert dot(a, a) == pytest.approx(1.0)  # normalisé
-    assert dot(a, b) > 0.6  # trois mots communs sur quatre (collisions rares à 1 024 cases)
-    assert abs(dot(a, c)) < 0.3  # aucun mot commun
-    assert a == embedder.vector("retrieval finds relevant documents")  # déterministe
+    assert dot(a, a) == pytest.approx(1.0)  # normalized
+    assert dot(a, b) > 0.6  # three shared words out of four (collisions rare at 1,024 slots)
+    assert abs(dot(a, c)) < 0.3  # no shared word
+    assert a == embedder.vector("retrieval finds relevant documents")  # deterministic
     assert embedder.vector("") == tuple([0.0] * 1024)

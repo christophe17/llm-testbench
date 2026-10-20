@@ -1,1 +1,1 @@
-"""Évaluation : types de datasets, loaders, et (à partir de la phase 2) harness et métriques."""
+"""Evaluation: dataset types, loaders, and (from phase 2 on) harness and metrics."""

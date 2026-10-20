@@ -1,13 +1,13 @@
-"""Configuration du banc d'essai.
+"""Testbench configuration.
 
-Deux modes d'exécution traversent tout le projet :
+Two execution modes run through the whole project:
 
-- **complet** (défaut) : les loaders téléchargent les jeux publics réels et le cache
-  vit dans ``data/cache/``. C'est le mode qui produit des chiffres publiables.
-- **échantillon** (``LLM_TESTBENCH_SAMPLE=1``) : quelques requêtes seulement, et si
-  ``LLM_TESTBENCH_FIXTURES_DIR`` est défini, les loaders lisent des fixtures locales
-  au lieu du réseau. C'est le mode CI : il vérifie que tout s'exécute, il ne produit
-  jamais un chiffre. Cette séparation est un engagement du brief (section 2.B.4).
+- **full** (default): the loaders download the real public datasets and the cache
+  lives in ``data/cache/``. This is the mode that produces publishable numbers.
+- **sample** (``LLM_TESTBENCH_SAMPLE=1``): only a few queries, and if
+  ``LLM_TESTBENCH_FIXTURES_DIR`` is set, the loaders read local fixtures instead of
+  the network. This is the CI mode: it checks that everything runs, it never produces
+  a number. This separation is a commitment of the brief (section 2.B.4).
 """
 
 from functools import lru_cache
@@ -20,41 +20,41 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="LLM_TESTBENCH_", env_file=".env", extra="ignore")
 
     data_dir: Path = Path("data/cache")
-    """Cache local des jeux publics (jamais versionné)."""
+    """Local cache of the public datasets (never versioned)."""
 
     sample: bool = False
-    """Mode échantillon : jeux tronqués, exécution rapide, chiffres non publiables."""
+    """Sample mode: truncated datasets, fast run, numbers not publishable."""
 
     sample_max_queries: int = 5
-    """Nombre de requêtes conservées en mode échantillon."""
+    """Number of queries kept in sample mode."""
 
     fixtures_dir: Path | None = None
-    """Si défini, les loaders lisent ces fixtures locales au lieu du réseau (CI hors ligne)."""
+    """If set, the loaders read these local fixtures instead of the network (offline CI)."""
 
     config_dir: Path | None = None
-    """Répertoire des fichiers de configuration TOML (défaut : ``<racine du dépôt>/config``)."""
+    """Directory of the TOML configuration files (default: ``<repository root>/config``)."""
 
     prompts_dir: Path | None = None
-    """Répertoire des prompts versionnés (défaut : ``<racine du dépôt>/prompts``)."""
+    """Directory of the versioned prompts (default: ``<repository root>/prompts``)."""
 
-    # ------------------------------------------------------------ API et stockage
+    # ------------------------------------------------------------ API and storage
 
     database_url: str | None = None
-    """Postgres + pgvector. En local : ``make pg-port-forward`` puis
+    """Postgres + pgvector. Locally: ``make pg-port-forward`` then
     ``postgresql://testbench:testbench-local-only@localhost:5432/testbench``."""
 
     chat_model: str | None = None
-    """``backend/modèle`` du générateur ; défaut : ``defaults.generator`` du registre."""
+    """``backend/model`` of the generator; default: ``defaults.generator`` of the registry."""
 
     source_key: str = "docs:scifact"
     index_key: str = "scifact-recursive-oai-small"
-    """L'index interrogé par l'API (registre ``indexes`` en base)."""
+    """The index queried by the API (``indexes`` registry in the database)."""
 
     retrieval_k: int = 5
     service_name: str = "llm-testbench-api"
 
     otlp_endpoint: str | None = None
-    """Endpoint OTLP/HTTP des traces (Langfuse : ``<url>/api/public/otel/v1/traces``)."""
+    """OTLP/HTTP endpoint for traces (Langfuse: ``<url>/api/public/otel/v1/traces``)."""
 
     langfuse_public_key: str | None = None
     langfuse_secret_key: str | None = None
@@ -72,13 +72,13 @@ def get_settings() -> Settings:
 
 
 def find_repo_root(start: Path | None = None) -> Path:
-    """Remonte jusqu'à la racine du dépôt (marquée par pyproject.toml).
+    """Walk up to the repository root (marked by pyproject.toml).
 
-    Nécessaire aux notebooks, dont le répertoire courant est ``notebooks/phase-N/``,
-    pour ancrer chemins de cache et fixtures indépendamment d'où on exécute.
+    Needed by the notebooks, whose current directory is ``notebooks/phase-N/``, to
+    anchor cache and fixture paths regardless of where they run from.
     """
     current = (start or Path.cwd()).resolve()
     for candidate in (current, *current.parents):
         if (candidate / "pyproject.toml").is_file():
             return candidate
-    raise FileNotFoundError(f"pas de pyproject.toml au-dessus de {current}")
+    raise FileNotFoundError(f"no pyproject.toml above {current}")

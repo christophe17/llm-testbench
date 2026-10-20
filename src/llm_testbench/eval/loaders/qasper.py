@@ -1,16 +1,16 @@
-"""Loader QASPER — des articles scientifiques complets, en sections (Dasigi et al. 2021).
+"""QASPER loader — complete scientific papers, in sections (Dasigi et al. 2021).
 
-Pourquoi lui en phase 1 : c'est le jeu que le brief désigne pour le chunking « sur
-documents bruts » (phase 3), et son texte intégral est déjà structuré en sections et
-paragraphes dans le Parquet — des documents longs sans parser de PDF. Les questions et
-réponses annotées du jeu servent en phase 2 ; ici on ne charge que ce qu'il faut pour
-produire des :class:`ParsedDocument`.
+Why this one in phase 1: it is the dataset the brief designates for chunking "on raw
+documents" (phase 3), and its full text is already structured in sections and
+paragraphs in the Parquet — long documents without a PDF parser. The dataset's
+annotated questions and answers serve in phase 2; here we load only what is needed to
+produce :class:`ParsedDocument` objects.
 
-Particularités de la distribution (vérifiées le 2026-09-03) : dépôt ``allenai/qasper`` à
-script, converti en Parquet par Hugging Face sur la branche ``refs/convert/parquet``
-(la seule chargeable avec ``datasets`` ≥ 3) ; splits train 888 / validation 281 /
-test 416 ; ``full_text`` est un dictionnaire de listes parallèles (``section_name``,
-``paragraphs``) ; licence CC BY 4.0 (étiquette HF).
+Specifics of the distribution (verified on 2026-09-03): script-based repository
+``allenai/qasper``, converted to Parquet by Hugging Face on the ``refs/convert/parquet``
+branch (the only one loadable with ``datasets`` ≥ 3); splits train 888 / validation 281 /
+test 416; ``full_text`` is a dictionary of parallel lists (``section_name``,
+``paragraphs``); license CC BY 4.0 (HF label).
 """
 
 import json
@@ -27,8 +27,8 @@ QASPER_INFO = DatasetInfo(
     key="qasper",
     name="QASPER",
     homepage="https://allenai.org/data/qasper",
-    license="cc-by-4.0 (étiquette du dépôt HF)",
-    source="hf:allenai/qasper (branche refs/convert/parquet)",
+    license="cc-by-4.0 (label of the HF repository)",
+    source="hf:allenai/qasper (branch refs/convert/parquet)",
 )
 
 Row = dict[str, Any]
@@ -48,7 +48,7 @@ class QasperPaper(BaseModel):
     title: str
     abstract: str
     sections: tuple[tuple[str, str], ...]
-    """(nom de section, paragraphes joints par une ligne vide), sections vides écartées."""
+    """(section name, paragraphs joined by a blank line), empty sections dropped."""
     questions: tuple[QasperQuestion, ...] = ()
     split: str
 
@@ -85,8 +85,8 @@ class QasperDataset(BaseModel):
 
 
 def _sections(full_text: Any) -> tuple[tuple[str, str], ...]:
-    """``full_text`` arrive soit en dictionnaire de listes parallèles (HF), soit en liste
-    de dictionnaires (fixtures écrites à la main) : on accepte les deux."""
+    """``full_text`` arrives either as a dictionary of parallel lists (HF) or as a list of
+    dictionaries (hand-written fixtures): we accept both."""
     pairs: Iterable[tuple[Any, Any]]
     if isinstance(full_text, dict):
         names = full_text.get("section_name") or []
@@ -148,7 +148,7 @@ class QasperLoader:
         if fixtures_dir is not None:
             path = fixtures_dir / "qasper" / f"{split}.json"
             if not path.is_file():
-                raise FileNotFoundError(f"fixture absente : {path}")
+                raise FileNotFoundError(f"missing fixture: {path}")
             rows: list[Row] = json.loads(path.read_text(encoding="utf-8"))
             return rows
         return self._load_rows_from_hf(split)

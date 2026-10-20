@@ -1,4 +1,4 @@
-"""Les implémentations concrètes du protocole :class:`LLMProvider` (ADR 006)."""
+"""The concrete implementations of the :class:`LLMProvider` protocol (ADR 006)."""
 
 from llm_testbench.llm.embeddings import EmbeddingProvider
 from llm_testbench.llm.errors import InvalidRequestError
@@ -12,10 +12,10 @@ from llm_testbench.llm.registry import BackendConfig, BackendKind
 
 
 def build_provider(backend: str, config: BackendConfig) -> LLMProvider:
-    """Construit le provider d'un backend à partir de sa configuration.
+    """Builds the provider of a backend from its configuration.
 
-    C'est ici, et seulement ici, qu'un client SDK est créé : les clés sont lues à ce
-    moment, jamais stockées dans la configuration.
+    It is here, and only here, that an SDK client is created: the keys are read at that
+    moment, never stored in the configuration.
     """
     if config.kind in (BackendKind.ANTHROPIC, BackendKind.ANTHROPIC_BEDROCK):
         return AnthropicProvider.from_config(backend, config)
@@ -23,11 +23,11 @@ def build_provider(backend: str, config: BackendConfig) -> LLMProvider:
 
 
 def build_embedding_provider(backend: str, config: BackendConfig) -> EmbeddingProvider:
-    """Anthropic n'a pas d'endpoint d'embeddings : seuls les backends compatibles OpenAI
-    (et, plus tard, les modèles locaux) en fournissent."""
+    """Anthropic has no embeddings endpoint: only OpenAI-compatible backends
+    (and, later, local models) provide them."""
     if config.kind is not BackendKind.OPENAI_COMPATIBLE:
         raise InvalidRequestError(
-            f"le backend {backend!r} ({config.kind.value}) ne fournit pas d'embeddings",
+            f"backend {backend!r} ({config.kind.value}) does not provide embeddings",
             backend=backend,
         )
     return OpenAIEmbeddingProvider.from_config(backend, config)

@@ -1,9 +1,9 @@
-"""Pipeline d'ingestion : documents → chunks → embeddings → index (ADR 007).
+"""Ingestion pipeline: documents → chunks → embeddings → index (ADR 007).
 
-Idempotent à deux niveaux : un document dont l'empreinte n'a pas changé n'est pas
-réécrit, et un chunk qui a déjà son vecteur dans l'index n'est pas ré-embarqué. On ne
-repaie jamais un embedding déjà calculé — la phase 3 industrialisera cette idée avec
-un orchestrateur, mais la propriété est là dès maintenant.
+Idempotent at two levels: a document whose fingerprint has not changed is not
+rewritten, and a chunk that already has its vector in the index is not re-embedded. We
+never pay twice for an embedding already computed — phase 3 will industrialize this idea
+with an orchestrator, but the property is there right now.
 """
 
 import time
@@ -30,7 +30,7 @@ class IngestReport(BaseModel):
     embedding_tokens: int = 0
     embedding_calls: int = 0
     cost_usd: float | None = None
-    """Somme des coûts d'embeddings ; ``None`` dès qu'un appel a un coût inconnu."""
+    """Sum of the embedding costs; ``None`` as soon as one call has an unknown cost."""
     duration_ms: float = Field(ge=0)
 
 
@@ -59,8 +59,8 @@ class IngestionPipeline:
         dimensions: int,
         description: str = "",
     ) -> IndexSpec:
-        """La définition d'index cohérente avec CE chunker : c'est ce qui garantit que le
-        registre décrit bien ce qui a produit les chunks."""
+        """The index definition consistent with THIS chunker: this is what guarantees that
+        the registry really describes what produced the chunks."""
         from llm_testbench.llm.types import ModelRef
 
         return IndexSpec(
@@ -75,7 +75,7 @@ class IngestionPipeline:
     async def ingest(self, spec: IndexSpec, documents: Iterable[ParsedDocument]) -> IngestReport:
         if spec.chunker != self._chunker.describe():
             raise ValueError(
-                "le chunker du pipeline ne correspond pas à celui de l'index "
+                "the pipeline chunker does not match the index chunker "
                 f"({spec.chunker} ≠ {self._chunker.describe()})"
             )
         start = time.perf_counter()

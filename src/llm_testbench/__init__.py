@@ -1,3 +1,3 @@
-"""llm_testbench — banc d'essai LLM chiffré sur jeux publics à vérité de référence."""
+"""llm_testbench — measured LLM testbench on public datasets with ground truth."""
 
 __version__ = "0.1.0"

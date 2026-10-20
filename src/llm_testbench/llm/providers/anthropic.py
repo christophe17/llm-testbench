@@ -1,15 +1,15 @@
-"""Provider Anthropic sur le SDK officiel — sert aussi Bedrock (même API Messages).
+"""Anthropic provider on the official SDK — also serves Bedrock (same Messages API).
 
-Traductions à connaître, parce qu'elles surprennent :
+Translations worth knowing, because they surprise:
 
-- **``temperature`` et ``seed`` sont ignorés.** Les modèles Claude actuels (Sonnet 5,
-  Opus 5, Fable 5) refusent tout paramètre d'échantillonnage avec un 400. Le réflexe
-  « température 0 pour le déterminisme » est un réflexe de 2024 ; la phase 5B mesurera
-  le déterminisme réel sans lui.
-- **Le system prompt est marqué cacheable.** Anthropic ne cache que ce qu'on lui demande
-  de cacher (``cache_control``), et seulement au-delà d'une taille minimale par modèle :
-  sur un prompt court, ``cache_read_tokens`` restera à zéro, c'est normal.
-- **Le SDK ne retente pas** (``max_retries=0``) : la politique de retry est la nôtre.
+- **``temperature`` and ``seed`` are ignored.** Current Claude models (Sonnet 5,
+  Opus 5, Fable 5) reject any sampling parameter with a 400. The reflex
+  "temperature 0 for determinism" is a 2024 reflex; phase 5B will measure
+  actual determinism without it.
+- **The system prompt is marked cacheable.** Anthropic only caches what it is asked
+  to cache (``cache_control``), and only beyond a minimum size per model:
+  on a short prompt, ``cache_read_tokens`` will stay at zero, this is normal.
+- **The SDK does not retry** (``max_retries=0``): the retry policy is ours.
 """
 
 from collections.abc import AsyncIterator
@@ -76,7 +76,7 @@ class AnthropicProvider:
             api_key = config.api_key()
             if api_key is None:
                 raise MissingCredentialsError(
-                    f"backend {backend!r} : variable d'environnement {config.api_key_env} absente"
+                    f"backend {backend!r}: environment variable {config.api_key_env} missing"
                 )
             client = anthropic.AsyncAnthropic(
                 api_key=api_key, base_url=config.base_url, max_retries=0
@@ -87,10 +87,10 @@ class AnthropicProvider:
             native_json_schema=config.structured_output is StructuredOutputMode.NATIVE,
         )
 
-    # ------------------------------------------------------------------ traduction
+    # ------------------------------------------------------------------ translation
 
     def build_params(self, request: CompletionRequest) -> dict[str, Any]:
-        """La requête neutre → les paramètres du SDK. Public : le notebook l'affiche."""
+        """The neutral request → the SDK parameters. Public: the notebook displays it."""
         params: dict[str, Any] = {
             "model": request.model.model,
             "max_tokens": request.max_output_tokens,
@@ -132,9 +132,9 @@ class AnthropicProvider:
                     str(error), backend=backend, status_code=error.status_code
                 )
             return InvalidRequestError(str(error), backend=backend, status_code=error.status_code)
-        return ProviderUnavailableError(f"erreur inattendue : {error!r}", backend=backend)
+        return ProviderUnavailableError(f"unexpected error: {error!r}", backend=backend)
 
-    # ------------------------------------------------------------------ appels
+    # ------------------------------------------------------------------ calls
 
     async def complete(self, request: CompletionRequest) -> Completion:
         params = self.build_params(request)

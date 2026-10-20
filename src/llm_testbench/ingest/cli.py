@@ -1,7 +1,7 @@
-"""Ingestion en ligne de commande : ``python -m llm_testbench.ingest.cli scifact``.
+"""Command-line ingestion: ``python -m llm_testbench.ingest.cli scifact``.
 
-Charge un jeu public, le convertit en documents, et l'indexe dans la base configurée.
-Requiert la clé du provider d'embeddings (``OPENAI_API_KEY`` pour le modèle par défaut).
+Loads a public dataset, converts it into documents, and indexes it in the configured
+database. Requires the embedding provider key (``OPENAI_API_KEY`` for the default model).
 """
 
 import argparse
@@ -51,11 +51,11 @@ async def run(
 ) -> IngestReport:
     settings = get_settings()
     if settings.database_url is None:
-        raise SystemExit("LLM_TESTBENCH_DATABASE_URL est requis")
+        raise SystemExit("LLM_TESTBENCH_DATABASE_URL is required")
     model_name = embedding_model.rpartition("/")[2]
     dims = dimensions or DEFAULT_EMBEDDING_DIMENSIONS.get(model_name)
     if dims is None:
-        raise SystemExit(f"dimension inconnue pour {embedding_model!r} : passer --dimensions")
+        raise SystemExit(f"unknown dimension for {embedding_model!r}: pass --dimensions")
     documents = (
         scifact_documents(settings, max_docs)
         if dataset == "scifact"
@@ -80,14 +80,14 @@ async def run(
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Indexe un jeu public dans pgvector.")
+    parser = argparse.ArgumentParser(description="Index a public dataset in pgvector.")
     parser.add_argument("dataset", choices=["scifact", "qasper"])
     parser.add_argument("--index-key", default=None)
     parser.add_argument("--embedding-model", default="openai/text-embedding-3-small")
     parser.add_argument("--dimensions", type=int, default=None)
     parser.add_argument("--chunk-size", type=int, default=1_000)
     parser.add_argument("--chunk-overlap", type=int, default=200)
-    parser.add_argument("--max-docs", type=int, default=None, help="tronque (test rapide)")
+    parser.add_argument("--max-docs", type=int, default=None, help="truncate (quick test)")
     args = parser.parse_args(argv)
     index_key = args.index_key or f"{args.dataset}-recursive-oai-small"
     report = asyncio.run(

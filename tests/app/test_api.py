@@ -1,5 +1,5 @@
-"""L'API sur un client LLM à provider simulé et une source en mémoire : aucun réseau,
-aucune base. On teste le transport (JSON, SSE, codes d'erreur), pas le retrieval."""
+"""The API on an LLM client with a simulated provider and an in-memory source: no
+network, no database. We test the transport (JSON, SSE, error codes), not retrieval."""
 
 import json
 from collections.abc import Iterator
@@ -37,11 +37,11 @@ class MemorySource:
         self.queries.append(query)
         return [
             Evidence(
-                text=f"Extrait {i} sur {query.text}",
+                text=f"Excerpt {i} about {query.text}",
                 score=1.0 - i / 10,
                 rank=i,
                 provenance=Provenance(
-                    source_key=self.key, document_id=f"doc{i}", locator=f"partie {i}", title=f"D{i}"
+                    source_key=self.key, document_id=f"doc{i}", locator=f"part {i}", title=f"D{i}"
                 ),
             )
             for i in range(1, min(query.k, 3) + 1)
@@ -81,7 +81,7 @@ def make_app(provider: FakeProvider, source: MemorySource) -> Iterator[TestClien
 
 @pytest.fixture
 def api(source: MemorySource) -> Iterator[TestClient]:
-    yield from make_app(FakeProvider(script=[make_completion("Paris [2], sûrement [1].")]), source)
+    yield from make_app(FakeProvider(script=[make_completion("Paris [2], surely [1].")]), source)
 
 
 def test_health_and_readiness(api: TestClient) -> None:
@@ -99,13 +99,13 @@ def test_not_ready_without_database() -> None:
 
 
 def test_chat_returns_answer_citations_and_evidence(api: TestClient, source: MemorySource) -> None:
-    response = api.post("/chat", json={"question": "Capitale ?", "k": 2})
+    response = api.post("/chat", json={"question": "Capital?", "k": 2})
     assert response.status_code == 200, response.text
     body = response.json()
-    assert body["answer"] == "Paris [2], sûrement [1]."
+    assert body["answer"] == "Paris [2], surely [1]."
     assert body["refused"] is False
     assert [c["index"] for c in body["citations"]] == [2, 1]
-    assert body["citations"][0]["label"] == "docs:memory › D2 › partie 2"
+    assert body["citations"][0]["label"] == "docs:memory › D2 › part 2"
     assert body["unknown_citations"] == []
     assert [e["rank"] for e in body["evidence"]] == [1, 2]
     assert body["backend"] == "anthropic"
@@ -116,12 +116,12 @@ def test_chat_returns_answer_citations_and_evidence(api: TestClient, source: Mem
 
 
 def test_chat_reports_refusal_and_unknown_citations(source: MemorySource) -> None:
-    provider = FakeProvider(script=[make_completion(REFUSAL_SENTINEL), make_completion("Oui [9].")])
+    provider = FakeProvider(script=[make_completion(REFUSAL_SENTINEL), make_completion("Yes [9].")])
     for api in make_app(provider, source):
-        refused = api.post("/chat", json={"question": "Et la lune ?"}).json()
+        refused = api.post("/chat", json={"question": "And the moon?"}).json()
         assert refused["refused"] is True
         assert refused["citations"] == []
-        suspicious = api.post("/chat", json={"question": "Encore ?"}).json()
+        suspicious = api.post("/chat", json={"question": "Again?"}).json()
         assert suspicious["unknown_citations"] == [9]
 
 
@@ -136,7 +136,7 @@ def test_governance_violation_is_403_with_reasons(api: TestClient) -> None:
     assert response.status_code == 403
     body = response.json()
     assert body["error"] == "governance"
-    assert any("région" in r for r in body["reasons"])
+    assert any("region" in r for r in body["reasons"])
 
 
 def test_upstream_outage_is_503(source: MemorySource) -> None:
@@ -167,7 +167,7 @@ def test_sources_endpoint(api: TestClient) -> None:
 
 
 def test_stream_sends_evidence_then_tokens_then_done(api: TestClient) -> None:
-    with api.stream("POST", "/chat/stream", json={"question": "Capitale ?", "k": 1}) as response:
+    with api.stream("POST", "/chat/stream", json={"question": "Capital?", "k": 1}) as response:
         assert response.status_code == 200
         assert response.headers["content-type"].startswith("text/event-stream")
         raw = b"".join(response.iter_bytes()).decode()
@@ -177,6 +177,6 @@ def test_stream_sends_evidence_then_tokens_then_done(api: TestClient) -> None:
     assert kinds[-1] == "done"
     assert kinds[1:-1] == ["token", "token"]
     done = json.loads(blocks[-1].splitlines()[1].removeprefix("data: "))
-    assert done["answer"]["answer"] == "Bonjour"
+    assert done["answer"]["answer"] == "Hello"
     assert done["answer"]["usage"]["output_tokens"] == 5
     assert done["answer"]["cost_usd"] == pytest.approx(10 * 2e-6 + 5 * 10e-6)

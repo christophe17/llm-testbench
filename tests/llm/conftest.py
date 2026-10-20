@@ -34,8 +34,8 @@ ClientFactory = Callable[..., tuple[LLMClient, FakeProvider]]
 
 @pytest.fixture
 def make_client(spans: InMemorySpanExporter, fake_sleep: FakeSleep) -> ClientFactory:
-    """Fabrique un client sur la vraie configuration, avec un provider simulé injecté
-    pour le backend ``anthropic`` et un exporteur de traces en mémoire."""
+    """Builds a client on the real configuration, with a simulated provider injected
+    for the ``anthropic`` backend and an in-memory trace exporter."""
 
     def factory(
         provider: FakeProvider | None = None, **overrides: Any
@@ -57,5 +57,5 @@ def make_client(spans: InMemorySpanExporter, fake_sleep: FakeSleep) -> ClientFac
 
 def last_span(spans: InMemorySpanExporter) -> ReadableSpan:
     exported = spans.get_finished_spans()
-    assert exported, "aucun span exporté"
+    assert exported, "no span exported"
     return exported[-1]

@@ -1,4 +1,4 @@
-"""Contrat d'un provider LLM : ce que la façade attend, ce que chaque SDK traduit."""
+"""Contract of an LLM provider: what the facade expects, what each SDK translates."""
 
 from collections.abc import AsyncIterator
 from typing import Protocol, runtime_checkable
@@ -10,7 +10,7 @@ from llm_testbench.llm.types import Completion, CompletionRequest, StreamChunk
 class LLMProvider(Protocol):
     backend: str
     native_json_schema: bool
-    """True si le provider peut imposer un schéma JSON lui-même."""
+    """True if the provider can enforce a JSON schema itself."""
 
     async def complete(self, request: CompletionRequest) -> Completion: ...
 

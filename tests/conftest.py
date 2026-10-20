@@ -9,5 +9,5 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 @pytest.fixture
 def offline_settings(tmp_path: Path) -> Settings:
-    """Settings pointant sur les fixtures locales : aucun test ne touche le réseau."""
+    """Settings pointing to the local fixtures: no test touches the network."""
     return Settings(fixtures_dir=FIXTURES_DIR, data_dir=tmp_path / "cache")

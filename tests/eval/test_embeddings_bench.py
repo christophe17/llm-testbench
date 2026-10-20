@@ -25,7 +25,7 @@ def test_report_round_trip_and_table(tmp_path: Path) -> None:
                 dimensions=768,
                 elapsed_s=120.0,
                 published_ndcg_at_10=0.7404,
-                published_source="carte HF",
+                published_source="HF card",
             ),
             ModelScore(
                 model="openai/x", ndcg_at_10=0.7, elapsed_s=3.0, cost_usd=0.03, backend="openai"
@@ -37,7 +37,7 @@ def test_report_round_trip_and_table(tmp_path: Path) -> None:
     assert load_report(path) == report
     table = report.table()
     assert "+0.001" in table
-    assert "0.0300 $" in table
+    assert "$0.0300" in table
     assert report.scores[1].gap_to_published is None
 
 
@@ -55,7 +55,7 @@ def test_client_encoder_routes_batches_through_the_facade() -> None:
     embedder = FakeEmbedder()
     client.register_embedder("openai", embedder)
     encoder = ClientEncoder(client, "openai/text-embedding-3-small")
-    batches = [{"text": ["capitale a", "capitale b"]}, {"text": ["recette"]}]
+    batches = [{"text": ["capital a", "capital b"]}, {"text": ["recipe"]}]
     vectors = encoder.encode(iter(batches))
     assert isinstance(vectors, np.ndarray)
     assert vectors.shape == (3, 2)

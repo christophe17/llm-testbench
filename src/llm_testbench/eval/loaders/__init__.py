@@ -1,4 +1,4 @@
-"""Loaders des jeux publics. Un loader = une provenance vérifiée + une jointure validée."""
+"""Loaders of the public datasets. A loader = a verified provenance + a validated join."""
 
 from llm_testbench.eval.loaders.base import RetrievalLoader
 from llm_testbench.eval.loaders.beir import BeirLoader

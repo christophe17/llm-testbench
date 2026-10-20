@@ -1,9 +1,9 @@
--- Schéma de l'ingestion (ADR 007). Idempotent : rejoué à chaque démarrage.
+-- Ingestion schema (ADR 007). Idempotent: replayed at every startup.
 --
--- documents et chunks sont partagés par tous les index d'une même source ; les vecteurs
--- vivent dans une table par index (emb_<clé>, créée par le code avec sa dimension), et
--- la table indexes est le registre qui relie chaque index au chunker et au modèle qui
--- l'ont produit — le début du lineage de la phase 3.
+-- documents and chunks are shared by all the indexes of a same source; the vectors
+-- live in one table per index (emb_<key>, created by the code with its dimension), and
+-- the indexes table is the registry that links each index to the chunker and the model
+-- that produced it — the start of the phase 3 lineage.
 
 CREATE EXTENSION IF NOT EXISTS vector;
 

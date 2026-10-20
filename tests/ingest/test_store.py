@@ -1,6 +1,6 @@
-"""Tests du stockage pgvector — exigent une base (marqueur ``db``).
+"""Tests of the pgvector storage — require a database (``db`` marker).
 
-Localement : ``make k3d-up`` + ``make pg-port-forward`` puis
+Locally: ``make k3d-up`` + ``make pg-port-forward`` then
 ``LLM_TESTBENCH_DATABASE_URL=postgresql://testbench:testbench-local-only@localhost:5432/testbench``.
 """
 
@@ -19,7 +19,7 @@ DATABASE_URL = os.environ.get("LLM_TESTBENCH_DATABASE_URL")
 
 pytestmark = [
     pytest.mark.db,
-    pytest.mark.skipif(DATABASE_URL is None, reason="LLM_TESTBENCH_DATABASE_URL non défini"),
+    pytest.mark.skipif(DATABASE_URL is None, reason="LLM_TESTBENCH_DATABASE_URL not set"),
 ]
 
 
@@ -44,7 +44,7 @@ async def spec(store: PgVectorStore, source_key: str) -> AsyncIterator[IndexSpec
         embedding_model=ModelRef.parse("openai/text-embedding-3-small"),
         dimensions=3,
         chunker=RecursiveChunker(chunk_size=40, chunk_overlap=0).describe(),
-        description="index de test",
+        description="test index",
     )
     await store.register_index(spec)
     yield spec
@@ -71,7 +71,7 @@ async def test_upsert_is_a_noop_on_identical_content_and_replaces_on_change(
     store: PgVectorStore, spec: IndexSpec, source_key: str
 ) -> None:
     chunker = RecursiveChunker(chunk_size=40, chunk_overlap=0)
-    document = parse_text("d1", "Première phrase du document. Seconde phrase, un peu plus longue.")
+    document = parse_text("d1", "First sentence of the document. Second sentence, a little longer.")
     chunks = chunker.chunk(document)
     assert await store.upsert_document(source_key, document, chunks) is True
     assert await store.upsert_document(source_key, document, chunks) is False
@@ -83,13 +83,13 @@ async def test_upsert_is_a_noop_on_identical_content_and_replaces_on_change(
         c.chunk_id for c in chunks[1:]
     ]
 
-    changed = parse_text("d1", "Un contenu entièrement différent.")
+    changed = parse_text("d1", "Entirely different content.")
     new_chunks = chunker.chunk(changed)
     assert await store.upsert_document(source_key, changed, new_chunks) is True
     stored = await store.fetch_document(source_key, "d1")
     assert stored is not None
     assert [c.text for c in stored.chunks] == [c.text for c in new_chunks]
-    assert await store.embedding_count(spec) == 0  # cascade : les anciens vecteurs sont partis
+    assert await store.embedding_count(spec) == 0  # cascade: the old vectors are gone
     assert await store.fetch_document(source_key, "absent") is None
 
 
@@ -99,9 +99,9 @@ async def test_search_returns_nearest_chunks_with_cosine_scores_and_filters(
     chunker = RecursiveChunker(chunk_size=1_000, chunk_overlap=0)
     fr, en = {"lang": "fr"}, {"lang": "en"}
     docs = {
-        "a": (parse_text("a", "Document sur les chats.", metadata=fr), [1.0, 0.0, 0.0]),
+        "a": (parse_text("a", "Document about cats.", metadata=fr), [1.0, 0.0, 0.0]),
         "b": (parse_text("b", "Document about dogs.", metadata=en), [0.0, 1.0, 0.0]),
-        "c": (parse_text("c", "Document sur les chiens.", metadata=fr), [0.7, 0.7, 0.0]),
+        "c": (parse_text("c", "Another document about dogs.", metadata=fr), [0.7, 0.7, 0.0]),
     }
     for document, vector in docs.values():
         chunks = chunker.chunk(document)

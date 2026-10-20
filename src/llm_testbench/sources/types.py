@@ -1,9 +1,9 @@
-"""Types communs à toutes les sources (ADR 007).
+"""Types common to all sources (ADR 007).
 
-Le point structurant : la **provenance** et la **citation** ont la même forme pour un
-chunk de document, une ligne SQL (phase 4) ou une réponse d'API. Le générateur ne sait
-pas d'où vient une preuve ; il la cite par son numéro, et c'est la provenance qui dit
-au lecteur où aller vérifier.
+The structuring point: **provenance** and **citation** have the same shape for a
+document chunk, an SQL row (phase 4) or an API response. The generator does not know
+where a piece of evidence comes from; it cites it by its number, and it is the
+provenance that tells the reader where to go and check.
 """
 
 import datetime as dt
@@ -25,19 +25,19 @@ class SourceKind(StrEnum):
 
 class Capability(StrEnum):
     SEARCH = "search"
-    """Recherche par similarité ou par mots-clés : la capacité de base d'un RAG."""
+    """Search by similarity or by keywords: the basic capability of a RAG."""
     FETCH = "fetch"
-    """Récupération d'un document entier par identifiant."""
+    """Retrieval of a whole document by identifier."""
     FILTER = "filter"
-    """Filtrage par métadonnées lors de la recherche."""
+    """Filtering by metadata during the search."""
     QUERY = "query"
-    """Exécution d'une requête (SQL) — phase 4."""
+    """Execution of a query (SQL) — phase 4."""
     CALL = "call"
-    """Appel d'une opération d'API — phase 4."""
+    """Call of an API operation — phase 4."""
 
 
 class Provenance(BaseModel):
-    """D'où vient une preuve, assez précisément pour qu'un humain aille vérifier."""
+    """Where a piece of evidence comes from, precisely enough for a human to go and check."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -45,11 +45,11 @@ class Provenance(BaseModel):
     document_id: str
     chunk_id: str | None = None
     locator: str
-    """Localisation lisible dans le document : section et position, page, plage de lignes…"""
+    """Readable location in the document: section and position, page, line range…"""
     title: str | None = None
     uri: str | None = None
     checksum: str | None = None
-    """Empreinte du texte cité : la preuve qu'on cite ce qui a été indexé, pas autre chose."""
+    """Fingerprint of the cited text: proof that we cite what was indexed, nothing else."""
     ingested_at: dt.datetime | None = None
     extra: dict[str, str] = Field(default_factory=dict)
 
@@ -61,7 +61,7 @@ class Provenance(BaseModel):
 
 
 class Evidence(BaseModel):
-    """Un élément de contexte retourné par une source, avec son score et sa provenance."""
+    """A context item returned by a source, with its score and its provenance."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -73,7 +73,7 @@ class Evidence(BaseModel):
 
 
 class Citation(BaseModel):
-    """Ce que le lecteur voit : ``[n]`` puis un libellé homogène quelle que soit la source."""
+    """What the reader sees: ``[n]`` then a uniform label whatever the source."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -96,7 +96,7 @@ class SearchQuery(BaseModel):
     k: int = Field(default=5, ge=1, le=50)
     filters: dict[str, str] = Field(default_factory=dict)
     data_class: DataClass
-    """La question part dehors (embedding) : elle a une classe de données, comme tout."""
+    """The question goes outside (embedding): it has a data class, like everything."""
 
 
 class SourceInfo(BaseModel):

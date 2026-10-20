@@ -1,13 +1,13 @@
-# Table de prix, en USD par million de tokens (ADR 006).
-# Un modèle absent d'ici a un coût inconnu : le banc affiche « inconnu », jamais une estimation.
-# Les prix changent sans préavis : la date de vérification fait partie de la donnée.
+# Price table, in USD per million tokens (ADR 006).
+# A model missing from here has an unknown cost: the testbench shows "unknown", never an estimate.
+# Prices change without notice: the verification date is part of the data.
 
 verified_on = 2026-10-19
-source = "Anthropic : référence des modèles du 2026-10-06 (famille Claude 5.5 ajoutée le 2026-10-19 ; cache : lecture 0,1x et écriture 1,25x, sauf Opus 5.5 dont la lecture de cache est publiée à 0,20) ; OpenAI : page de prix officielle relevée le 2026-09-03, inchangée"
+source = "Anthropic: models reference of 2026-10-06 (Claude 5.5 family added on 2026-10-19; cache: read 0.1x and write 1.25x, except Opus 5.5 whose cache read is published at 0.20); OpenAI: official pricing page recorded on 2026-09-03, unchanged"
 
-# Génération courante (Claude 5.5). Haiku 5.5 : prix pour les prompts jusqu'à 100 k tokens
-# (0,50 / 2,50 au-delà) ; ses prix de cache ne sont pas publiés dans la référence relevée,
-# donc absents : un appel en cache sur ce modèle affichera un coût inconnu, pas une estimation.
+# Current generation (Claude 5.5). Haiku 5.5: prices for prompts up to 100k tokens
+# (0.50 / 2.50 beyond); its cache prices are not published in the recorded reference,
+# hence absent: a cached call on this model will show an unknown cost, not an estimate.
 
 [models."claude-sonnet-5-5"]
 input_per_mtok = 2.0
@@ -25,8 +25,8 @@ cache_write_per_mtok = 5.0
 input_per_mtok = 0.1
 output_per_mtok = 0.5
 
-# Génération précédente (Claude 5), encore servie : gardée pour rejouer les chiffres de la
-# phase 1 (notebooks 1 et 2 exécutés avec claude-sonnet-5).
+# Previous generation (Claude 5), still served: kept to replay the phase 1 numbers
+# (notebooks 1 and 2 run with claude-sonnet-5).
 
 [models."claude-sonnet-5"]
 input_per_mtok = 2.0
@@ -46,8 +46,8 @@ output_per_mtok = 5.0
 cache_read_per_mtok = 0.1
 cache_write_per_mtok = 1.25
 
-# OpenAI — https://developers.openai.com/api/docs/pricing, relevé le 2026-09-03.
-# Le cache OpenAI n'a pas de surcoût d'écriture : cache_write = prix d'entrée.
+# OpenAI — https://developers.openai.com/api/docs/pricing, recorded on 2026-09-03.
+# The OpenAI cache has no write surcharge: cache_write = input price.
 
 [models."gpt-5.6-sol"]
 input_per_mtok = 4.0
@@ -91,7 +91,7 @@ output_per_mtok = 0.4
 cache_read_per_mtok = 0.005
 cache_write_per_mtok = 0.05
 
-# Embeddings : entrée seulement.
+# Embeddings: input only.
 
 [models."text-embedding-3-small"]
 input_per_mtok = 0.02

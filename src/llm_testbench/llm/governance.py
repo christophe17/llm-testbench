@@ -1,13 +1,13 @@
-"""Gouvernance des données : classes, métadonnées de backend, politique, décision (ADR 006).
+"""Data governance: classes, backend metadata, policy, decision (ADR 006).
 
-Le principe : une requête porte une **classe de données**, un backend déclare des
-**métadonnées de gouvernance**, une **politique** dit ce que chaque classe exige, et la
-**décision** est prise avant tout appel réseau, par refus par défaut. Une métadonnée
-inconnue (``None``) échoue à toute exigence : l'inconnu n'est jamais un laissez-passer.
+The principle: a request carries a **data class**, a backend declares
+**governance metadata**, a **policy** says what each class requires, and the
+**decision** is made before any network call, deny by default. An unknown metadata
+value (``None``) fails every requirement: the unknown is never a free pass.
 
-Sur le banc d'essai, toutes les données sont publiques ; le mécanisme est là pour être
-exercé, tracé et démontré, et pour accueillir les contraintes réelles quand elles seront
-connues, sans toucher au code.
+On the testbench, all data is public; the mechanism is there to be
+exercised, traced and demonstrated, and to take in the real constraints once they are
+known, without touching the code.
 """
 
 import datetime as dt
@@ -20,7 +20,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class DataClass(StrEnum):
-    """Classe de données d'une requête. Sans classe explicite, une requête est refusée."""
+    """Data class of a request. Without an explicit class, a request is refused."""
 
     PUBLIC = "public"
     INTERNAL = "internal"
@@ -33,17 +33,17 @@ class InferenceRegion(StrEnum):
     EU = "eu"
     US = "us"
     SELF = "self"
-    """Sur notre propre machine ou notre propre cluster : le texte ne sort pas."""
+    """On our own machine or our own cluster: the text does not leave."""
     VARIABLE = "variable"
-    """Courtier qui route vers des hébergeurs tiers : la région dépend de l'appel."""
+    """Broker that routes to third-party hosts: the region depends on the call."""
 
 
 class BackendGovernance(BaseModel):
-    """Métadonnées de gouvernance d'un backend.
+    """Governance metadata of a backend.
 
-    Ce sont des affirmations relevées à ``verified_on``, pas des garanties contractuelles.
-    ``zero_retention`` décrit la configuration effective de NOTRE compte chez ce fournisseur,
-    pas ce qu'il propose (``zero_retention_available``).
+    These are claims recorded on ``verified_on``, not contractual guarantees.
+    ``zero_retention`` describes the effective configuration of OUR account with this provider,
+    not what it offers (``zero_retention_available``).
     """
 
     model_config = ConfigDict(frozen=True)
@@ -62,7 +62,7 @@ class BackendGovernance(BaseModel):
 
 
 class Requirement(BaseModel):
-    """Exigences d'une classe de données. Tout ce qui n'est pas exigé est permis."""
+    """Requirements of a data class. Everything not required is allowed."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -73,7 +73,7 @@ class Requirement(BaseModel):
 
 
 class GovernanceDecision(BaseModel):
-    """Résultat de l'évaluation, destiné à la trace et à l'exception."""
+    """Result of the evaluation, intended for the trace and the exception."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -81,10 +81,10 @@ class GovernanceDecision(BaseModel):
     backend: str
     allowed: bool
     reasons: tuple[str, ...] = ()
-    """Vide si autorisé ; sinon, chaque exigence non satisfaite, en clair."""
+    """Empty if allowed; otherwise, each unmet requirement, in plain words."""
 
     def enforce(self) -> None:
-        # Import local : errors importe DataClass d'ici, on évite le cycle à l'import.
+        # Local import: errors imports DataClass from here, this avoids the import cycle.
         from llm_testbench.llm.errors import GovernanceViolation
 
         if not self.allowed:
@@ -94,7 +94,7 @@ class GovernanceDecision(BaseModel):
 
 
 class GovernancePolicy(BaseModel):
-    """Politique : une exigence par classe de données, chargée depuis un fichier TOML."""
+    """Policy: one requirement per data class, loaded from a TOML file."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -104,7 +104,7 @@ class GovernancePolicy(BaseModel):
     def _every_class_has_a_rule(self) -> "GovernancePolicy":
         missing = [c.value for c in DataClass if c not in self.rules]
         if missing:
-            raise ValueError(f"politique incomplète, classes sans règle : {missing}")
+            raise ValueError(f"incomplete policy, classes without a rule: {missing}")
         return self
 
     @classmethod
@@ -121,15 +121,15 @@ class GovernancePolicy(BaseModel):
         region = governance.inference_region
         if rule.allowed_regions is not None and region not in rule.allowed_regions:
             allowed = ", ".join(r.value for r in rule.allowed_regions)
-            reasons.append(f"région d'inférence {region.value!r} hors de [{allowed}]")
+            reasons.append(f"inference region {region.value!r} outside [{allowed}]")
         if rule.require_zero_retention and governance.zero_retention is not True:
-            state = "inconnue" if governance.zero_retention is None else "non configurée"
-            reasons.append(f"rétention zéro exigée, {state}")
+            state = "unknown" if governance.zero_retention is None else "not configured"
+            reasons.append(f"zero retention required, {state}")
         if rule.forbid_training and governance.trains_on_inputs is not False:
-            state = "inconnu" if governance.trains_on_inputs is None else "déclaré"
-            reasons.append(f"entraînement sur les entrées interdit, {state}")
+            state = "unknown" if governance.trains_on_inputs is None else "declared"
+            reasons.append(f"training on inputs forbidden, {state}")
         if rule.forbid_variable_subprocessors and governance.subprocessors != "fixed":
-            reasons.append("sous-traitants variables (courtier) interdits")
+            reasons.append("variable subprocessors (broker) forbidden")
 
         return GovernanceDecision(
             data_class=data_class, backend=backend, allowed=not reasons, reasons=tuple(reasons)

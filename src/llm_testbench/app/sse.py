@@ -1,10 +1,10 @@
-"""Server-Sent Events, à la main : le format tient en trois lignes et il vaut mieux le
-connaître que l'importer.
+"""Server-Sent Events, by hand: the format fits in three lines and it is better to know
+it than to import it.
 
-Un événement SSE est ``event: <nom>\\ndata: <json>\\n\\n``. Le client lit un flux
-``text/event-stream`` et reçoit chaque bloc dès qu'il est envoyé. L'annulation vient du
-client : quand il ferme la connexion, le serveur cesse d'itérer, ce qui ferme le flux du
-provider — et arrête la facturation des tokens de sortie.
+An SSE event is ``event: <name>\\ndata: <json>\\n\\n``. The client reads a
+``text/event-stream`` stream and receives each block as soon as it is sent. Cancellation
+comes from the client: when it closes the connection, the server stops iterating, which
+closes the provider stream — and stops the billing of output tokens.
 """
 
 from collections.abc import AsyncIterator, Awaitable, Callable
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 SSE_HEADERS = {
     "Cache-Control": "no-cache",
-    "X-Accel-Buffering": "no",  # les proxys nginx ne doivent pas tamponner le flux
+    "X-Accel-Buffering": "no",  # nginx proxies must not buffer the stream
 }
 
 
@@ -27,7 +27,7 @@ async def until_disconnected[T: BaseModel](
     is_disconnected: Callable[[], Awaitable[bool]],
     kind: Callable[[T], str],
 ) -> AsyncIterator[bytes]:
-    """Encode les événements et s'arrête dès que le client a raccroché."""
+    """Encode the events and stop as soon as the client has hung up."""
     async for event in events:
         if await is_disconnected():
             break

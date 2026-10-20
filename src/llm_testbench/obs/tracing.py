@@ -1,16 +1,16 @@
-"""Traces OpenTelemetry (brief §4 : conventions sémantiques GenAI).
+"""OpenTelemetry traces (brief §4: GenAI semantic conventions).
 
-Deux familles d'attributs sur chaque span d'appel LLM :
+Two families of attributes on each LLM call span:
 
-- ``gen_ai.*`` : les noms standardisés par OpenTelemetry pour l'IA générative, pour que
-  n'importe quel backend de traces (Langfuse, Grafana Tempo, Jaeger) sache les lire ;
-- ``llm_testbench.*`` : ce que la convention ne couvre pas encore et que le banc mesure —
-  coût, cache, tentatives, gouvernance, empreinte du prompt.
+- ``gen_ai.*``: the names standardized by OpenTelemetry for generative AI, so that any
+  trace backend (Langfuse, Grafana Tempo, Jaeger) can read them;
+- ``llm_testbench.*``: what the convention does not cover yet and what the testbench
+  measures — cost, cache, attempts, governance, prompt fingerprint.
 
-Configuration : ``configure_tracing`` installe un ``TracerProvider`` global avec, au choix,
-un exporteur fourni (tests, notebook : mémoire ou console) ou un exporteur OTLP/HTTP vers
-un endpoint (Langfuse en phase 1, collecteur OTel en phase 5). Sans configuration, les
-spans sont des no-op : le code applicatif ne change pas.
+Configuration: ``configure_tracing`` installs a global ``TracerProvider`` with, as
+chosen, a provided exporter (tests, notebook: memory or console) or an OTLP/HTTP exporter
+to an endpoint (Langfuse in phase 1, OTel collector in phase 5). Without configuration,
+spans are no-ops: the application code does not change.
 """
 
 import base64
@@ -30,7 +30,7 @@ TRACER_NAME: Final = "llm_testbench"
 
 
 class GenAI:
-    """Noms d'attributs, conventions sémantiques GenAI d'OpenTelemetry (version 1.3x)."""
+    """Attribute names, OpenTelemetry GenAI semantic conventions (version 1.3x)."""
 
     OPERATION_NAME: Final = "gen_ai.operation.name"
     PROVIDER_NAME: Final = "gen_ai.provider.name"
@@ -45,7 +45,7 @@ class GenAI:
 
 
 class Bench:
-    """Attributs propres au banc d'essai."""
+    """Attributes specific to the testbench."""
 
     BACKEND: Final = "llm_testbench.backend"
     LATENCY_MS: Final = "llm_testbench.latency_ms"
@@ -67,7 +67,7 @@ class Bench:
 
 
 def langfuse_otlp_headers(public_key: str, secret_key: str) -> dict[str, str]:
-    """Langfuse authentifie l'OTLP par Basic auth ``clé publique:clé secrète``."""
+    """Langfuse authenticates OTLP with Basic auth ``public key:secret key``."""
     token = base64.b64encode(f"{public_key}:{secret_key}".encode()).decode()
     return {"Authorization": f"Basic {token}"}
 
@@ -80,11 +80,11 @@ def configure_tracing(
     otlp_headers: Mapping[str, str] | None = None,
     set_global: bool = True,
 ) -> TracerProvider:
-    """Installe un fournisseur de traces.
+    """Install a trace provider.
 
-    ``exporter`` fourni → traitement synchrone (tests, notebooks : chaque span est visible
-    tout de suite). Sinon, ``otlp_endpoint`` → export OTLP/HTTP par lots. Ni l'un ni
-    l'autre → fournisseur sans exporteur (les spans existent, personne ne les lit).
+    ``exporter`` given → synchronous processing (tests, notebooks: each span is visible
+    right away). Otherwise, ``otlp_endpoint`` → batched OTLP/HTTP export. Neither one
+    → provider without an exporter (the spans exist, nobody reads them).
     """
     provider = TracerProvider(resource=Resource.create({"service.name": service_name}))
     if exporter is not None:

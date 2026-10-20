@@ -1,7 +1,7 @@
-"""Les deux providers, testés à travers les vrais SDK sur un transport HTTP simulé.
+"""The two providers, tested through the real SDKs over a simulated HTTP transport.
 
-On ne mocke pas nos classes : on rejoue des réponses HTTP réalistes (JSON et flux SSE) et
-on vérifie ce que le SDK envoie et ce que nous en faisons. Aucun test ne touche le réseau.
+We do not mock our classes: we replay realistic HTTP responses (JSON and SSE streams) and
+check what the SDK sends and what we do with it. No test touches the network.
 """
 
 import json
@@ -43,7 +43,7 @@ Responder = Callable[[dict[str, Any]], httpx2.Response]
 
 
 class Recorder:
-    """Transport simulé : enregistre chaque corps de requête et répond selon ``responder``."""
+    """Simulated transport: records each request body and responds according to ``responder``."""
 
     def __init__(self, responder: Responder) -> None:
         self.bodies: list[dict[str, Any]] = []
@@ -89,8 +89,8 @@ def make_request(**overrides: Any) -> CompletionRequest:
     fields: dict[str, Any] = {
         "model": ModelRef.parse("anthropic/claude-sonnet-5"),
         "messages": (
-            Message(role=Role.SYSTEM, content="Réponds en un mot."),
-            Message(role=Role.USER, content="Bonjour ?"),
+            Message(role=Role.SYSTEM, content="Answer in one word."),
+            Message(role=Role.USER, content="Hello?"),
         ),
         "data_class": DataClass.PUBLIC,
         "max_output_tokens": 64,
@@ -102,14 +102,14 @@ def make_request(**overrides: Any) -> CompletionRequest:
 
 SCHEMA = {"type": "object", "properties": {"a": {"type": "string"}}, "required": ["a"]}
 
-# ------------------------------------------------------------------ corps de réponse
+# ------------------------------------------------------------------ response bodies
 
 ANTHROPIC_MESSAGE = {
     "id": "msg_01",
     "type": "message",
     "role": "assistant",
     "model": "claude-sonnet-5-served",
-    "content": [{"type": "text", "text": "Bonjour"}],
+    "content": [{"type": "text", "text": "Hello"}],
     "stop_reason": "end_turn",
     "stop_sequence": None,
     "usage": {
@@ -145,7 +145,7 @@ def anthropic_sse(text_parts: list[str], stop_reason: str = "end_turn") -> str:
 
 def openai_completion(
     *,
-    content: str | None = "Bonjour",
+    content: str | None = "Hello",
     refusal: str | None = None,
     usage: dict[str, Any] | None = None,
     finish_reason: str = "stop",
@@ -195,22 +195,22 @@ async def test_anthropic_translates_request_and_response() -> None:
     recorder = Recorder(lambda body: httpx2.Response(200, json=ANTHROPIC_MESSAGE))
     provider = anthropic_provider(recorder)
 
-    completion = await provider.complete(make_request(seed=42, stop=("FIN",), timeout_s=5.0))
+    completion = await provider.complete(make_request(seed=42, stop=("END",), timeout_s=5.0))
 
     body = recorder.bodies[0]
     assert body["model"] == "claude-sonnet-5"
     assert body["max_tokens"] == 64
     assert body["system"] == [
-        {"type": "text", "text": "Réponds en un mot.", "cache_control": {"type": "ephemeral"}}
+        {"type": "text", "text": "Answer in one word.", "cache_control": {"type": "ephemeral"}}
     ]
-    assert body["messages"] == [{"role": "user", "content": "Bonjour ?"}]
-    assert body["stop_sequences"] == ["FIN"]
+    assert body["messages"] == [{"role": "user", "content": "Hello?"}]
+    assert body["stop_sequences"] == ["END"]
     assert "temperature" not in body
     assert "seed" not in body
     assert recorder.headers[0]["x-api-key"] == "test"
 
-    assert completion.text == "Bonjour"
-    assert completion.model == "claude-sonnet-5-served"  # celui servi, pas celui demandé
+    assert completion.text == "Hello"
+    assert completion.model == "claude-sonnet-5-served"  # the one served, not the one requested
     assert completion.backend == "anthropic"
     assert completion.usage.model_dump() == {
         "input_tokens": 10,
@@ -236,18 +236,18 @@ async def test_anthropic_schema_and_effort_go_to_output_config() -> None:
     prompt_mode = anthropic_provider(recorder, native_json_schema=False, cache_system_prompt=False)
     await prompt_mode.complete(make_request(json_schema=SCHEMA))
     assert "output_config" not in recorder.bodies[1]
-    assert recorder.bodies[1]["system"] == [{"type": "text", "text": "Réponds en un mot."}]
+    assert recorder.bodies[1]["system"] == [{"type": "text", "text": "Answer in one word."}]
 
 
 async def test_anthropic_stream_yields_text_then_usage_then_end() -> None:
-    recorder = Recorder(lambda body: sse_response(anthropic_sse(["Bon", "jour"], "max_tokens")))
+    recorder = Recorder(lambda body: sse_response(anthropic_sse(["Hel", "lo"], "max_tokens")))
     provider = anthropic_provider(recorder)
 
     chunks = [chunk async for chunk in provider.stream(make_request())]
 
     assert recorder.bodies[0]["stream"] is True
     assert [c.kind for c in chunks] == ["text", "text", "usage", "end"]
-    assert "".join(c.text for c in chunks) == "Bonjour"
+    assert "".join(c.text for c in chunks) == "Hello"
     assert chunks[2].usage is not None
     assert chunks[2].usage.output_tokens == 5
     assert chunks[2].usage.cache_read_tokens == 7
@@ -317,7 +317,7 @@ async def test_openai_normalizes_cached_tokens_and_uses_max_completion_tokens() 
     provider = openai_provider(recorder, max_tokens_param="max_completion_tokens")
 
     completion = await provider.complete(
-        make_request(model=ModelRef.parse("openai/gpt-5.6-luna"), seed=1, stop=("FIN",))
+        make_request(model=ModelRef.parse("openai/gpt-5.6-luna"), seed=1, stop=("END",))
     )
 
     body = recorder.bodies[0]
@@ -326,11 +326,11 @@ async def test_openai_normalizes_cached_tokens_and_uses_max_completion_tokens() 
     assert "max_tokens" not in body
     assert body["temperature"] == 0.0
     assert body["seed"] == 1
-    assert body["stop"] == ["FIN"]
-    assert body["messages"][0] == {"role": "system", "content": "Réponds en un mot."}
+    assert body["stop"] == ["END"]
+    assert body["messages"][0] == {"role": "system", "content": "Answer in one word."}
     assert recorder.headers[0]["authorization"] == "Bearer test"
 
-    assert completion.text == "Bonjour"
+    assert completion.text == "Hello"
     assert completion.model == "gpt-served"
     assert completion.usage.input_tokens == 60
     assert completion.usage.cache_read_tokens == 40
@@ -365,7 +365,7 @@ async def test_openai_native_schema_uses_strict_response_format() -> None:
 
 async def test_openai_refusal_and_missing_usage_are_visible() -> None:
     recorder = Recorder(
-        lambda body: httpx2.Response(200, json=openai_completion(content=None, refusal="non"))
+        lambda body: httpx2.Response(200, json=openai_completion(content=None, refusal="no"))
     )
     completion = await openai_provider(recorder).complete(make_request())
     assert completion.finish_reason is FinishReason.REFUSAL
@@ -375,7 +375,7 @@ async def test_openai_refusal_and_missing_usage_are_visible() -> None:
 
 
 async def test_openai_stream_requests_usage_and_yields_chunks() -> None:
-    recorder = Recorder(lambda body: sse_response(openai_sse(["Bon", "jour"])))
+    recorder = Recorder(lambda body: sse_response(openai_sse(["Hel", "lo"])))
     provider = openai_provider(recorder)
 
     chunks = [chunk async for chunk in provider.stream(make_request())]
@@ -384,7 +384,7 @@ async def test_openai_stream_requests_usage_and_yields_chunks() -> None:
     assert body["stream"] is True
     assert body["stream_options"] == {"include_usage": True}
     assert [c.kind for c in chunks] == ["text", "text", "usage", "end"]
-    assert "".join(c.text for c in chunks) == "Bonjour"
+    assert "".join(c.text for c in chunks) == "Hello"
     assert chunks[2].usage is not None
     assert chunks[2].usage.output_tokens == 5
     assert chunks[3].finish_reason is FinishReason.LENGTH
@@ -416,7 +416,7 @@ async def test_openai_http_errors_become_typed_errors(
     assert isinstance(info.value.__cause__, openai.APIStatusError)
 
 
-# ================================================================== fabrique
+# ================================================================== factory
 
 
 def test_build_provider_reads_credentials_at_construction(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -442,7 +442,7 @@ def test_build_provider_reads_credentials_at_construction(monkeypatch: pytest.Mo
     assert broker.max_tokens_param == "max_tokens"
     assert not broker.native_json_schema
 
-    local = build_provider("local", registry.get("local"))  # pas de clé requise
+    local = build_provider("local", registry.get("local"))  # no key required
     assert isinstance(local, OpenAICompatibleProvider)
     assert local.backend == "local"
 
@@ -471,15 +471,15 @@ async def test_openai_embeddings_keep_input_order_and_report_usage() -> None:
     result = await provider.embed(
         EmbeddingRequest(
             model=ModelRef.parse("openai/text-embedding-3-small"),
-            texts=("premier", "second"),
+            texts=("first", "second"),
             data_class=DataClass.PUBLIC,
             dimensions=2,
         )
     )
 
-    assert recorder.bodies[0]["input"] == ["premier", "second"]
+    assert recorder.bodies[0]["input"] == ["first", "second"]
     assert recorder.bodies[0]["dimensions"] == 2
-    assert result.vectors == ((1.0, 0.0), (0.0, 1.0))  # remis dans l'ordre d'entrée
+    assert result.vectors == ((1.0, 0.0), (0.0, 1.0))  # put back in input order
     assert result.dimensions == 2
     assert result.usage.input_tokens == 6
     assert result.model == "text-embedding-3-small"
@@ -489,7 +489,7 @@ def test_embedding_factory_refuses_backends_without_embeddings(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     registry = Registry.from_settings()
-    with pytest.raises(InvalidRequestError, match="ne fournit pas d'embeddings"):
+    with pytest.raises(InvalidRequestError, match="does not provide embeddings"):
         build_embedding_provider("anthropic", registry.get("anthropic"))
     monkeypatch.setenv("OPENAI_API_KEY", "sk-o")
     assert build_embedding_provider("openai", registry.get("openai")).backend == "openai"

@@ -1,14 +1,14 @@
-# Politique de gouvernance des données (ADR 006) — PROVISOIRE.
+# Data governance policy (ADR 006) — PROVISIONAL.
 #
-# Les contraintes réelles ne sont pas encore connues (2026-09-03). Cette politique est un
-# défaut raisonnable, à durcir ou assouplir sans toucher au code. Refus par défaut : une
-# métadonnée inconnue échoue à toute exigence.
+# The real constraints are not known yet (2026-09-03). This policy is a reasonable default,
+# to be tightened or relaxed without touching the code. Deny by default: an unknown
+# metadata value fails every requirement.
 #
-# Exigences possibles par classe :
+# Possible requirements per class:
 #   allowed_regions               = ["eu", "self", "us", "variable"]
-#   require_zero_retention        = true | false   (rétention zéro EFFECTIVE sur notre compte)
-#   forbid_training               = true | false   (le fournisseur n'entraîne pas sur les entrées)
-#   forbid_variable_subprocessors = true | false   (pas de courtier à hébergeurs variables)
+#   require_zero_retention        = true | false   (EFFECTIVE zero retention on our account)
+#   forbid_training               = true | false   (the provider does not train on inputs)
+#   forbid_variable_subprocessors = true | false   (no broker with variable hosts)
 
 [rules.public]
 

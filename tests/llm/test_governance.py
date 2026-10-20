@@ -46,13 +46,13 @@ def test_sensitive_data_refuses_us_providers_and_brokers_but_allows_eu_and_self(
 ) -> None:
     anthropic = _decide(policy, registry, data_class, "anthropic")
     assert not anthropic.allowed
-    assert any("région" in r for r in anthropic.reasons)
-    assert any("rétention zéro" in r for r in anthropic.reasons)
+    assert any("region" in r for r in anthropic.reasons)
+    assert any("zero retention" in r for r in anthropic.reasons)
 
     openrouter = _decide(policy, registry, data_class, "openrouter")
     assert not openrouter.allowed
-    assert any("courtier" in r for r in openrouter.reasons)
-    assert any("inconnu" in r for r in openrouter.reasons)
+    assert any("broker" in r for r in openrouter.reasons)
+    assert any("unknown" in r for r in openrouter.reasons)
 
     for compliant in ("bedrock", "local"):
         decision = _decide(policy, registry, data_class, compliant)
@@ -66,7 +66,7 @@ def test_internal_data_only_requires_no_training(
     assert _decide(policy, registry, DataClass.INTERNAL, "openai").allowed
     broker = _decide(policy, registry, DataClass.INTERNAL, "openrouter")
     assert not broker.allowed
-    assert broker.reasons == ("entraînement sur les entrées interdit, inconnu",)
+    assert broker.reasons == ("training on inputs forbidden, unknown",)
 
 
 def test_unknown_metadata_fails_closed() -> None:
@@ -85,13 +85,13 @@ def test_unknown_metadata_fails_closed() -> None:
     )
     decision = policy.evaluate(DataClass.REGULATED, "x", unknown)
     assert decision.reasons == (
-        "rétention zéro exigée, inconnue",
-        "entraînement sur les entrées interdit, inconnu",
+        "zero retention required, unknown",
+        "training on inputs forbidden, unknown",
     )
 
 
 def test_policy_must_cover_every_data_class() -> None:
-    with pytest.raises(ValueError, match="classes sans règle"):
+    with pytest.raises(ValueError, match="classes without a rule"):
         GovernancePolicy(rules={DataClass.PUBLIC: Requirement()})
 
 

@@ -1,6 +1,6 @@
 ---
 name: greeting
-version: 2
-description: Prompt de test pour le registre.
+version: 3
+description: Test prompt for the registry.
 ---
-Bonjour {{ name }}, tu as {{ count }} messages.
+Hello {{ name }}, you have {{ count }} messages.

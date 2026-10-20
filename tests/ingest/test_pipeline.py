@@ -1,4 +1,4 @@
-"""Pipeline + DocumentSource sur la vraie base (marqueur ``db``), embeddings simulés."""
+"""Pipeline + DocumentSource on the real database (``db`` marker), simulated embeddings."""
 
 import os
 import uuid
@@ -20,7 +20,7 @@ DATABASE_URL = os.environ.get("LLM_TESTBENCH_DATABASE_URL")
 
 pytestmark = [
     pytest.mark.db,
-    pytest.mark.skipif(DATABASE_URL is None, reason="LLM_TESTBENCH_DATABASE_URL non défini"),
+    pytest.mark.skipif(DATABASE_URL is None, reason="LLM_TESTBENCH_DATABASE_URL not set"),
 ]
 
 
@@ -55,48 +55,46 @@ async def test_ingest_then_search_then_cite(store: PgVectorStore, client: LLMCli
         dimensions=2,
         description="test",
     )
-    geo = (
-        "La capitale de la France est Paris. Paris est la capitale de la France. Capitale : Paris."
-    )
-    cook = "Une recette de crêpes. Il faut de la farine, des œufs et du lait. Mélanger, puis cuire."
+    geo = "The capital of France is Paris. Paris is the capital of France. Capital: Paris."
+    cook = "A recipe for pancakes. You need flour, eggs and milk. Mix, then cook."
     documents = [
-        parse_text("geo", geo, title="Géo"),
-        parse_text("cook", cook, title="Cuisine"),
+        parse_text("geo", geo, title="Geo"),
+        parse_text("cook", cook, title="Cooking"),
     ]
     try:
         report = await pipeline.ingest(spec, documents)
         assert report.documents_seen == 2
         assert report.documents_written == 2
         assert report.chunks_total == report.chunks_embedded
-        assert report.chunks_total >= 4  # deux chunks par document à chunk_size=60
-        assert report.embedding_calls >= 2  # lots de 2
+        assert report.chunks_total >= 4  # two chunks per document at chunk_size=60
+        assert report.embedding_calls >= 2  # batches of 2
         assert report.cost_usd is not None
         assert report.cost_usd > 0
         assert await store.embedding_count(spec) == report.chunks_total
 
         again = await pipeline.ingest(spec, documents)
         assert again.documents_written == 0
-        assert again.chunks_embedded == 0  # rien à repayer
+        assert again.chunks_embedded == 0  # nothing to pay for again
         assert again.embedding_calls == 0
 
         source = DocumentSource(client=client, store=store, spec=spec)
         assert Capability.SEARCH in source.capabilities
         evidence = await source.search(
-            SearchQuery(text="Quelle est la capitale ?", k=2, data_class=DataClass.PUBLIC)
+            SearchQuery(text="What is the capital?", k=2, data_class=DataClass.PUBLIC)
         )
         assert [e.rank for e in evidence] == [1, 2]
         assert evidence[0].provenance.document_id == "geo"
-        assert evidence[0].provenance.title == "Géo"
+        assert evidence[0].provenance.title == "Geo"
         assert evidence[0].provenance.extra == {"index_key": spec.index_key}
         assert evidence[0].score == pytest.approx(1.0, abs=1e-6)
         assert (
-            Citation.from_evidence(1, evidence[0]).render().startswith(f"[1] {source_key} › Géo › ")
+            Citation.from_evidence(1, evidence[0]).render().startswith(f"[1] {source_key} › Geo › ")
         )
 
         whole = await source.fetch("geo")
         assert whole is not None
         assert "Paris" in whole.text
-        assert whole.provenance.locator == "document entier"
+        assert whole.provenance.locator == "whole document"
         assert await source.fetch("nope") is None
 
         info = await source.describe()

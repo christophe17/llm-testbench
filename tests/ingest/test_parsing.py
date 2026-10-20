@@ -1,50 +1,50 @@
 from llm_testbench.ingest.parsing import parse_markdown, parse_sections, parse_text
 
-MARKDOWN = """Préambule avant tout titre.
+MARKDOWN = """Preamble before any heading.
 
-# Titre du document
+# Document title
 
-Intro sous le titre.
+Intro under the title.
 
-## Méthode
+## Method
 
-Première ligne.
-Deuxième ligne.
+First line.
+Second line.
 
-## Vide
+## Empty
 
-## Résultats
+## Results
 
-Des chiffres.
+Some numbers.
 """
 
 
 def test_parse_text_is_one_untitled_section() -> None:
-    document = parse_text("d1", "  Bonjour.  ", title=" T ")
+    document = parse_text("d1", "  Hello.  ", title=" T ")
     assert document.title == "T"
-    assert [(s.title, s.text, s.order) for s in document.sections] == [("", "Bonjour.", 0)]
-    assert document.text == "Bonjour."
-    assert document.char_count == 8
+    assert [(s.title, s.text, s.order) for s in document.sections] == [("", "Hello.", 0)]
+    assert document.text == "Hello."
+    assert document.char_count == 6
 
 
 def test_parse_markdown_splits_on_headings_and_drops_empty_sections() -> None:
     document = parse_markdown("d2", MARKDOWN)
-    assert document.title == "Titre du document"
+    assert document.title == "Document title"
     assert [(s.title, s.order) for s in document.sections] == [
         ("", 0),
-        ("Titre du document", 1),
-        ("Méthode", 2),
-        ("Résultats", 3),
+        ("Document title", 1),
+        ("Method", 2),
+        ("Results", 3),
     ]
-    assert document.sections[2].text == "Première ligne.\nDeuxième ligne."
-    assert parse_markdown("d3", MARKDOWN, title="Forcé").title == "Forcé"
+    assert document.sections[2].text == "First line.\nSecond line."
+    assert parse_markdown("d3", MARKDOWN, title="Forced").title == "Forced"
 
 
 def test_parse_sections_keeps_order_and_metadata() -> None:
     document = parse_sections(
         "d4",
-        [("Abstract", "Résumé."), ("Empty", "   "), ("Body", "Corps.")],
-        title="Papier",
+        [("Abstract", "Summary."), ("Empty", "   "), ("Body", "Body.")],
+        title="Paper",
         source_uri="hf:allenai/qasper",
         metadata={"split": "validation"},
     )

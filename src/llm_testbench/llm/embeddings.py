@@ -1,8 +1,8 @@
-"""Contrat des embeddings : même logique que les complétions, mêmes règles de gouvernance.
+"""Embeddings contract: same logic as completions, same governance rules.
 
-Un embedding envoie le texte dehors exactement comme une complétion : la classe de
-données est obligatoire et la politique s'applique. C'est le point que l'on oublie le plus
-souvent quand on « sécurise » un RAG en ne regardant que le générateur.
+An embedding sends the text out exactly like a completion: the data class
+is required and the policy applies. This is the point most often forgotten
+when "securing" a RAG by looking only at the generator.
 """
 
 from typing import Protocol, runtime_checkable
@@ -22,7 +22,7 @@ class EmbeddingRequest(BaseModel):
     texts: tuple[str, ...] = Field(min_length=1)
     data_class: DataClass
     dimensions: int | None = Field(default=None, ge=1)
-    """Troncature demandée au provider quand il la supporte (OpenAI v3) ; sinon ignorée."""
+    """Truncation requested from the provider when it supports it (OpenAI v3); ignored otherwise."""
 
 
 class EmbeddingResult(BaseModel):

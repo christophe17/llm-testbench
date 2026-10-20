@@ -1,13 +1,13 @@
-"""Budget de tokens : par requête et sur une fenêtre glissante (ADR 006).
+"""Token budget: per request and over a sliding window (ADR 006).
 
-Un budget refuse **avant** l'appel, sur une estimation ; il comptabilise **après**, sur
-l'usage réel. L'estimation d'entrée est grossière (quatre caractères par token, l'ordre de
-grandeur de l'anglais) : elle ne sert qu'à décider si l'appel a le droit de partir, jamais
-au coût. La réservation de sortie prend ``max_output_tokens`` en entier : on refuse un
-appel qui *pourrait* dépasser, pas seulement un appel qui dépassera à coup sûr.
+A budget refuses **before** the call, on an estimate; it accounts **after**, on actual
+usage. The input estimate is rough (four characters per token, the order of magnitude
+for English): it only serves to decide whether the call is allowed to go out, never
+for cost. The output reservation takes ``max_output_tokens`` in full: we refuse a
+call that *could* exceed, not only a call that will exceed for sure.
 
-Phase 1 : compteur en mémoire, donc par processus. La phase 5 le rendra partagé
-(Postgres) pour qu'un budget vaille pour toutes les réplicas de l'API.
+Phase 1: in-memory counter, hence per process. Phase 5 will make it shared
+(Postgres) so that a budget holds across all API replicas.
 """
 
 import time
@@ -21,7 +21,7 @@ _CHARS_PER_TOKEN = 4
 
 
 def estimate_tokens(text: str) -> int:
-    """Estimation grossière, volontairement pessimiste (arrondi vers le haut)."""
+    """Rough estimate, deliberately pessimistic (rounded up)."""
     return -(-len(text) // _CHARS_PER_TOKEN) if text else 0
 
 
@@ -57,7 +57,7 @@ class TokenBudget:
             and estimated_input_tokens > self.max_input_tokens_per_request
         ):
             raise BudgetExceededError(
-                f"entrée estimée à {estimated_input_tokens} tokens, plafond par requête "
+                f"input estimated at {estimated_input_tokens} tokens, per-request cap "
                 f"{self.max_input_tokens_per_request}"
             )
         if (
@@ -65,7 +65,7 @@ class TokenBudget:
             and max_output_tokens > self.max_output_tokens_per_request
         ):
             raise BudgetExceededError(
-                f"max_output_tokens={max_output_tokens}, plafond par requête "
+                f"max_output_tokens={max_output_tokens}, per-request cap "
                 f"{self.max_output_tokens_per_request}"
             )
         if self.max_tokens_per_window is not None:
@@ -73,8 +73,8 @@ class TokenBudget:
             reserved = estimated_input_tokens + max_output_tokens
             if spent + reserved > self.max_tokens_per_window:
                 raise BudgetExceededError(
-                    f"{spent} tokens déjà consommés sur la fenêtre de {self.window_s:.0f} s, "
-                    f"{reserved} réservés pour cet appel, plafond {self.max_tokens_per_window}"
+                    f"{spent} tokens already spent in the {self.window_s:.0f} s window, "
+                    f"{reserved} reserved for this call, cap {self.max_tokens_per_window}"
                 )
 
     def record(self, usage: Usage) -> None:

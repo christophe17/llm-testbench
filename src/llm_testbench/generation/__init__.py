@@ -1,1 +1,1 @@
-"""Génération : assembler le contexte, demander une réponse citée, vérifier les citations."""
+"""Generation: assemble the context, ask for a cited answer, check the citations."""

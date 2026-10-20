@@ -1,10 +1,10 @@
 ---
 name: structured_output_repair
-version: 1
-description: Message de réparation envoyé après une sortie structurée invalide, avec l'erreur de validation.
+version: 2
+description: Repair message sent after an invalid structured output, with the validation error.
 ---
-Ta réponse précédente n'est pas conforme au schéma attendu. Erreur de validation :
+Your previous answer does not conform to the expected schema. Validation error:
 
 {{ error }}
 
-Renvoie uniquement l'objet JSON corrigé, complet, sans texte autour ni bloc de code.
+Return only the corrected JSON object, complete, with no surrounding text or code block.

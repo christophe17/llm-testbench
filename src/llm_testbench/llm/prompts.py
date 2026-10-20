@@ -1,12 +1,12 @@
-"""Prompts versionnés en fichiers (brief §4, ADR 006).
+"""Prompts versioned as files (brief §4, ADR 006).
 
-Un prompt est un fichier ``prompts/<nom>.md`` : un en-tête entre ``---`` (nom, version,
-description) puis un corps Jinja2. Deux règles non négociables :
+A prompt is a ``prompts/<name>.md`` file: a header between ``---`` (name, version,
+description) then a Jinja2 body. Two non-negotiable rules:
 
-- **variables strictes** : une variable manquante est une erreur, pas une chaîne vide —
-  un prompt silencieusement tronqué produit des chiffres faux sans le dire ;
-- **empreinte** : chaque rendu porte le SHA-256 du texte exact envoyé au modèle, inscrit
-  dans la trace. Six mois plus tard, on sait quel texte a produit quel chiffre.
+- **strict variables**: a missing variable is an error, not an empty string —
+  a silently truncated prompt produces wrong numbers without saying so;
+- **fingerprint**: each render carries the SHA-256 of the exact text sent to the model,
+  recorded in the trace. Six months later, we know which text produced which number.
 """
 
 import hashlib
@@ -34,7 +34,7 @@ class PromptTemplate(BaseModel):
     description: str
     body: str
     source_sha256: str
-    """Empreinte du fichier entier : change dès qu'un caractère du prompt change."""
+    """Fingerprint of the whole file: changes as soon as one character of the prompt changes."""
     path: Path
 
 
@@ -45,11 +45,11 @@ class RenderedPrompt(BaseModel):
     version: int
     text: str
     sha256: str
-    """Empreinte du texte rendu, variables incluses : ce qui est réellement parti."""
+    """Fingerprint of the rendered text, variables included: what actually went out."""
     template_sha256: str
 
     def trace_metadata(self) -> dict[str, str]:
-        """Ce que la façade copie dans ``CompletionRequest.metadata``."""
+        """What the facade copies into ``CompletionRequest.metadata``."""
         return {
             "prompt.name": self.name,
             "prompt.version": str(self.version),
@@ -65,22 +65,22 @@ def _parse_header(header: str, path: Path) -> dict[str, str]:
             continue
         key, sep, value = line.partition(":")
         if not sep:
-            raise PromptError(f"{path} : ligne d'en-tête invalide {line!r} (attendu clé: valeur)")
+            raise PromptError(f"{path}: invalid header line {line!r} (expected key: value)")
         fields[key.strip()] = value.strip()
     return fields
 
 
 def parse_prompt_file(path: Path) -> PromptTemplate:
     if not path.is_file():
-        raise PromptError(f"prompt introuvable : {path}")
+        raise PromptError(f"prompt not found: {path}")
     source = path.read_text(encoding="utf-8")
     match = _FRONTMATTER.match(source)
     if match is None:
-        raise PromptError(f"{path} : en-tête ``---`` absent ou mal fermé")
+        raise PromptError(f"{path}: ``---`` header missing or not closed")
     fields = _parse_header(match.group("header"), path)
     if fields.get("name") != path.stem:
         raise PromptError(
-            f"{path} : le champ name ({fields.get('name')!r}) doit valoir le nom du fichier "
+            f"{path}: the name field ({fields.get('name')!r}) must equal the file name "
             f"({path.stem!r})"
         )
     try:
@@ -93,7 +93,7 @@ def parse_prompt_file(path: Path) -> PromptTemplate:
             path=path,
         )
     except (ValueError, ValidationError) as error:
-        raise PromptError(f"{path} : en-tête invalide ({error})") from None
+        raise PromptError(f"{path}: invalid header ({error})") from None
 
 
 class PromptRegistry:
@@ -126,13 +126,13 @@ class PromptRegistry:
         return self._cache[name]
 
     def render(self, prompt: str, /, **variables: object) -> RenderedPrompt:
-        """Le nom du prompt est positionnel-seul : un prompt peut avoir une variable
-        ``name`` sans collision avec ce paramètre."""
+        """The prompt name is positional-only: a prompt can have a ``name`` variable
+        without colliding with this parameter."""
         template = self.get(prompt)
         try:
             text = self._env.from_string(template.body).render(**variables)
         except TemplateError as error:
-            raise PromptError(f"prompt {prompt!r} v{template.version} : {error}") from None
+            raise PromptError(f"prompt {prompt!r} v{template.version}: {error}") from None
         return RenderedPrompt(
             name=template.name,
             version=template.version,

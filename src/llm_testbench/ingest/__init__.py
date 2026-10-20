@@ -1,6 +1,6 @@
-"""Ingestion (ADR 007) : parsing → chunking → embeddings → index pgvector.
+"""Ingestion (ADR 007): parsing → chunking → embeddings → pgvector index.
 
-Chaque étape produit des objets figés, identifiables et traçables : un chunk porte son
-document, sa section, sa position et son empreinte ; un index porte le chunker, ses
-paramètres et le modèle d'embeddings qui l'ont produit.
+Each step produces frozen, identifiable and traceable objects: a chunk carries its
+document, its section, its position and its fingerprint; an index carries the chunker,
+its parameters and the embedding model that produced it.
 """

@@ -1,10 +1,10 @@
-"""L'application FastAPI et son câblage.
+"""The FastAPI application and its wiring.
 
-``create_app`` accepte des composants injectés (client LLM, source) pour les tests et le
-notebook ; en production, le cycle de vie ouvre le pool Postgres, vérifie le schéma,
-retrouve l'index configuré dans le registre et construit la source documentaire. Si
-l'index n'existe pas, l'API démarre mais ``/readyz`` répond 503 avec la raison : un pod
-qui ne peut pas répondre ne doit pas recevoir de trafic, et doit dire pourquoi.
+``create_app`` accepts injected components (LLM client, source) for the tests and the
+notebook; in production, the lifespan opens the Postgres pool, checks the schema, finds
+the configured index in the registry and builds the document source. If the index does
+not exist, the API starts but ``/readyz`` answers 503 with the reason: a pod that cannot
+answer must not receive traffic, and must say why.
 """
 
 from collections.abc import AsyncIterator
@@ -95,7 +95,7 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-        state: dict[str, Any] = {"ready": False, "reason": "démarrage", "store": None}
+        state: dict[str, Any] = {"ready": False, "reason": "starting", "store": None}
         app.state.bench = state
         _configure_tracing_from(settings)
         client = (
@@ -111,15 +111,15 @@ def create_app(
         chosen_source = source
         if chosen_source is None:
             if settings.database_url is None:
-                state["reason"] = "LLM_TESTBENCH_DATABASE_URL absent"
+                state["reason"] = "LLM_TESTBENCH_DATABASE_URL missing"
             else:
                 store = PgVectorStore.from_url(settings.database_url)
-                await store.open()  # applique le schéma puis ouvre le pool
+                await store.open()  # applies the schema then opens the pool
                 state["store"] = store
                 spec = await store.get_index(settings.index_key)
                 if spec is None:
                     state["reason"] = (
-                        f"index {settings.index_key!r} absent du registre : lancer l'ingestion"
+                        f"index {settings.index_key!r} missing from the registry: run the ingestion"
                     )
                 else:
                     chosen_source = DocumentSource(client=client, store=store, spec=spec)
@@ -141,7 +141,7 @@ def create_app(
     app = FastAPI(
         title="llm-testbench",
         version="0.1.0",
-        summary="Banc d'essai LLM chiffré — API de démonstration (phase 1)",
+        summary="Measured LLM testbench — demonstration API (phase 1)",
         lifespan=lifespan,
     )
 
@@ -173,7 +173,7 @@ def create_app(
 
     @app.get("/sources", response_model=list[SourceOut])
     async def sources(request: Request) -> list[SourceOut]:
-        _service(request)  # 503 si l'API n'est pas prête
+        _service(request)  # 503 if the API is not ready
         source_obj: Source = request.app.state.bench["source"]
         info = await source_obj.describe()
         return [
@@ -204,7 +204,7 @@ def create_app(
 
 
 class ServiceUnavailable(RuntimeError):
-    """L'API tourne mais ne peut pas répondre (base absente, index non construit)."""
+    """The API is running but cannot answer (database missing, index not built)."""
 
 
 app = create_app()

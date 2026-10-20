@@ -1,17 +1,17 @@
-"""Ce qui encaisse les pannes : retry avec backoff, circuit breaker, délai (ADR 006).
+"""What absorbs failures: retry with backoff, circuit breaker, timeout (ADR 006).
 
-Trois mécanismes, trois questions différentes :
+Three mechanisms, three different questions:
 
-- **retry** : « cette tentative a échoué, est-ce que la suivante peut réussir ? » — oui pour
-  un 429, un 5xx, une coupure ; non pour un 400 ;
-- **circuit breaker** : « ce backend est-il en train de tomber ? » — après N échecs
-  consécutifs, on arrête de l'appeler pendant un temps, pour ne pas aggraver sa panne ni
-  faire attendre nos propres appelants ;
-- **délai** : « combien de temps accepte-t-on d'attendre une réponse ? » — un provider
-  muet est traité comme une panne, pas comme une attente.
+- **retry**: "this attempt failed, can the next one succeed?" — yes for
+  a 429, a 5xx, an outage; no for a 400;
+- **circuit breaker**: "is this backend going down?" — after N consecutive
+  failures, we stop calling it for a while, so as not to worsen its outage nor
+  keep our own callers waiting;
+- **timeout**: "how long do we accept to wait for an answer?" — a silent
+  provider is treated as a failure, not as a wait.
 
-Le temps et le hasard sont injectés (``clock``, ``sleep``, ``rng``) : les tests jouent
-des heures en millisecondes et des délais reproductibles.
+Time and randomness are injected (``clock``, ``sleep``, ``rng``): the tests play
+hours in milliseconds, with reproducible delays.
 """
 
 import asyncio
@@ -39,13 +39,13 @@ class RetryPolicy:
     max_delay_s: float = 8.0
     multiplier: float = 2.0
     jitter: float = 0.25
-    """Gigue relative (±25 %) : sans elle, tous les clients réessaient à la même seconde."""
+    """Relative jitter (±25%): without it, all clients retry in the same second."""
 
     def delay_for(self, attempt: int, retry_after_s: float | None, rng: random.Random) -> float:
-        """Délai avant la tentative ``attempt + 1`` (``attempt`` compte à partir de 1).
+        """Delay before attempt ``attempt + 1`` (``attempt`` counts from 1).
 
-        Un ``Retry-After`` du provider est respecté, plafonné à ``max_delay_s`` : au-delà,
-        on préfère réessayer tôt et échouer vite plutôt que bloquer un appelant.
+        A ``Retry-After`` from the provider is honored, capped at ``max_delay_s``: beyond that,
+        we prefer to retry early and fail fast rather than block a caller.
         """
         if retry_after_s is not None:
             return min(max(retry_after_s, 0.0), self.max_delay_s)
@@ -61,15 +61,15 @@ class CircuitState(StrEnum):
 
 
 class CircuitBreaker:
-    """Breaker à trois états, par backend.
+    """Three-state breaker, per backend.
 
-    ``CLOSED`` : tout passe, on compte les échecs consécutifs. ``OPEN`` : on refuse sans
-    appeler, jusqu'à ``recovery_timeout_s``. ``HALF_OPEN`` : on laisse passer un appel
-    d'essai ; s'il réussit on referme, s'il échoue on rouvre.
+    ``CLOSED``: everything goes through, we count consecutive failures. ``OPEN``: we refuse
+    without calling, until ``recovery_timeout_s``. ``HALF_OPEN``: we let one trial call
+    through; if it succeeds we close again, if it fails we reopen.
 
-    Seules les erreurs qui parlent de la santé du backend comptent (indisponible, délai) :
-    un 400 est notre faute, un 429 est une limite de débit, ni l'un ni l'autre ne dit que
-    le backend tombe.
+    Only the errors that speak to the backend's health count (unavailable, timeout):
+    a 400 is our fault, a 429 is a rate limit, neither one says that
+    the backend is going down.
     """
 
     def __init__(
@@ -139,7 +139,7 @@ class CircuitBreaker:
 
 
 async def with_timeout[T](awaitable: Awaitable[T], timeout_s: float | None, *, backend: str) -> T:
-    """Un provider muet au-delà de ``timeout_s`` est une panne (réessayable)."""
+    """A provider silent beyond ``timeout_s`` is a failure (retryable)."""
     if timeout_s is None:
         return await awaitable
     try:
@@ -147,13 +147,13 @@ async def with_timeout[T](awaitable: Awaitable[T], timeout_s: float | None, *, b
             return await awaitable
     except TimeoutError:
         raise ProviderTimeoutError(
-            f"aucune réponse de {backend!r} en {timeout_s:.1f} s", backend=backend
+            f"no response from {backend!r} in {timeout_s:.1f} s", backend=backend
         ) from None
 
 
 @dataclass(frozen=True)
 class Attempt:
-    """Ce qui s'est passé à une tentative : matière première de la trace et du notebook."""
+    """What happened at one attempt: raw material for the trace and the notebook."""
 
     number: int
     error: LLMError | None
@@ -178,9 +178,9 @@ async def retry_call[T](
     rng: random.Random | None = None,
     report: RetryReport | None = None,
 ) -> T:
-    """Appelle ``fn(numéro de tentative)`` jusqu'à succès, erreur non réessayable, ou
-    épuisement de ``policy.max_attempts``. Le breaker, s'il est fourni, est consulté avant
-    chaque tentative et informé après."""
+    """Calls ``fn(attempt number)`` until success, a non-retryable error, or
+    exhaustion of ``policy.max_attempts``. The breaker, if provided, is consulted before
+    each attempt and informed after."""
     rng = rng if rng is not None else random.Random()
     report = report if report is not None else RetryReport()
     for attempt in range(1, policy.max_attempts + 1):

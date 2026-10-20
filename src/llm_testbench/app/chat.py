@@ -1,8 +1,8 @@
-"""Le service de chat : retrieval → requête citée → génération → parsing des citations.
+"""The chat service: retrieval → cited request → generation → citation parsing.
 
-Indépendant du transport : la route JSON et la route SSE appellent le même service, et
-le même parseur de réponse (ADR 007). Le flux renvoie les preuves **avant** le premier
-token, pour que le client puisse afficher les sources pendant que la réponse s'écrit.
+Transport-independent: the JSON route and the SSE route call the same service, and the
+same answer parser (ADR 007). The stream sends the evidence **before** the first token,
+so that the client can display the sources while the answer is being written.
 """
 
 from collections.abc import AsyncIterator

@@ -18,8 +18,8 @@ def request() -> CompletionRequest:
     return CompletionRequest(
         model=ModelRef.parse("anthropic/claude-sonnet-5"),
         messages=(
-            Message(role=Role.SYSTEM, content="Sois précis."),
-            Message(role=Role.USER, content="Capitale de la France ?"),
+            Message(role=Role.SYSTEM, content="Be precise."),
+            Message(role=Role.USER, content="Capital of France?"),
         ),
         data_class=DataClass.PUBLIC,
     )
@@ -30,9 +30,9 @@ def request() -> CompletionRequest:
     [
         ('{"a": 1}', '{"a": 1}'),
         ('```json\n{"a": 1}\n```', '{"a": 1}'),
-        ('Voici la réponse : {"a": 1}. Voilà.', '{"a": 1}'),
+        ('Here is the answer: {"a": 1}. There you go.', '{"a": 1}'),
         ("[1, 2]", "[1, 2]"),
-        ("pas de json", "pas de json"),
+        ("no json", "no json"),
     ],
 )
 def test_extract_json(text: str, expected: str) -> None:
@@ -45,7 +45,7 @@ def test_native_backend_gets_the_schema_and_an_untouched_system(
     client, _ = make_client()
     prepared = StructuredOutputs(client, PromptRegistry.from_settings()).prepare(request(), Answer)
     assert prepared.json_schema == Answer.model_json_schema()
-    assert prepared.system == "Sois précis."
+    assert prepared.system == "Be precise."
 
 
 def test_prompt_backend_gets_the_instruction_in_the_system_prompt(
@@ -55,8 +55,8 @@ def test_prompt_backend_gets_the_instruction_in_the_system_prompt(
     prepared = StructuredOutputs(client, PromptRegistry.from_settings()).prepare(request(), Answer)
     assert prepared.json_schema == Answer.model_json_schema()
     assert prepared.system is not None
-    assert prepared.system.startswith("Sois précis.")
-    assert "Schéma JSON attendu" in prepared.system
+    assert prepared.system.startswith("Be precise.")
+    assert "Expected JSON schema" in prepared.system
     assert '"confidence"' in prepared.system
     assert [m.role for m in prepared.turns] == [Role.USER]
 
@@ -83,15 +83,15 @@ async def test_invalid_output_is_repaired_with_the_validation_error(
     assert second_call.messages[-2].role is Role.ASSISTANT
     assert second_call.messages[-2].content == '{"city": "Paris", "confidence": 2}'
     assert second_call.messages[-1].role is Role.USER
-    assert "Erreur de validation" in second_call.messages[-1].content
+    assert "Validation error" in second_call.messages[-1].content
     assert "confidence" in second_call.messages[-1].content
 
 
 async def test_repairs_are_bounded_and_the_raw_text_is_kept(make_client: ClientFactory) -> None:
-    provider = FakeProvider(script=[make_completion("pas du json"), make_completion("{}")])
+    provider = FakeProvider(script=[make_completion("not json"), make_completion("{}")])
     client, fake = make_client(provider)
     structured = StructuredOutputs(client, PromptRegistry.from_settings(), max_repairs=1)
-    with pytest.raises(StructuredOutputError, match="2 tentative") as info:
+    with pytest.raises(StructuredOutputError, match="2 attempt") as info:
         await structured.complete(request(), Answer)
     assert info.value.attempts == 2
     assert info.value.raw_text == "{}"

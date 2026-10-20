@@ -1,5 +1,5 @@
-"""Schémas d'entrée/sortie de l'API. Séparés du domaine : ce que le client voit peut
-évoluer sans toucher aux types internes."""
+"""API input/output schemas. Separate from the domain: what the client sees can evolve
+without touching the internal types."""
 
 from typing import Literal
 
@@ -16,9 +16,9 @@ class ChatRequest(BaseModel):
     question: str = Field(min_length=1, max_length=4_000)
     k: int = Field(default=5, ge=1, le=20)
     data_class: DataClass = DataClass.PUBLIC
-    """Le banc ne manipule que des données publiques ; le champ existe pour que la
-    politique de gouvernance soit exercée de bout en bout."""
-    model: str | None = Field(default=None, description="backend/modèle, sinon le défaut")
+    """The testbench handles only public data; the field exists so that the governance
+    policy is exercised end to end."""
+    model: str | None = Field(default=None, description="backend/model, otherwise the default")
 
 
 class EvidenceOut(BaseModel):
@@ -54,7 +54,7 @@ class ChatResponse(BaseModel):
     refused: bool
     citations: list[CitationOut]
     unknown_citations: list[int]
-    """Numéros cités sans preuve correspondante : la réponse est suspecte."""
+    """Cited numbers without matching evidence: the answer is suspect."""
     evidence: list[EvidenceOut]
     model: str
     backend: str
@@ -67,7 +67,7 @@ class ChatResponse(BaseModel):
 
 
 class ChatEvent(BaseModel):
-    """Un événement du flux SSE : les preuves d'abord, puis les tokens, puis le bilan."""
+    """An event of the SSE stream: the evidence first, then the tokens, then the summary."""
 
     kind: Literal["retrieval", "token", "done", "error"]
     evidence: list[EvidenceOut] | None = None

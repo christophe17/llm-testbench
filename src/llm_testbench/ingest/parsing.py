@@ -1,9 +1,9 @@
-"""Parsing : du document brut à un document en sections.
+"""Parsing: from the raw document to a document in sections.
 
-Phase 1, volontairement minimal : texte brut, markdown (sections par titres), et
-documents déjà sectionnés (texte intégral QASPER, titre + résumé BEIR). Le PDF et ses
-pièges (colonnes, tableaux, notes de bas de page) arrivent en phase 3, où ils seront
-**mesurés** — le parsing fait la moitié de la qualité d'un RAG, il mérite un chiffre.
+Phase 1, deliberately minimal: plain text, markdown (sections by headings), and
+already-sectioned documents (QASPER full text, BEIR title + abstract). PDF and its
+pitfalls (columns, tables, footnotes) arrive in phase 3, where they will be
+**measured** — parsing makes half the quality of a RAG, it deserves a number.
 """
 
 import hashlib
@@ -38,8 +38,8 @@ class ParsedDocument(BaseModel):
 
     @property
     def text(self) -> str:
-        """Le texte complet, sections séparées par une ligne vide (pour affichage et
-        empreinte ; le chunking travaille section par section)."""
+        """The full text, sections separated by a blank line (for display and
+        fingerprint; chunking works section by section)."""
         return "\n\n".join(s.text for s in self.sections)
 
     @property
@@ -60,8 +60,8 @@ def parse_sections(
     source_uri: str | None = None,
     metadata: dict[str, str] | None = None,
 ) -> ParsedDocument:
-    """Document déjà structuré : une suite de (titre de section, texte). Les sections
-    vides sont écartées, l'ordre est conservé."""
+    """Already-structured document: a sequence of (section title, text). Empty
+    sections are dropped, the order is kept."""
     kept = [
         Section(title=name.strip(), text=text.strip(), order=order)
         for order, (name, text) in enumerate(
@@ -85,7 +85,7 @@ def parse_text(
     source_uri: str | None = None,
     metadata: dict[str, str] | None = None,
 ) -> ParsedDocument:
-    """Texte brut : une seule section, sans titre."""
+    """Plain text: a single section, without a title."""
     return parse_sections(
         doc_id, [("", text)], title=title, source_uri=source_uri, metadata=metadata
     )
@@ -99,10 +99,10 @@ def parse_markdown(
     source_uri: str | None = None,
     metadata: dict[str, str] | None = None,
 ) -> ParsedDocument:
-    """Markdown : une section par titre ATX (``#`` à ``######``), le préambule avant le
-    premier titre forme une section sans titre. Le titre du document est le premier
-    ``#`` de niveau 1 si aucun n'est fourni. Les blocs de code ne sont pas traités
-    spécialement : c'est un parseur de phase 1, pas un parseur de documentation."""
+    """Markdown: one section per ATX heading (``#`` to ``######``), the preamble before
+    the first heading forms a section without a title. The document title is the first
+    level-1 ``#`` if none is given. Code blocks are not handled specially: this is a
+    phase 1 parser, not a documentation parser."""
     sections: list[tuple[str, str]] = []
     current_title = ""
     buffer: list[str] = []

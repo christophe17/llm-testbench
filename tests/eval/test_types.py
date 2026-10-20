@@ -16,8 +16,8 @@ def make_dataset(**overrides: object) -> RetrievalDataset:
     fields: dict[str, object] = {
         "info": INFO,
         "split": "test",
-        "documents": (Document(doc_id="d1", text="un"), Document(doc_id="d2", text="deux")),
-        "queries": (Query(query_id="q1", text="quoi ?"),),
+        "documents": (Document(doc_id="d1", text="one"), Document(doc_id="d2", text="two")),
+        "queries": (Query(query_id="q1", text="what?"),),
         "qrels": {"q1": {"d1": 2, "d2": 0}},
     }
     fields.update(overrides)
@@ -37,37 +37,37 @@ def test_valid_dataset_builds() -> None:
 
 
 def test_qrels_referencing_unknown_document_rejected() -> None:
-    with pytest.raises(ValidationError, match="documents absents"):
+    with pytest.raises(ValidationError, match="missing documents"):
         make_dataset(qrels={"q1": {"d1": 1, "ghost": 1}})
 
 
 def test_qrels_referencing_unknown_query_rejected() -> None:
-    with pytest.raises(ValidationError, match="requêtes absentes"):
+    with pytest.raises(ValidationError, match="missing queries"):
         make_dataset(qrels={"q1": {"d1": 1}, "ghost": {"d2": 1}})
 
 
 def test_query_without_any_judgment_rejected() -> None:
-    with pytest.raises(ValidationError, match="sans aucun jugement"):
+    with pytest.raises(ValidationError, match="without any judgment"):
         make_dataset(queries=(Query(query_id="q1", text="a"), Query(query_id="q2", text="b")))
 
 
 def test_duplicate_doc_id_rejected() -> None:
-    with pytest.raises(ValidationError, match="doc_id en double"):
+    with pytest.raises(ValidationError, match="duplicate doc_id"):
         make_dataset(
-            documents=(Document(doc_id="d1", text="un"), Document(doc_id="d1", text="bis"))
+            documents=(Document(doc_id="d1", text="one"), Document(doc_id="d1", text="again"))
         )
 
 
 def test_relevant_doc_ids_honours_min_relevance() -> None:
     ds = make_dataset()
-    assert ds.relevant_doc_ids("q1") == {"d1"}  # d2 est jugé non pertinent (score 0)
+    assert ds.relevant_doc_ids("q1") == {"d1"}  # d2 is judged not relevant (score 0)
     assert ds.relevant_doc_ids("q1", min_relevance=2) == {"d1"}
     assert ds.relevant_doc_ids("q1", min_relevance=3) == set()
-    assert ds.relevant_doc_ids("inconnue") == set()
+    assert ds.relevant_doc_ids("unknown") == set()
 
 
 def test_document_by_id() -> None:
     ds = make_dataset()
-    assert ds.document_by_id("d2").text == "deux"
+    assert ds.document_by_id("d2").text == "two"
     with pytest.raises(KeyError, match="ghost"):
         ds.document_by_id("ghost")

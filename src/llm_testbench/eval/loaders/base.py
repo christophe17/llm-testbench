@@ -1,12 +1,12 @@
-"""Interface commune des loaders de jeux de retrieval.
+"""Common interface of the retrieval dataset loaders.
 
-Chaque jeu public arrive dans un format différent (Parquet Hugging Face, zips,
-JSON sur GitHub...) ; le rôle d'un loader est d'absorber cette variété et de
-livrer toujours le même objet validé, :class:`~llm_testbench.eval.types.RetrievalDataset`.
-Les loaders des autres familles de jeux (QA multi-hop, text-to-SQL, tableaux,
-images) arriveront au fil des phases qui en ont besoin — avec leurs propres types
-de sortie, mais le même contrat : provenance déclarée, intégrité validée, mode
-échantillon explicite.
+Each public dataset arrives in a different format (Hugging Face Parquet, zips, JSON
+on GitHub...); the role of a loader is to absorb this variety and always deliver
+the same validated object, :class:`~llm_testbench.eval.types.RetrievalDataset`.
+The loaders of the other dataset families (multi-hop QA, text-to-SQL, tables,
+images) will arrive with the phases that need them — with their own output types,
+but the same contract: declared provenance, validated integrity, explicit sample
+mode.
 """
 
 from abc import ABC, abstractmethod
@@ -21,8 +21,8 @@ class RetrievalLoader(ABC):
 
     @abstractmethod
     def load(self, split: str = "test", max_queries: int | None = None) -> RetrievalDataset:
-        """Charge un split complet, ou tronqué à ``max_queries`` requêtes.
+        """Load a full split, or one truncated to ``max_queries`` queries.
 
-        Un jeu tronqué est marqué ``sampled=True`` : il sert à vérifier la
-        mécanique (CI, itération locale), jamais à produire un chiffre.
+        A truncated dataset is marked ``sampled=True``: it serves to check the
+        mechanics (CI, local iteration), never to produce a number.
         """

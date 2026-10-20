@@ -1,12 +1,12 @@
-"""Stockage Postgres + pgvector (ADR 007).
+"""Postgres + pgvector storage (ADR 007).
 
-Un index = une table ``emb_<clé>`` à dimension fixée, avec un index HNSW en distance
-cosinus, et une ligne dans le registre ``indexes`` qui dit comment il a été produit. Les
-documents et les chunks sont partagés par tous les index d'une même source : réindexer
-avec un autre modèle d'embeddings ne re-parse rien.
+An index = an ``emb_<key>`` table with a fixed dimension, with an HNSW index on cosine
+distance, and a row in the ``indexes`` registry that says how it was produced. Documents
+and chunks are shared by all the indexes of a same source: reindexing with another
+embedding model re-parses nothing.
 
-Tout passe par un pool de connexions asynchrone ; les identifiants SQL dynamiques (noms
-de tables d'index) sont composés avec ``psycopg.sql``, jamais par concaténation.
+Everything goes through an async connection pool; dynamic SQL identifiers (index table
+names) are composed with ``psycopg.sql``, never by concatenation.
 """
 
 import datetime as dt
@@ -33,7 +33,7 @@ SCHEMA_FILE = "001_schema.sql"
 
 
 class IndexSpec(BaseModel):
-    """Ce qu'il faut savoir d'un index pour le régénérer ou l'interroger."""
+    """What one needs to know about an index to regenerate or query it."""
 
     model_config = ConfigDict(frozen=True)
 
@@ -67,7 +67,7 @@ class SearchHit(BaseModel):
 
     chunk: Chunk
     score: float
-    """1 - distance cosinus : 1 = identique, 0 = orthogonal."""
+    """1 - cosine distance: 1 = identical, 0 = orthogonal."""
     document_title: str
     document_uri: str | None
     document_metadata: dict[str, str]
@@ -75,7 +75,7 @@ class SearchHit(BaseModel):
 
 
 class IndexMismatchError(ValueError):
-    """Un index existe déjà sous cette clé avec une autre définition."""
+    """An index already exists under this key with another definition."""
 
 
 def _chunk_from_row(row: dict[str, Any]) -> Chunk:
@@ -112,9 +112,9 @@ class PgVectorStore:
         return cls(pool, url=url)
 
     async def open(self) -> None:
-        """Applique le schéma AVANT d'ouvrir le pool : chaque connexion du pool enregistre
-        le type ``vector`` à sa création, ce qui échoue tant que l'extension n'existe pas.
-        Sur une base neuve (CI), l'ordre inverse ne peut pas fonctionner."""
+        """Apply the schema BEFORE opening the pool: each pool connection registers the
+        ``vector`` type on creation, which fails as long as the extension does not exist.
+        On a fresh database (CI), the reverse order cannot work."""
         await self.ensure_schema()
         await self._pool.open()
 
@@ -133,11 +133,11 @@ class PgVectorStore:
     ) -> None:
         await self.close()
 
-    # ------------------------------------------------------------------ schéma
+    # ------------------------------------------------------------------ schema
 
     async def ensure_schema(self) -> None:
-        """Idempotent. Passe par une connexion brute (sans adaptateur ``vector``) quand l'URL
-        est connue, pour pouvoir créer l'extension elle-même ; sinon par le pool."""
+        """Idempotent. Goes through a raw connection (without the ``vector`` adapter) when the
+        URL is known, to be able to create the extension itself; otherwise through the pool."""
         schema = resources.files("llm_testbench.ingest.sql").joinpath(SCHEMA_FILE).read_text()
         if self._url is not None:
             async with await AsyncConnection.connect(self._url, autocommit=True) as conn:
@@ -147,12 +147,12 @@ class PgVectorStore:
             await conn.execute(schema)
 
     async def register_index(self, spec: IndexSpec) -> None:
-        """Crée la table de vecteurs et l'index HNSW de l'index, et l'inscrit au registre.
-        Idempotent si la définition est identique ; refuse une définition différente."""
+        """Create the vector table and the HNSW index of the index, and record it in the
+        registry. Idempotent if the definition is identical; refuses a different one."""
         existing = await self.get_index(spec.index_key)
         if existing is not None and existing != spec:
             raise IndexMismatchError(
-                f"l'index {spec.index_key!r} existe avec une autre définition : {existing!r}"
+                f"index {spec.index_key!r} exists with another definition: {existing!r}"
             )
         table = sql.Identifier(spec.table)
         async with self._pool.connection() as conn:
@@ -231,9 +231,9 @@ class PgVectorStore:
     async def upsert_document(
         self, source_key: str, document: ParsedDocument, chunks: Sequence[Chunk]
     ) -> bool:
-        """Écrit le document et ses chunks. Retourne True si quelque chose a changé
-        (nouveau document ou contenu modifié) ; un contenu identique est un no-op qui
-        conserve les embeddings existants."""
+        """Write the document and its chunks. Returns True if something changed (new
+        document or modified content); identical content is a no-op that keeps the
+        existing embeddings."""
         if await self.document_checksum(source_key, document.doc_id) == document.checksum:
             return False
         async with self._pool.connection() as conn, conn.transaction():
@@ -254,7 +254,7 @@ class PgVectorStore:
                     json.dumps(document.metadata),
                 ),
             )
-            # Le contenu a changé : les anciens chunks (et leurs vecteurs, en cascade) partent.
+            # The content changed: the old chunks (and their vectors, by cascade) go away.
             await conn.execute(
                 "DELETE FROM chunks WHERE source_key = %s AND doc_id = %s",
                 (source_key, document.doc_id),
@@ -309,7 +309,7 @@ class PgVectorStore:
         )
 
     async def delete_source(self, source_key: str) -> None:
-        """Ménage complet d'une source : documents, chunks et vecteurs (cascade)."""
+        """Full cleanup of a source: documents, chunks and vectors (cascade)."""
         async with self._pool.connection() as conn:
             await conn.execute("DELETE FROM documents WHERE source_key = %s", (source_key,))
 
@@ -327,12 +327,12 @@ class PgVectorStore:
             ).fetchone()
         return (int(docs[0]) if docs else 0, int(chunks[0]) if chunks else 0)
 
-    # ------------------------------------------------------------------ vecteurs
+    # ------------------------------------------------------------------ vectors
 
     async def missing_embeddings(self, spec: IndexSpec, chunks: Sequence[Chunk]) -> list[Chunk]:
-        """Les chunks qui n'ont pas encore de vecteur dans cet index — ou dont le texte a
-        changé depuis (empreinte différente). C'est l'idempotence : on ne repaie jamais un
-        embedding déjà calculé."""
+        """The chunks that do not yet have a vector in this index — or whose text has
+        changed since (different fingerprint). This is the idempotence: we never pay twice
+        for an embedding already computed."""
         if not chunks:
             return []
         query = sql.SQL(
@@ -353,7 +353,7 @@ class PgVectorStore:
         for _chunk, vector in rows:
             if len(vector) != spec.dimensions:
                 raise ValueError(
-                    f"vecteur de dimension {len(vector)} pour l'index {spec.index_key!r} "
+                    f"vector of dimension {len(vector)} for index {spec.index_key!r} "
                     f"({spec.dimensions})"
                 )
         query = sql.SQL(
@@ -389,8 +389,8 @@ class PgVectorStore:
         k: int = 5,
         filters: dict[str, str] | None = None,
     ) -> list[SearchHit]:
-        """Les ``k`` chunks les plus proches en cosinus, avec leur document. Les filtres
-        s'appliquent aux métadonnées du document (inclusion JSON)."""
+        """The ``k`` nearest chunks by cosine, with their document. The filters apply to
+        the document metadata (JSON containment)."""
         needle = np.asarray(vector, dtype=np.float32)
         query = sql.SQL(
             "SELECT c.*, d.title AS document_title, d.uri AS document_uri,"
