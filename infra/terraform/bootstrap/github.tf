@@ -1,16 +1,16 @@
-# Identité de la CI de déploiement (guide 09, ADR 009) : GitHub Actions obtient des
-# identifiants AWS temporaires par OIDC, sans aucune clé stockée côté GitHub.
+# Identity of the deployment CI (guide 09, ADR 009): GitHub Actions obtains temporary
+# AWS credentials through OIDC, with no key stored on the GitHub side.
 #
-# Ressources de compte, stables et gratuites : elles vivent ici, pas dans envs/dev qui
-# est détruit chaque soir. Le rôle porte un nom fixe ; envs/dev lui ouvre l'accès au
-# cluster par une access entry (eks.tf) en reconstruisant son ARN à partir de ce nom.
+# Account-level resources, stable and free: they live here, not in envs/dev, which is
+# destroyed every evening. The role has a fixed name; envs/dev grants it access to the
+# cluster through an access entry (eks.tf) by rebuilding its ARN from that name.
 
 resource "aws_iam_openid_connect_provider" "github" {
   url            = "https://token.actions.githubusercontent.com"
   client_id_list = ["sts.amazonaws.com"]
 
-  # Depuis 2023, AWS valide le certificat de GitHub par sa chaîne de confiance ; la liste
-  # d'empreintes reste exigée par la ressource. Ce sont les deux valeurs publiées par GitHub.
+  # Since 2023, AWS validates GitHub's certificate through its chain of trust; the thumbprint
+  # list is still required by the resource. These are the two values published by GitHub.
   thumbprint_list = [
     "6938fd4d98bab03faadb97b34396831e3780aea1",
     "1c58a3a8518e8759bf075b76b750d4f2df264fcd",
@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "github_deploy_trust" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Seul ce dépôt, sur sa branche main, peut assumer le rôle : ni un fork, ni une PR.
+    # Only this repository, on its main branch, can assume the role: neither a fork nor a PR.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
@@ -44,7 +44,7 @@ data "aws_iam_policy_document" "github_deploy_trust" {
 
 resource "aws_iam_role" "github_deploy" {
   name                 = var.github_deploy_role_name
-  description          = "GitHub Actions (${var.github_repository}, main) : build, push ECR, helm upgrade sur le cluster dev"
+  description          = "GitHub Actions (${var.github_repository}, main): build, push ECR, helm upgrade on the dev cluster"
   assume_role_policy   = data.aws_iam_policy_document.github_deploy_trust.json
   max_session_duration = 3600
 }
@@ -54,7 +54,7 @@ data "aws_iam_policy_document" "github_deploy" {
     sid       = "EcrLogin"
     effect    = "Allow"
     actions   = ["ecr:GetAuthorizationToken"]
-    resources = ["*"] # l'API n'accepte pas de ressource plus fine pour cette action
+    resources = ["*"] # the API accepts no finer-grained resource for this action
   }
 
   statement {
@@ -81,8 +81,8 @@ data "aws_iam_policy_document" "github_deploy" {
     resources = ["arn:aws:eks:${var.region}:${data.aws_caller_identity.current.account_id}:cluster/${var.dev_environment_name}"]
   }
 
-  # Le workflow lit l'adresse de la base et l'ARN de son secret géré, pour les passer au
-  # chart (guide 05) : il ne touche pas à l'état Terraform.
+  # The workflow reads the database address and the ARN of its managed secret, to pass them
+  # to the chart (guide 05): it does not touch the Terraform state.
   statement {
     sid       = "RdsEndpoint"
     effect    = "Allow"

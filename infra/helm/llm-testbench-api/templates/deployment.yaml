@@ -21,7 +21,7 @@ spec:
       labels:
         {{- include "api.selectorLabels" . | nindent 8 }}
       annotations:
-        # Redéploie quand la configuration change, sans redémarrage manuel.
+        # Redeploys when the configuration changes, without a manual restart.
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       serviceAccountName: {{ include "api.serviceAccountName" . }}

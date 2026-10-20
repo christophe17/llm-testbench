@@ -1,6 +1,6 @@
-# Identités de pods (EKS Pod Identity) : un rôle par charge de travail, aucune clé
-# partagée. L'API obtient le droit d'appeler Bedrock ; External Secrets celui de lire
-# nos secrets, et rien d'autre.
+# Pod identities (EKS Pod Identity): one role per workload, no shared key. The API gets
+# the right to call Bedrock; External Secrets the right to read our secrets, and nothing
+# else.
 
 data "aws_iam_policy_document" "pod_identity_trust" {
   statement {
@@ -13,7 +13,7 @@ data "aws_iam_policy_document" "pod_identity_trust" {
   }
 }
 
-# --- API : Bedrock ---------------------------------------------------------------
+# --- API: Bedrock ----------------------------------------------------------------
 
 resource "aws_iam_role" "api" {
   name               = "${var.name}-api"
@@ -32,7 +32,7 @@ data "aws_iam_policy_document" "api_bedrock" {
       "bedrock:InvokeModel",
       "bedrock:InvokeModelWithResponseStream",
     ]
-    # Modèles de fondation de la région et profils d'inférence UE (préfixe eu.)
+    # Foundation models of the region and EU inference profiles (eu. prefix)
     resources = [
       "arn:aws:bedrock:${var.region}::foundation-model/*",
       "arn:aws:bedrock:eu-*::foundation-model/*",
@@ -61,7 +61,7 @@ resource "aws_eks_pod_identity_association" "api" {
   role_arn        = aws_iam_role.api.arn
 }
 
-# --- External Secrets : lecture de nos secrets uniquement ---------------------------
+# --- External Secrets: read our secrets only ----------------------------------------
 
 resource "aws_iam_role" "external_secrets" {
   name               = "${var.name}-external-secrets"
@@ -82,8 +82,8 @@ data "aws_iam_policy_document" "external_secrets" {
     ]
     resources = [
       "arn:aws:secretsmanager:${var.region}:${data.aws_caller_identity.current.account_id}:secret:${local.secret_prefix}/*",
-      # Le secret géré par RDS ({username, password}) : External Secrets compose l'URL de
-      # la base dans le cluster à partir de lui (guide 05, ADR 009).
+      # The RDS-managed secret ({username, password}): External Secrets composes the
+      # database URL in the cluster from it (guide 05, ADR 009).
       module.rds.db_instance_master_user_secret_arn,
     ]
   }

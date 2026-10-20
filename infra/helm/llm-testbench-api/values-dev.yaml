@@ -1,6 +1,6 @@
-# EKS dev : image ECR, secrets par External Secrets depuis AWS Secrets Manager,
-# identité de pod pour Bedrock. Les valeurs <...> sont remplies par `make deploy` (sorties
-# Terraform) ou par le workflow deploy.yml (API AWS) — guides 06 et 09.
+# EKS dev: ECR image, secrets through External Secrets from AWS Secrets Manager,
+# pod identity for Bedrock. The <...> values are filled in by `make deploy` (Terraform
+# outputs) or by the deploy.yml workflow (AWS API) — guides 06 and 09.
 image:
   repository: "<ecr_repository_url>"
   tag: "<git_sha>"
@@ -16,13 +16,13 @@ secrets:
         key: llm-testbench/dev/openai-api-key
       - name: OPENROUTER_API_KEY
         key: llm-testbench/dev/openrouter-api-key
-# L'URL de la base est composée dans le cluster par External Secrets (guide 05) :
+# The database URL is composed in the cluster by External Secrets (guide 05):
 database:
   host: "<rds_address>"
   port: 5432
   name: testbench
   masterSecretArn: "<rds_master_secret_arn>"
-# Aucune annotation IRSA : l'accès Bedrock passe par EKS Pod Identity, associé par
-# Terraform au couple (namespace llm-testbench, ServiceAccount api) — iam.tf.
+# No IRSA annotation: Bedrock access goes through EKS Pod Identity, associated by
+# Terraform with the (namespace llm-testbench, ServiceAccount api) pair — iam.tf.
 serviceAccount:
   create: true

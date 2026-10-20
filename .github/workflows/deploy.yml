@@ -1,18 +1,18 @@
-# Déploiement de l'API sur le cluster EKS dev, déclenché à la main (le cluster est
-# éphémère : un déploiement automatique à chaque push échouerait le soir).
-# Aucune clé AWS dans GitHub : le job obtient des identifiants temporaires par OIDC en
-# assumant le rôle créé par le bootstrap Terraform (infra/terraform/bootstrap/github.tf).
-# Ce que fait ce workflow est exactement `make deploy` (guide 09).
+# Deployment of the API to the dev EKS cluster, triggered by hand (the cluster is
+# ephemeral: an automatic deployment on every push would fail in the evening).
+# No AWS key in GitHub: the job obtains temporary credentials through OIDC by assuming
+# the role created by the Terraform bootstrap (infra/terraform/bootstrap/github.tf).
+# What this workflow does is exactly `make deploy` (guide 09).
 name: deploy
 
 on:
   workflow_dispatch:
 
 permissions:
-  id-token: write # jeton OIDC pour AssumeRoleWithWebIdentity
+  id-token: write # OIDC token for AssumeRoleWithWebIdentity
   contents: read
 
-# Un seul déploiement à la fois sur l'environnement dev.
+# Only one deployment at a time on the dev environment.
 concurrency:
   group: deploy-dev
   cancel-in-progress: false
@@ -25,22 +25,22 @@ env:
 
 jobs:
   deploy:
-    # Runner arm64 : même architecture que les nœuds Graviton, pas d'émulation QEMU.
+    # arm64 runner: same architecture as the Graviton nodes, no QEMU emulation.
     runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
 
-      - name: Identifiants AWS temporaires (OIDC)
+      - name: Temporary AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Connexion à ECR
+      - name: Log in to ECR
         id: ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build et push de l'image (tag = SHA git)
+      - name: Build and push the image (tag = git SHA)
         env:
           IMAGE: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}
           TAG: ${{ github.sha }}
@@ -48,7 +48,7 @@ jobs:
           docker build -t "$IMAGE:${TAG::7}" .
           docker push "$IMAGE:${TAG::7}"
 
-      - name: Kubeconfig et paramètres de la base (API AWS, pas l'état Terraform)
+      - name: Kubeconfig and database parameters (AWS API, not the Terraform state)
         id: params
         run: |
           aws eks update-kubeconfig --region "$AWS_REGION" --name "$CLUSTER_NAME"
@@ -70,13 +70,13 @@ jobs:
             --set database.host="${{ steps.params.outputs.rds_host }}" \
             --set database.masterSecretArn="${{ steps.params.outputs.rds_secret }}"
 
-      # La readiness refuse tant que l'index n'existe pas dans RDS (guide 04) : un rollout
-      # qui n'aboutit pas n'est pas forcément un déploiement raté. On constate, on n'arbitre pas.
-      - name: État du rollout
+      # Readiness refuses as long as the index does not exist in RDS (guide 04): a rollout
+      # that does not complete is not necessarily a failed deployment. We observe, we do not decide.
+      - name: Rollout status
         continue-on-error: true
         run: kubectl -n "$NAMESPACE" rollout status deploy/api --timeout=180s
 
-      - name: Pods et ExternalSecret
+      - name: Pods and ExternalSecret
         if: always()
         run: |
           kubectl -n "$NAMESPACE" get pods -o wide

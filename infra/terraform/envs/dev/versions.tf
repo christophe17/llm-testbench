@@ -8,8 +8,8 @@ terraform {
     }
   }
 
-  # Le bucket est propre au compte (suffixe) : il est passé par `-backend-config` depuis
-  # le Makefile (`make infra-init`), jamais écrit en dur ici.
+  # The bucket is account-specific (suffix): it is passed through `-backend-config` from
+  # the Makefile (`make infra-init`), never hard-coded here.
   backend "s3" {
     key          = "envs/dev/terraform.tfstate"
     region       = "eu-west-3"

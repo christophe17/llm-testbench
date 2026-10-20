@@ -1,6 +1,6 @@
-# CI hors ligne : aucun secret, aucun appel réseau vers des providers.
-# Les notebooks tournent en mode échantillon sur les fixtures de tests ;
-# les chiffres publiés sont produits par des exécutions complètes manuelles (brief §2.B.4).
+# Offline CI: no secret, no network call to providers.
+# The notebooks run in sample mode on the test fixtures;
+# the published numbers are produced by manual full runs (brief §2.B.4).
 name: ci
 
 on:
@@ -11,8 +11,8 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    # Postgres + pgvector comme service : les tests `db` et le notebook 2 tournent en CI,
-    # toujours sans secret ni appel réseau vers un provider (ADR 003, ADR 007).
+    # Postgres + pgvector as a service: the `db` tests and notebook 2 run in CI,
+    # still with no secret and no network call to a provider (ADR 003, ADR 007).
     services:
       postgres:
         image: pgvector/pgvector:pg16
@@ -45,10 +45,10 @@ jobs:
       - name: Typecheck (mypy strict)
         run: uv run mypy
 
-      - name: Tests (hors ligne, base incluse)
+      - name: Tests (offline, database included)
         run: uv run python -m pytest -m "not network"
 
-      - name: Notebooks (mode échantillon, hors ligne)
+      - name: Notebooks (sample mode, offline)
         env:
           LLM_TESTBENCH_SAMPLE: "1"
         run: |

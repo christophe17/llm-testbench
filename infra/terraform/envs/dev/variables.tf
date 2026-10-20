@@ -1,5 +1,5 @@
 variable "region" {
-  description = "Région AWS (Paris : Bedrock y sert des modèles Claude, à vérifier par modèle)"
+  description = "AWS region (Paris: Bedrock serves Claude models there, to be checked per model)"
   type        = string
   default     = "eu-west-3"
 }
@@ -10,7 +10,7 @@ variable "environment" {
 }
 
 variable "name" {
-  description = "Préfixe des ressources"
+  description = "Resource prefix"
   type        = string
   default     = "llm-testbench-dev"
 }
@@ -21,13 +21,13 @@ variable "vpc_cidr" {
 }
 
 variable "kubernetes_version" {
-  description = "Version EKS (support standard ~14 mois ; au-delà, support étendu facturé)"
+  description = "EKS version (standard support ~14 months; beyond that, extended support is billed)"
   type        = string
   default     = "1.33"
 }
 
 variable "node_instance_types" {
-  description = "Nœuds Graviton (arm64) : même architecture que l'image construite sur Mac M1"
+  description = "Graviton (arm64) nodes: same architecture as the image built on the M1 Mac"
   type        = list(string)
   default     = ["t4g.medium"]
 }
@@ -48,13 +48,13 @@ variable "node_desired_size" {
 }
 
 variable "nat_gateway" {
-  description = "\"single\" (une NAT Gateway, ~0,05 $/h) ou \"none\" (nœuds en sous-réseaux publics, sans NAT)"
+  description = "\"single\" (one NAT Gateway, ~$0.05/h) or \"none\" (nodes in public subnets, no NAT)"
   type        = string
   default     = "single"
 
   validation {
     condition     = contains(["single", "none"], var.nat_gateway)
-    error_message = "nat_gateway doit valoir \"single\" ou \"none\"."
+    error_message = "nat_gateway must be \"single\" or \"none\"."
   }
 }
 
@@ -74,7 +74,7 @@ variable "api_namespace" {
 }
 
 variable "api_service_account" {
-  description = "Nom du ServiceAccount de l'API (= nom de la release Helm, chart llm-testbench-api)"
+  description = "Name of the API ServiceAccount (= name of the Helm release, chart llm-testbench-api)"
   type        = string
   default     = "api"
 }
@@ -86,17 +86,17 @@ variable "external_secrets_namespace" {
 
 variable "public_access_cidrs" {
   description = <<-EOT
-    CIDR autorisés sur l'endpoint public de l'API Kubernetes. Ouvert par défaut, et c'est un
-    choix (ADR 009, guide 09) : l'authentification est IAM (access entries) et le pipeline
-    GitHub Actions déploie depuis des runners à IP variable. Restreignez à votre IP/32 si vous
-    ne déployez que depuis votre poste (TF_VAR_public_access_cidrs='["a.b.c.d/32"]').
+    CIDRs allowed on the public endpoint of the Kubernetes API. Open by default, and that is
+    a deliberate choice (ADR 009, guide 09): authentication is IAM (access entries) and the
+    GitHub Actions pipeline deploys from runners with variable IPs. Restrict to your IP/32 if
+    you only deploy from your workstation (TF_VAR_public_access_cidrs='["a.b.c.d/32"]').
   EOT
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
 
 variable "github_deploy_role_name" {
-  description = "Nom du rôle IAM de GitHub Actions créé par le bootstrap (github.tf) ; \"\" pour ne pas lui ouvrir le cluster"
+  description = "Name of the GitHub Actions IAM role created by the bootstrap (github.tf); \"\" to not grant it cluster access"
   type        = string
   default     = "llm-testbench-github-deploy"
 }

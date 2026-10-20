@@ -1,7 +1,7 @@
 locals {
   azs = slice(data.aws_availability_zones.available.names, 0, 2)
 
-  # Trois familles de sous-réseaux par AZ : publics (LB, NAT), privés (nœuds), base (RDS).
+  # Three subnet families per AZ: public (LB, NAT), private (nodes), database (RDS).
   public_subnets   = [for i, az in local.azs : cidrsubnet(var.vpc_cidr, 8, i)]
   private_subnets  = [for i, az in local.azs : cidrsubnet(var.vpc_cidr, 8, 10 + i)]
   database_subnets = [for i, az in local.azs : cidrsubnet(var.vpc_cidr, 8, 20 + i)]

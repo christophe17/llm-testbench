@@ -1,6 +1,6 @@
-# RDS PostgreSQL 16 avec pgvector (disponible nativement : `CREATE EXTENSION vector`,
-# exécuté par l'application au démarrage). Plus petite instance, mono-AZ, sans snapshot
-# final : c'est un environnement de dev détruit et recréé, pas une base de production.
+# RDS PostgreSQL 16 with pgvector (natively available: `CREATE EXTENSION vector`,
+# run by the application at startup). Smallest instance, single-AZ, no final snapshot:
+# this is a dev environment destroyed and recreated, not a production database.
 
 module "rds" {
   source  = "terraform-aws-modules/rds/aws"
@@ -23,7 +23,7 @@ module "rds" {
   username = "testbench"
   port     = 5432
 
-  # Mot de passe géré par RDS dans Secrets Manager (jamais dans le code ni les variables).
+  # Password managed by RDS in Secrets Manager (never in the code or the variables).
   manage_master_user_password = true
 
   multi_az               = false
@@ -40,7 +40,7 @@ module "rds" {
   monitoring_interval          = 0
 
   parameters = [
-    { name = "log_min_duration_statement", value = "1000" }, # requêtes > 1 s dans les logs
+    { name = "log_min_duration_statement", value = "1000" }, # queries > 1 s in the logs
   ]
 
   tags = {
@@ -50,7 +50,7 @@ module "rds" {
 
 resource "aws_security_group" "rds" {
   name        = "${var.name}-rds"
-  description = "Postgres depuis les noeuds EKS uniquement"
+  description = "Postgres from the EKS nodes only"
   vpc_id      = module.vpc.vpc_id
 
   tags = {

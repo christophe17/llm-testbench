@@ -1,10 +1,10 @@
-# Registre d'images. Le scan à la poussée est gratuit ; la politique de cycle de vie
-# évite d'accumuler des images (0,10 $/Go/mois).
+# Image registry. Scan on push is free; the lifecycle policy avoids piling up images
+# ($0.10/GB/month).
 
 resource "aws_ecr_repository" "api" {
   name                 = "llm-testbench-api"
-  image_tag_mutability = "MUTABLE" # le tag = SHA git, mais `latest`/`dev` restent utiles
-  force_delete         = true      # `make infra-down` supprime aussi les images
+  image_tag_mutability = "MUTABLE" # the tag = git SHA, but `latest`/`dev` remain useful
+  force_delete         = true      # `make infra-down` deletes the images too
 
   image_scanning_configuration {
     scan_on_push = true
@@ -26,7 +26,7 @@ resource "aws_ecr_lifecycle_policy" "api" {
     rules = [
       {
         rulePriority = 1
-        description  = "Garder les 10 dernières images"
+        description  = "Keep the last 10 images"
         selection = {
           tagStatus   = "any"
           countType   = "imageCountMoreThan"

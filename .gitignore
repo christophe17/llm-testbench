@@ -7,10 +7,10 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
-# Notebooks : sorties exécutées localement, pas les checkpoints
+# Notebooks: locally executed outputs, not the checkpoints
 .ipynb_checkpoints/
 
-# Données : le cache des jeux publics ne se versionne pas (data/README.md explique quoi versionner)
+# Data: the public datasets cache is not versioned (data/README.md explains what to version)
 data/cache/
 
 # Terraform
@@ -18,16 +18,16 @@ data/cache/
 *.tfstate
 *.tfstate.backup
 *.tfplan
-# Les .terraform.lock.hcl des environnements sont versionnés (empreintes multi-plateformes) ;
-# celui du bootstrap (état local, usage unique) reste ignoré.
+# The environments' .terraform.lock.hcl files are versioned (multi-platform hashes);
+# the bootstrap's (local state, single use) stays ignored.
 infra/terraform/bootstrap/.terraform.lock.hcl
 
-# Secrets et environnement local
+# Secrets and local environment
 .env
 .envrc
 
 # macOS
 .DS_Store
 
-# Terraform : les tfvars contiennent des valeurs personnelles (e-mail d'alerte...)
+# Terraform: tfvars files contain personal values (alert e-mail...)
 *.tfvars

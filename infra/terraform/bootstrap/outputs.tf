@@ -1,10 +1,10 @@
 output "tfstate_bucket" {
-  description = "Bucket S3 à utiliser comme backend par les environnements (phase 1+)"
+  description = "S3 bucket to be used as backend by the environments (phase 1+)"
   value       = aws_s3_bucket.tfstate.bucket
 }
 
 output "backend_example" {
-  description = "Bloc backend à copier dans les modules d'environnement"
+  description = "Backend block to copy into the environment modules"
   value       = <<-EOT
     backend "s3" {
       bucket       = "${aws_s3_bucket.tfstate.bucket}"
@@ -16,6 +16,6 @@ output "backend_example" {
 }
 
 output "github_deploy_role_arn" {
-  description = "À poser dans le dépôt GitHub : gh variable set AWS_DEPLOY_ROLE_ARN --body <valeur> (guide 09)"
+  description = "To set in the GitHub repository: gh variable set AWS_DEPLOY_ROLE_ARN --body <value> (guide 09)"
   value       = aws_iam_role.github_deploy.arn
 }

@@ -1,6 +1,6 @@
-# Réseau. Le poste de coût dormant à surveiller est la NAT Gateway (~0,05 $/h + trafic) :
-# `nat_gateway = "none"` place les nœuds en sous-réseaux publics (IP publique, groupe de
-# sécurité fermé en entrée) et supprime ce coût — acceptable pour un dev éphémère.
+# Network. The idle cost item to watch is the NAT Gateway (~$0.05/h + traffic):
+# `nat_gateway = "none"` puts the nodes in public subnets (public IP, security group
+# closed to ingress) and removes that cost — acceptable for an ephemeral dev.
 
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
@@ -21,11 +21,11 @@ module "vpc" {
   enable_nat_gateway = var.nat_gateway == "single"
   single_nat_gateway = true
 
-  # Sans NAT, les nœuds (en public) ont besoin d'une IP publique pour joindre ECR, S3,
-  # les API LLM et le plan de contrôle.
+  # Without NAT, the nodes (in public subnets) need a public IP to reach ECR, S3,
+  # the LLM APIs and the control plane.
   map_public_ip_on_launch = local.nodes_in_public_subnets
 
-  # Ces tags permettent aux contrôleurs Kubernetes (LB) de retrouver les sous-réseaux.
+  # These tags let the Kubernetes (LB) controllers find the subnets.
   public_subnet_tags = {
     "kubernetes.io/role/elb" = 1
   }

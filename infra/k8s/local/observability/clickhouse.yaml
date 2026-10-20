@@ -1,9 +1,9 @@
-# ClickHouse mono-nœud pour Langfuse en local (guide 07).
+# Single-node ClickHouse for local Langfuse (guide 07).
 #
-# Le chart Langfuse 2.x déploie ClickHouse via un opérateur (CRD + Keeper ×3) : trop lourd
-# pour « le strict nécessaire » du brief sur un k3d. Le chart accepte un ClickHouse externe
-# non clusterisé : le voici, en 60 lignes. Image multi-arch (arm64 natif vérifié).
-# Identifiants en clair : EN LOCAL UNIQUEMENT.
+# The Langfuse 2.x chart deploys ClickHouse through an operator (CRD + Keeper ×3): too heavy
+# for the brief's "bare minimum" on a k3d. The chart accepts an external non-clustered
+# ClickHouse: here it is, in 60 lines. Multi-arch image (native arm64 verified).
+# Plaintext credentials: LOCALLY ONLY.
 apiVersion: v1
 kind: Secret
 metadata:
@@ -54,7 +54,7 @@ spec:
             - secretRef:
                 name: clickhouse-credentials
           env:
-            # Autorise le mot de passe du compte default (l'image le refuse sinon).
+            # Allows the password of the default account (the image refuses it otherwise).
             - name: CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT
               value: "1"
           resources:

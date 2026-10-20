@@ -1,6 +1,6 @@
-# Postgres 16 + pgvector pour le dev local.
-# Image pgvector/pgvector : multi-arch, build arm64 natif vérifié (pas d'émulation).
-# Le mot de passe en clair est assumé EN LOCAL UNIQUEMENT : en cloud, External
+# Postgres 16 + pgvector for local dev.
+# pgvector/pgvector image: multi-arch, native arm64 build verified (no emulation).
+# The plaintext password is accepted LOCALLY ONLY: in the cloud, External
 # Secrets + AWS Secrets Manager (phase 1, ADR 002).
 apiVersion: v1
 kind: Secret
@@ -76,7 +76,7 @@ spec:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
-        # local-path : provisionneur par défaut de k3s/k3d
+        # local-path: default provisioner of k3s/k3d
         resources:
           requests:
             storage: 2Gi

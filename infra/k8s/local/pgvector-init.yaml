@@ -1,5 +1,5 @@
-# Active l'extension pgvector au premier démarrage. Job idempotent :
-# relançable sans effet (CREATE EXTENSION IF NOT EXISTS).
+# Enables the pgvector extension on first start. Idempotent Job:
+# can be rerun with no effect (CREATE EXTENSION IF NOT EXISTS).
 apiVersion: batch/v1
 kind: Job
 metadata:

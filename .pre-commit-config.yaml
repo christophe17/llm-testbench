@@ -11,8 +11,8 @@ repos:
         args: [--maxkb=2048]
       - id: check-merge-conflict
 
-  # ruff et mypy tournent avec les versions du projet (uv), jamais avec une version
-  # épinglée à part : deux versions d'un même linter finissent par se contredire.
+  # ruff and mypy run with the project's versions (uv), never with a separately pinned
+  # version: two versions of the same linter end up contradicting each other.
   - repo: local
     hooks:
       - id: ruff

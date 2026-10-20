@@ -1,5 +1,5 @@
-# Valeurs par défaut : niveau production (probes, ressources, HPA, PDB, non-root).
-# Les valeurs locales (k3d) et cloud (EKS) surchargent l'image, les secrets et l'exposition.
+# Default values: production grade (probes, resources, HPA, PDB, non-root).
+# The local (k3d) and cloud (EKS) values override the image, the secrets and the exposure.
 
 image:
   repository: llm-testbench-api
@@ -8,7 +8,7 @@ image:
 
 replicaCount: 2
 
-# Variables d'environnement non secrètes (préfixe LLM_TESTBENCH_ côté application).
+# Non-secret environment variables (LLM_TESTBENCH_ prefix on the application side).
 config:
   LLM_TESTBENCH_INDEX_KEY: scifact-recursive-oai-small
   LLM_TESTBENCH_SOURCE_KEY: "docs:scifact"
@@ -16,7 +16,7 @@ config:
   LLM_TESTBENCH_SERVICE_NAME: llm-testbench-api
   # LLM_TESTBENCH_OTLP_ENDPOINT: http://langfuse-web.observability:3000/api/public/otel/v1/traces
 
-# Secrets : soit un Secret Kubernetes existant (local), soit External Secrets (cloud).
+# Secrets: either an existing Kubernetes Secret (local), or External Secrets (cloud).
 secrets:
   existingSecret: llm-testbench-api-secrets
   externalSecret:
@@ -25,13 +25,13 @@ secrets:
       name: aws-secrets-manager
       kind: ClusterSecretStore
     refreshInterval: 1h
-    # Une clé Secrets Manager par variable : {name: NOM_VARIABLE, key: chemin/du/secret}
+    # One Secrets Manager key per variable: {name: VARIABLE_NAME, key: path/to/secret}
     data: []
 
-# Base de données en cloud : rien de secret ici. Si `masterSecretArn` est renseigné (secret
-# géré par RDS, {username, password}), l'ExternalSecret compose LLM_TESTBENCH_DATABASE_URL
-# dans le cluster à partir de ces trois valeurs et du secret (guide 05). Rempli par
-# `make deploy` et par le workflow de déploiement depuis les sorties Terraform / l'API RDS.
+# Cloud database: nothing secret here. If `masterSecretArn` is set (RDS-managed secret,
+# {username, password}), the ExternalSecret composes LLM_TESTBENCH_DATABASE_URL in the
+# cluster from these three values and the secret (guide 05). Filled in by `make deploy`
+# and by the deployment workflow from the Terraform outputs / the RDS API.
 database:
   host: ""
   port: 5432
@@ -40,7 +40,7 @@ database:
 
 serviceAccount:
   create: true
-  annotations: {}   # EKS : eks.amazonaws.com/role-arn pour l'accès Bedrock (guide 03)
+  annotations: {}   # EKS: eks.amazonaws.com/role-arn for Bedrock access (guide 03)
 
 service:
   type: ClusterIP
@@ -58,7 +58,7 @@ resources:
     cpu: 250m
     memory: 512Mi
   limits:
-    memory: 1Gi   # pas de limite CPU : le throttling CFS dégrade la latence sans protéger
+    memory: 1Gi   # no CPU limit: CFS throttling degrades latency without protecting anything
 
 autoscaling:
   enabled: true
@@ -73,10 +73,10 @@ podDisruptionBudget:
 probes:
   startup:
     path: /healthz
-    failureThreshold: 30   # 30 × 2 s : le pool Postgres et le schéma peuvent prendre du temps
+    failureThreshold: 30   # 30 × 2 s: the Postgres pool and the schema can take a while
     periodSeconds: 2
   readiness:
-    path: /readyz          # 503 tant que l'index n'est pas là : le pod ne reçoit rien
+    path: /readyz          # 503 until the index is there: the pod receives nothing
     periodSeconds: 10
   liveness:
     path: /healthz

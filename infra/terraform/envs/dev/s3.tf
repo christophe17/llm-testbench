@@ -1,5 +1,5 @@
-# Bucket de travail : caches de jeux de données et artefacts d'évaluation (phase 2+).
-# Expiration à 30 jours : rien ici n'est une source de vérité, tout se régénère.
+# Working bucket: dataset caches and evaluation artifacts (phase 2+).
+# Expiration at 30 days: nothing here is a source of truth, everything is regenerated.
 
 resource "aws_s3_bucket" "data" {
   bucket        = "${var.name}-data-${data.aws_caller_identity.current.account_id}"

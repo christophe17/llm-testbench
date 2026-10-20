@@ -1,10 +1,10 @@
-# Langfuse v4 (chart langfuse/langfuse 2.x) sur k3d, dimensionné au strict nécessaire.
+# Langfuse v4 (chart langfuse/langfuse 2.x) on k3d, sized to the bare minimum.
 #
-# - ClickHouse externe mono-nœud (infra/k8s/local/observability/), pas d'opérateur ;
-# - Postgres, Valkey (Redis) et SeaweedFS (S3) embarqués, volumes réduits ;
-# - initialisation « headless » : organisation, projet, utilisateur et clés d'API créés au
-#   premier démarrage, pour que l'API du banc puisse tracer sans passer par l'interface.
-# Tous les secrets ci-dessous sont des valeurs de dev LOCAL UNIQUEMENT.
+# - external single-node ClickHouse (infra/k8s/local/observability/), no operator;
+# - embedded Postgres, Valkey (Redis) and SeaweedFS (S3), reduced volumes;
+# - "headless" initialization: organization, project, user and API keys created on
+#   first start, so the testbench API can trace without going through the UI.
+# All secrets below are LOCAL dev values ONLY.
 
 langfuse:
   salt:

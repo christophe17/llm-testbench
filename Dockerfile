@@ -1,12 +1,12 @@
-# Image de l'API — deux étapes : résolution des dépendances avec uv, puis exécution sur
-# une image Python minimale, sans uv ni outils de build, en utilisateur non root.
-# Multi-arch : les images de base existent en arm64 (dev local) et amd64 (cloud).
+# API image — two stages: dependency resolution with uv, then execution on a minimal
+# Python image, without uv or build tools, as a non-root user.
+# Multi-arch: the base images exist for arm64 (local dev) and amd64 (cloud).
 
 FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim AS builder
 WORKDIR /app
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 
-# Les dépendances d'abord (couche cacheable), le code ensuite.
+# Dependencies first (cacheable layer), code next.
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project

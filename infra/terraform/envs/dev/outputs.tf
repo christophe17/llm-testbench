@@ -27,7 +27,7 @@ output "rds_database" {
 }
 
 output "rds_master_secret_arn" {
-  description = "Secret géré par RDS ({username, password}) : External Secrets compose l'URL de la base à partir de lui"
+  description = "RDS-managed secret ({username, password}): External Secrets composes the database URL from it"
   value       = module.rds.db_instance_master_user_secret_arn
 }
 
@@ -44,7 +44,7 @@ output "data_bucket" {
 }
 
 output "secret_names" {
-  description = "Clés des providers à renseigner à la main avec `aws secretsmanager put-secret-value` (guide 05)"
+  description = "Provider keys to fill in by hand with `aws secretsmanager put-secret-value` (guide 05)"
   value       = [for s in aws_secretsmanager_secret.api_keys : s.name]
 }
 
