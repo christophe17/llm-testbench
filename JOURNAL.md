@@ -409,3 +409,29 @@ notebooks 1 et 2 réexécutés en mode échantillon sur un pgvector jetable.
 **Suite** : actions Christophe (`STATE.md`) — relire les commits du jour, clés, exécutions
 complètes, bootstrap (huit ressources), variable GitHub, demande de quota GPU — puis
 `GO PHASE 2`.
+
+## 2026-10-20 — Ordre de lecture du banc, demande de quota GPU
+
+**Contexte** : Christophe reprend la phase 1 construite et demande dans quel ordre lire les
+fichiers, puis que la liste soit écrite jusqu'à la phase 10, puis que les demandes de quota
+GPU de `STATE.md` soient envoyées.
+
+**Fait** : `docs/ordre-de-lecture.md` (16 blocs : phases 0 et 1 au module près, phases 2 à 10
+sur les livrables nommés par la roadmap, à compléter à chaque clôture de phase), renvois dans
+`README.md` et `STATE.md`. Quota GPU : identité vérifiée (compte 749020018778, utilisateur
+`christophe`), les deux quotas G et VT à 0 en eu-west-3, aucune demande en cours, g6.xlarge et
+g6.2xlarge offerts dans la région. Demande Spot (`L-3819A6DF`) envoyée à 8 vCPU à 10 h 51 ;
+demande On-Demand (`L-DB2E81BA`) envoyée par Christophe à 10 h 54 ; les deux en `CASE_OPENED`.
+
+**Incidents / surprises** :
+- **La demande On-Demand (`L-DB2E81BA`) a été refusée par le garde-fou de la session Claude**
+  (« transaction réelle »), alors que la demande Spot, strictement de même nature, est passée
+  juste après. Pas de relance à l'identique : la commande exacte a été mise dans `STATE.md`
+  et Christophe l'a lancée à la main trois minutes plus tard. Leçon : deux appels identiques
+  peuvent être jugés différemment par un classificateur ; consigner l'état après chaque
+  action réelle, pas à la fin.
+- Deux demandes de quota Standard (On-Demand et Spot, 32 vCPU) datées du 2026-09-03 sont en
+  `CASE_CLOSED` dans l'historique, un statut qui ne dit pas si elles ont été accordées ;
+  vérifié : les deux quotas sont à 32 vCPU, `make infra-up` (guide 03) n'est pas bloqué.
+
+**Suite** : actions Christophe (`STATE.md`) ; puis `GO PHASE 2`.

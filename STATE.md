@@ -43,7 +43,8 @@ changé au cap ; le banc ne prouve rien tant que la phase 1 n'est pas étudiée 
 
 ## Reste à faire en phase 1 (actions Christophe)
 
-1. Relire la phase 1 sur `main` (fusionnée le 2026-10-16 sans relecture formelle de la PR #3).
+1. Relire la phase 1 sur `main` (fusionnée le 2026-10-16 sans relecture formelle de la PR #3) ;
+   l'ordre de lecture, blocs 0 à 5, est dans `docs/ordre-de-lecture.md` (2026-10-20).
 2. `.env` avec les clés (`.env.example`) → `make ingest-scifact`, `make api` ou `tilt up`,
    `make notebooks-full` (section « vrai provider » du notebook 1, vrais embeddings et vraie
    génération du notebook 2), `make bench-embeddings` (ajoute text-embedding-3-small).
@@ -53,18 +54,22 @@ changé au cap ; le banc ne prouve rien tant que la phase 1 n'est pas étudiée 
    puis guides 02→05 : `make infra-up`, `make cluster-addons`, secrets, `make deploy` ou
    `make deploy-trigger` (guide 09) — l'API sur EKS (≈ 6 $/jour allumé, `make infra-down` le
    soir).
-4. **Demander le quota GPU dès maintenant** (phase 6, ADR 009 : des jours à des semaines) :
+4. **Quota GPU** (phase 6, ADR 009 : des jours à des semaines). Les deux demandes à 8 vCPU
+   (un g6.2xlarge ou deux g6.xlarge) sont envoyées le 2026-10-20, compte 749020018778,
+   eu-west-3, statut `CASE_OPENED` : AWS a ouvert un dossier de support par demande, la
+   réponse arrive par courriel au contact du compte.
+   - « All G and VT Spot Instance Requests » (`L-3819A6DF`), 10 h 51.
+   - « Running On-Demand G and VT instances » (`L-DB2E81BA`), 10 h 54, envoyée par Christophe.
+
+   Lire l'état des deux dossiers (lecture seule, ne renvoie rien à AWS) :
 
    ```bash
-   aws service-quotas list-service-quotas --service-code ec2 --region eu-west-3 \
-     --query "Quotas[?starts_with(QuotaName, 'Running On-Demand G and VT')].[QuotaCode,QuotaName,Value]" --output table
-   aws service-quotas request-service-quota-increase --service-code ec2 --region eu-west-3 \
-     --quota-code <code ci-dessus> --desired-value 8   # 8 vCPU : un g6.2xlarge ou deux g6.xlarge
+   aws service-quotas list-requested-service-quota-change-history --service-code ec2 --region eu-west-3 \
+     --query "RequestedQuotas[?contains(QuotaName,'G and VT')].[QuotaName,DesiredValue,Status]" --output table
    ```
 
-   Même demande pour « All G and VT Spot Instance Requests » si la phase 6 tourne en Spot.
-   g6 (GPU L4) est servi à Paris depuis décembre 2024 ; à vérifier le jour venu :
-   `aws ec2 describe-instance-type-offerings --location-type region --region eu-west-3 --filters Name=instance-type,Values=g6.xlarge`.
+   Statuts : `PENDING` → `CASE_OPENED` → `APPROVED` ou `DENIED` ; `CASE_CLOSED` signifie
+   dossier fermé sans plus, vérifier alors la valeur appliquée avec `list-service-quotas`.
 
 ## Chiffres actuels
 

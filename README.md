@@ -36,7 +36,8 @@ make k3d-up         # cluster local k3d + Postgres/pgvector
 Voir `CLAUDE.md` (contrat de travail), `docs/roadmap/` (les phases), `STATE.md` (état courant),
 `docs/decisions.md` et `docs/adr/` (décisions),
 `notebooks/` (un sous-dossier par phase ; commencer par `notebooks/phase-0/00_visite_guidee.ipynb`,
-visite guidée de l'architecture et des jeux de données).
+visite guidée de l'architecture et des jeux de données), `docs/ordre-de-lecture.md` (dans
+quel ordre lire tout cela, phase par phase).
 
 ## Licences des données
 
