@@ -6,7 +6,7 @@ SHELL := /bin/bash
 
 K3D_CLUSTER := llm-testbench
 # Un sous-dossier par phase (notebooks/phase-N/NN_slug.ipynb) ; nbmake parcourt le dossier.
-# Un seul : make notebooks-ci NOTEBOOKS=notebooks/phase-1/01_appel_llm_robuste.ipynb
+# Un seul : make notebooks-ci NOTEBOOKS=notebooks/phase-1/01_robust_llm_call.ipynb
 NOTEBOOKS ?= notebooks
 DATABASE_URL ?= postgresql://testbench:testbench-local-only@localhost:5432/testbench
 

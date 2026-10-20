@@ -416,7 +416,7 @@ complètes, bootstrap (huit ressources), variable GitHub, demande de quota GPU �
 fichiers, puis que la liste soit écrite jusqu'à la phase 10, puis que les demandes de quota
 GPU de `STATE.md` soient envoyées.
 
-**Fait** : `docs/ordre-de-lecture.md` (16 blocs : phases 0 et 1 au module près, phases 2 à 10
+**Fait** : `docs/reading-order.md` (16 blocs : phases 0 et 1 au module près, phases 2 à 10
 sur les livrables nommés par la roadmap, à compléter à chaque clôture de phase), renvois dans
 `README.md` et `STATE.md`. Quota GPU : identité vérifiée (compte 749020018778, utilisateur
 `christophe`), les deux quotas G et VT à 0 en eu-west-3, aucune demande en cours, g6.xlarge et

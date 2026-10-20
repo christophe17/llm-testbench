@@ -13,14 +13,14 @@ banc est dans `CLAUDE.md` §4 (ADR 009).
 | # | Guide | Ce qu'on construit | Coût allumé |
 |---|---|---|---|
 | 00 | [Bootstrap](00-bootstrap.md) | bucket d'état Terraform, alerte de budget, rôle OIDC GitHub | ~0 €/mois |
-| 01 | [Dev local k3d](01-dev-local-k3d.md) | cluster local, Postgres/pgvector, Tilt | 0 € |
-| 02 | [Réseau VPC](02-reseau-vpc.md) | sous-réseaux, routage, NAT ou endpoints | ~0,05 $/h + trafic |
+| 01 | [Dev local k3d](01-local-dev-k3d.md) | cluster local, Postgres/pgvector, Tilt | 0 € |
+| 02 | [Réseau VPC](02-network-vpc.md) | sous-réseaux, routage, NAT ou endpoints | ~0,05 $/h + trafic |
 | 03 | [EKS](03-eks.md) | plan de contrôle, nœuds Graviton, accès, identités de pods | ~0,18 $/h |
 | 04 | [RDS pgvector](04-rds-pgvector.md) | base managée, extension, accès depuis le cluster | ~0,02 $/h |
 | 05 | [Secrets](05-secrets.md) | Secrets Manager, External Secrets, URL de base composée dans le cluster | ~1,60 $/mois |
-| 06 | [Chart Helm de l'API](06-chart-helm-api.md) | probes, HPA, PDB, ressources | 0 € |
-| 07 | [Observabilité](07-observabilite.md) | Langfuse, collecteur OTel | 0 € en local |
-| 08 | [Coûts](08-couts.md) | coût par module, `make infra-up` / `make infra-down` | — |
-| 09 | [Déploiement par GitHub Actions](09-deploiement-github-oidc.md) | rôle OIDC, build arm64, ECR, Helm, sans clé | 0 € |
+| 06 | [Chart Helm de l'API](06-helm-chart-api.md) | probes, HPA, PDB, ressources | 0 € |
+| 07 | [Observabilité](07-observability.md) | Langfuse, collecteur OTel | 0 € en local |
+| 08 | [Coûts](08-costs.md) | coût par module, `make infra-up` / `make infra-down` | — |
+| 09 | [Déploiement par GitHub Actions](09-github-oidc-deployment.md) | rôle OIDC, build arm64, ECR, Helm, sans clé | 0 € |
 
 Total de l'environnement `dev` allumé : ~0,25 $/h, ~6 $/jour ; éteint : ~0 $ (guide 08).

@@ -30,28 +30,28 @@ C'est le protocole de reprise du brief, appliqué à toi aussi.
 ## Bloc 0 — Ce qui a changé pendant l'arrêt (✅ · 30 min · rien à installer)
 
 1. [decisions.md](decisions.md), lignes du 2026-10-19.
-2. [ADR 009](adr/009-un-environnement-oidc-et-services-aws.md) : un seul environnement,
+2. [ADR 009](adr/009-single-environment-oidc-aws-services.md) : un seul environnement,
    déploiement OIDC, règle d'entrée des services AWS.
 3. [STATE.md](../STATE.md), section « Reste à faire ». La demande de quota GPU se lance dès
    ce bloc : elle prend des jours à des semaines et la phase 6 en dépend.
 
 ## Bloc 1 — Phase 0, le vocabulaire (✅ · une séance · rien à installer)
 
-4. [ADR 001](adr/001-jeux-de-donnees.md) (les jeux retenus) et
-   [ADR 004](adr/004-interface-loaders.md) (l'interface des loaders), courts.
-5. [Notebook 0](../notebooks/phase-0/00_visite_guidee.ipynb) : corpus, queries, qrels,
+4. [ADR 001](adr/001-datasets.md) (les jeux retenus) et
+   [ADR 004](adr/004-loader-interface.md) (l'interface des loaders), courts.
+5. [Notebook 0](../notebooks/phase-0/00_guided_tour.ipynb) : corpus, queries, qrels,
    nDCG, SciFact, les quinze jeux. En partie 4, lire à côté
    [eval/types.py](../src/llm_testbench/eval/types.py),
    [eval/loaders/base.py](../src/llm_testbench/eval/loaders/base.py),
    [eval/loaders/beir.py](../src/llm_testbench/eval/loaders/beir.py) et
    [datasets-verification-2026-08-26.md](datasets-verification-2026-08-26.md).
-6. [ADR 003](adr/003-conventions-code.md) : comment le code est écrit, typé et testé, à lire
+6. [ADR 003](adr/003-code-conventions.md) : comment le code est écrit, typé et testé, à lire
    une fois avant d'ouvrir `src/`.
 
 ## Bloc 2 — Phase 1, la couche LLM (✅ · une à deux séances · rien à installer)
 
-7. [ADR 006](adr/006-couche-llm-et-gouvernance.md) d'abord : il justifie toute la structure.
-8. [Notebook 1](../notebooks/phase-1/01_appel_llm_robuste.ipynb), en mode échantillon.
+7. [ADR 006](adr/006-llm-layer-and-governance.md) d'abord : il justifie toute la structure.
+8. [Notebook 1](../notebooks/phase-1/01_robust_llm_call.ipynb), en mode échantillon.
    Modules dans l'ordre de sa partie 3 :
    - 3.1 la requête neutre et gouvernée :
      [llm/types.py](../src/llm_testbench/llm/types.py),
@@ -88,10 +88,10 @@ C'est le protocole de reprise du brief, appliqué à toi aussi.
 
 ## Bloc 3 — Phase 1, l'ingestion et la première mesure (✅ · une séance · Postgres local)
 
-10. [Guide 01](infra/01-dev-local-k3d.md), `make k3d-up` : le notebook 2 a besoin d'une
+10. [Guide 01](infra/01-local-dev-k3d.md), `make k3d-up` : le notebook 2 a besoin d'une
     base pgvector.
 11. [ADR 007](adr/007-sources-ingestion-pgvector.md).
-12. [Notebook 2](../notebooks/phase-1/02_document_vers_index.ipynb), en mode échantillon.
+12. [Notebook 2](../notebooks/phase-1/02_document_to_index.ipynb), en mode échantillon.
     Modules dans l'ordre de sa partie 3 :
     - 3.1 parsing : [sources/types.py](../src/llm_testbench/sources/types.py),
       [ingest/parsing.py](../src/llm_testbench/ingest/parsing.py),
@@ -112,7 +112,7 @@ C'est le protocole de reprise du brief, appliqué à toi aussi.
     - partie 5, trois embeddings contre la littérature :
       [eval/embeddings_bench.py](../src/llm_testbench/eval/embeddings_bench.py) et le
       résultat archivé `data/results/embeddings_scifact.json`.
-13. [Guide 07](infra/07-observabilite.md), `make langfuse-up` (VM Docker à 12 GB) : c'est là
+13. [Guide 07](infra/07-observability.md), `make langfuse-up` (VM Docker à 12 GB) : c'est là
     que vont les traces que les deux notebooks viennent d'émettre.
 14. Tests de référence : [tests/ingest/](../tests/ingest/),
     [tests/generation/test_answer.py](../tests/generation/test_answer.py),
@@ -140,13 +140,13 @@ sur le cluster).
 
 17. [Guide 00](infra/00-bootstrap.md) : bucket d'état, alerte de budget, rôle OIDC GitHub
     (`make bootstrap-apply`, huit ressources, 15 min).
-18. [Guide 08](infra/08-couts.md) : ce que coûte chaque module, avant d'allumer quoi que ce
+18. [Guide 08](infra/08-costs.md) : ce que coûte chaque module, avant d'allumer quoi que ce
     soit.
-19. [Guide 02](infra/02-reseau-vpc.md) → [03](infra/03-eks.md) →
+19. [Guide 02](infra/02-network-vpc.md) → [03](infra/03-eks.md) →
     [04](infra/04-rds-pgvector.md) → [05](infra/05-secrets.md) : `make infra-up`,
     `make cluster-addons`, secrets.
-20. [Guide 06](infra/06-chart-helm-api.md) : le chart, `make deploy`.
-21. [Guide 09](infra/09-deploiement-github-oidc.md) : la variable `AWS_DEPLOY_ROLE_ARN`
+20. [Guide 06](infra/06-helm-chart-api.md) : le chart, `make deploy`.
+21. [Guide 09](infra/09-github-oidc-deployment.md) : la variable `AWS_DEPLOY_ROLE_ARN`
     (commande dans `STATE.md`), puis `make deploy-trigger`.
 22. `make infra-down` le soir.
 
@@ -155,7 +155,7 @@ sur le cluster).
 ## Bloc 6 — Phase 2, l'évaluation (⏳ · phase centrale)
 
 **Avant `GO PHASE 2`** : [roadmap/phase-2.md](roadmap/phase-2.md) en entier ;
-[ADR 008](adr/008-travail-sur-main.md) pour la porte de régression (2.7) ; le plan d'une page
+[ADR 008](adr/008-work-on-main.md) pour la porte de régression (2.7) ; le plan d'une page
 que je rends, avec ses décisions ouvertes.
 
 **Pendant la phase, dans l'ordre** :
@@ -250,8 +250,8 @@ routage, scores BFCL, tau2-bench, AgentDojo.
 ## Bloc 9 — Phase 5, LLMOps (⏳)
 
 **Avant `GO PHASE 5`** : [roadmap/phase-5.md](roadmap/phase-5.md) ; relire dans
-[ADR 009](adr/009-un-environnement-oidc-et-services-aws.md) la règle d'entrée des services
-AWS ; les guides [07](infra/07-observabilite.md) et [09](infra/09-deploiement-github-oidc.md)
+[ADR 009](adr/009-single-environment-oidc-aws-services.md) la règle d'entrée des services
+AWS ; les guides [07](infra/07-observability.md) et [09](infra/09-github-oidc-deployment.md)
 sont le socle.
 
 **Pendant la phase, dans l'ordre** :
@@ -280,7 +280,7 @@ dérive injectée, temps de montée Karpenter.
 
 ## Bloc 10 — Phase 5B, le pont (⏳)
 
-**Avant `GO PHASE 5B`** : [ADR 005](adr/005-phase-5b-le-pont.md) puis
+**Avant `GO PHASE 5B`** : [ADR 005](adr/005-phase-5b-the-bridge.md) puis
 [roadmap/phase-5b.md](roadmap/phase-5b.md) ; relire les trois verrous de `CLAUDE.md` §6.
 
 54. `notebooks/phase-5b/01_*` — choisir entre un XGBoost et un LLM, la réponse est un

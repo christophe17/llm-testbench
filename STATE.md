@@ -44,7 +44,7 @@ changé au cap ; le banc ne prouve rien tant que la phase 1 n'est pas étudiée 
 ## Reste à faire en phase 1 (actions Christophe)
 
 1. Relire la phase 1 sur `main` (fusionnée le 2026-10-16 sans relecture formelle de la PR #3) ;
-   l'ordre de lecture, blocs 0 à 5, est dans `docs/ordre-de-lecture.md` (2026-10-20).
+   l'ordre de lecture, blocs 0 à 5, est dans `docs/reading-order.md` (2026-10-20).
 2. `.env` avec les clés (`.env.example`) → `make ingest-scifact`, `make api` ou `tilt up`,
    `make notebooks-full` (section « vrai provider » du notebook 1, vrais embeddings et vraie
    génération du notebook 2), `make bench-embeddings` (ajoute text-embedding-3-small).
@@ -117,8 +117,8 @@ phase), registre des décisions dans `docs/decisions.md`. Reprise de session : `
 
 ## Rangement des notebooks (2026-10-19)
 
-Un sous-dossier par phase : `notebooks/phase-N/NN_slug.ipynb` (`phase-0/00_visite_guidee`,
-`phase-1/01_appel_llm_robuste`, `phase-1/02_document_vers_index`). CI et `make notebooks-ci`
+Un sous-dossier par phase : `notebooks/phase-N/NN_slug.ipynb` (`phase-0/00_guided_tour`,
+`phase-1/01_robust_llm_call`, `phase-1/02_document_to_index`). CI et `make notebooks-ci`
 exécutent tout le dossier `notebooks/` ; les chemins et `.env` s'ancrent sur `find_repo_root()`.
 
 ## Contraintes actées
