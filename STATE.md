@@ -1,128 +1,138 @@
 # STATE
 
-> Instantané de l'état du projet. Mis à jour à chaque session de travail.
-> Historique détaillé dans `JOURNAL.md`, décisions dans `docs/adr/`.
+> Snapshot of the project state. Updated at each work session.
+> Detailed history in `JOURNAL.md`, decisions in `docs/adr/`.
 
-## Phase en cours
+## Current phase
 
-**Phase 1 — Squelette de production : construite** (2026-09-03), fusionnée dans `main` le
-2026-10-16 avec la PR #2 (PR #3). Depuis, tout se fait sur `main`, sans branche ni PR
-(ADR 008). Ce qui reste demande des actions de Christophe (clés, compte AWS), pas du code.
-**Audit de reprise du 2026-10-19** (ADR 009, `JOURNAL.md`, `docs/decisions.md`) : brief et
-infra corrigés — un seul environnement, déploiement par GitHub Actions et OIDC, URL de base
-composée dans le cluster, règle d'entrée des services AWS, Claude 5.5 par défaut. Rien de
-changé au cap ; le banc ne prouve rien tant que la phase 1 n'est pas étudiée et exécutée.
+**Phase 1 — Production skeleton: built** (2026-09-03), merged into `main` on
+2026-10-16 with PR #2 (PR #3). Since then, everything happens on `main`, with no branch or PR
+(ADR 008). What remains requires Christophe's actions (keys, AWS account), not code.
+**Resumption audit of 2026-10-19** (ADR 009, `JOURNAL.md`, `docs/decisions.md`): brief and
+infra corrected — a single environment, deployment via GitHub Actions and OIDC, database URL
+composed in the cluster, AWS services entry rule, Claude 5.5 by default. No change of
+course; the testbench proves nothing until phase 1 is studied and run.
 
-## Fait en phase 1 (2026-09-03)
+## Done in phase 1 (2026-09-03)
 
-- **Couche LLM** (`src/llm_testbench/llm/`, ADR 006) : types neutres ; gouvernance des données
-  (classes, métadonnées de backend datées, politique TOML par refus par défaut, décision
-  tracée) ; registre `config/llm_backends.toml` (anthropic, openai, openrouter, bedrock,
-  local) ; table de prix datée ; prompts versionnés Jinja2 strict avec empreinte ;
-  retry/backoff/gigue, circuit breaker, délai, budget, cache exact et sémantique ; providers
-  Anthropic (dont Bedrock) et compatible OpenAI sur SDK officiels ; embeddings ; sorties
-  structurées avec réparation bornée ; façade `LLMClient` ; traces OTel (`gen_ai.*` +
-  `llm_testbench.*`) ; simulateurs réseau (transport scripté, embedders jouet et haché).
-- **Sources et ingestion** (ADR 007) : `Source`/`Evidence`/`Provenance`/`Citation` homogènes ;
-  parsing (texte, markdown, sections) ; chunker récursif (baseline phase 3) ; schéma Postgres
-  (documents, chunks, registre d'index, une table de vecteurs HNSW par index) ; store psycopg
-  asynchrone ; pipeline idempotent ; loader QASPER ; `DocumentSource` ; réponse citée avec
-  sentinelle de refus.
-- **API** : `/chat` JSON, `/chat/stream` SSE, `/healthz`, `/readyz` (503 avec raison),
-  `/sources`, erreurs typées → HTTP ; CLI d'ingestion.
-- **Infra** : Dockerfile, chart Helm (probes, HPA, PDB, sécurité, ExternalSecret), Tilt,
-  Terraform `envs/dev` validé (VPC, EKS 1.33 + Pod Identity, RDS pg16 pgvector, ECR, S3,
-  secrets, rôles), vérifié sur k3d ; Langfuse v4 sur k3d (OTLP → ClickHouse prouvé, coût
-  recalculé identique au nôtre) ; 10 guides `docs/infra/` (README + 00→09, le 09 ajouté le 2026-10-19).
-- **Notebooks** : 1 (appel LLM robuste, 39 cellules) et 2 (document → index, 26 cellules),
-  exécutés en mode échantillon, en CI avec Postgres en service.
-- **Première mesure** (`data/results/embeddings_scifact.json`, mteb, SciFact nDCG@10) :
-  bge-base-en-v1.5 **0,740** (publié 0,7404 — écart nul) ; all-MiniLM-L6-v2 **0,645**
-  (< BM25 publié 0,665) ; text-embedding-3-small à produire avec une clé.
-- Tests : 155 hors ligne, 6 sur base, 2 réseau ; mypy strict ; hooks pre-commit alignés.
+- **LLM layer** (`src/llm_testbench/llm/`, ADR 006): neutral types; data governance
+  (classes, dated backend metadata, deny-by-default TOML policy, traced decision); registry
+  `config/llm_backends.toml` (anthropic, openai, openrouter, bedrock, local); dated price
+  table; versioned strict Jinja2 prompts with fingerprint; retry/backoff/jitter, circuit
+  breaker, timeout, budget, exact and semantic cache; Anthropic (including Bedrock) and
+  OpenAI-compatible providers on the official SDKs; embeddings; structured outputs with
+  bounded repair; `LLMClient` facade; OTel traces (`gen_ai.*` + `llm_testbench.*`); network
+  simulators (scripted transport, toy and hashed embedders).
+- **Sources and ingestion** (ADR 007): homogeneous `Source`/`Evidence`/`Provenance`/`Citation`;
+  parsing (text, markdown, sections); recursive chunker (phase 3 baseline); Postgres schema
+  (documents, chunks, index registry, one HNSW vector table per index); asynchronous psycopg
+  store; idempotent pipeline; QASPER loader; `DocumentSource`; cited answer with refusal
+  sentinel.
+- **API**: `/chat` JSON, `/chat/stream` SSE, `/healthz`, `/readyz` (503 with a reason),
+  `/sources`, typed errors → HTTP; ingestion CLI.
+- **Infra**: Dockerfile, Helm chart (probes, HPA, PDB, security, ExternalSecret), Tilt,
+  Terraform `envs/dev` validated (VPC, EKS 1.33 + Pod Identity, RDS pg16 pgvector, ECR, S3,
+  secrets, roles), verified on k3d; Langfuse v4 on k3d (OTLP → ClickHouse proven, cost
+  recomputed identical to ours); 10 `docs/infra/` guides (README + 00→09, 09 added on 2026-10-19).
+- **Notebooks**: 1 (robust LLM call, 39 cells) and 2 (document → index, 26 cells),
+  run in sample mode, in CI with Postgres as a service.
+- **First measurement** (`data/results/embeddings_scifact.json`, mteb, SciFact nDCG@10):
+  bge-base-en-v1.5 **0.740** (published 0.7404 — zero gap); all-MiniLM-L6-v2 **0.645**
+  (< published BM25 0.665); text-embedding-3-small to be produced with a key.
+- Tests: 155 offline, 6 on a database, 2 network; mypy strict; pre-commit hooks aligned.
 
-## Reste à faire en phase 1 (actions Christophe)
+## Remaining in phase 1 (Christophe's actions)
 
-1. Relire la phase 1 sur `main` (fusionnée le 2026-10-16 sans relecture formelle de la PR #3) ;
-   l'ordre de lecture, blocs 0 à 5, est dans `docs/reading-order.md` (2026-10-20).
-2. `.env` avec les clés (`.env.example`) → `make ingest-scifact`, `make api` ou `tilt up`,
-   `make notebooks-full` (section « vrai provider » du notebook 1, vrais embeddings et vraie
-   génération du notebook 2), `make bench-embeddings` (ajoute text-embedding-3-small).
-3. Guide 00 (bootstrap, 15 min ; huit ressources depuis le 2026-10-19, rôle OIDC GitHub
-   compris), puis la variable de dépôt du guide 09 :
+1. Review phase 1 on `main` (merged on 2026-10-16 without a formal review of PR #3);
+   the reading order, blocks 0 to 5, is in `docs/reading-order.md` (2026-10-20).
+2. `.env` with the keys (`.env.example`) → `make ingest-scifact`, `make api` or `tilt up`,
+   `make notebooks-full` ("real provider" section of notebook 1, real embeddings and real
+   generation of notebook 2), `make bench-embeddings` (adds text-embedding-3-small).
+3. Guide 00 (bootstrap, 15 min; eight resources since 2026-10-19, GitHub OIDC role
+   included), then the repository variable of guide 09:
    `gh variable set AWS_DEPLOY_ROLE_ARN --body "$(cd infra/terraform/bootstrap && terraform output -raw github_deploy_role_arn)"`,
-   puis guides 02→05 : `make infra-up`, `make cluster-addons`, secrets, `make deploy` ou
-   `make deploy-trigger` (guide 09) — l'API sur EKS (≈ 6 $/jour allumé, `make infra-down` le
-   soir).
-4. **Quota GPU** (phase 6, ADR 009 : des jours à des semaines). Les deux demandes à 8 vCPU
-   (un g6.2xlarge ou deux g6.xlarge) sont envoyées le 2026-10-20, compte 749020018778,
-   eu-west-3, statut `CASE_OPENED` : AWS a ouvert un dossier de support par demande, la
-   réponse arrive par courriel au contact du compte.
-   - « All G and VT Spot Instance Requests » (`L-3819A6DF`), 10 h 51.
-   - « Running On-Demand G and VT instances » (`L-DB2E81BA`), 10 h 54, envoyée par Christophe.
+   then guides 02→05: `make infra-up`, `make cluster-addons`, secrets, `make deploy` or
+   `make deploy-trigger` (guide 09) — the API on EKS (≈ $6/day while running, `make infra-down`
+   in the evening).
+4. **GPU quota** (phase 6, ADR 009: days to weeks). The two requests for 8 vCPU
+   (one g6.2xlarge or two g6.xlarge) were sent on 2026-10-20, account 749020018778,
+   eu-west-3, status `CASE_OPENED`: AWS opened one support case per request, and the
+   answer arrives by email to the account contact.
+   - "All G and VT Spot Instance Requests" (`L-3819A6DF`), 10:51.
+   - "Running On-Demand G and VT instances" (`L-DB2E81BA`), 10:54, sent by Christophe.
 
-   Lire l'état des deux dossiers (lecture seule, ne renvoie rien à AWS) :
+   Read the state of the two cases (read-only, sends nothing to AWS):
 
    ```bash
    aws service-quotas list-requested-service-quota-change-history --service-code ec2 --region eu-west-3 \
      --query "RequestedQuotas[?contains(QuotaName,'G and VT')].[QuotaName,DesiredValue,Status]" --output table
    ```
 
-   Statuts : `PENDING` → `CASE_OPENED` → `APPROVED` ou `DENIED` ; `CASE_CLOSED` signifie
-   dossier fermé sans plus, vérifier alors la valeur appliquée avec `list-service-quotas`.
+   Statuses: `PENDING` → `CASE_OPENED` → `APPROVED` or `DENIED`; `CASE_CLOSED` only means
+   the case was closed, so then check the applied value with `list-service-quotas`.
 
-## Chiffres actuels
+## Current numbers
 
-Premier chiffre du banc (protocole mteb, pas encore notre harness). Repères :
-BM25 = 0,665 nDCG@10 sur SciFact (papier BEIR) ; embeddings mesurés le 2026-09-03 : bge-base-en-v1.5 0,740 (= publié), all-MiniLM-L6-v2 0,645.
+First number of the testbench (mteb protocol, not our harness yet). Reference points:
+BM25 = 0.665 nDCG@10 on SciFact (BEIR paper); embeddings measured on 2026-09-03: bge-base-en-v1.5 0.740 (= published), all-MiniLM-L6-v2 0.645.
 
-## Décisions en attente d'arbitrage
+## Decisions awaiting a call
 
-- **Bootstrap AWS à appliquer par Christophe** en suivant `docs/infra/00-bootstrap.md`
-  (compte AWS existant, région eu-west-3, aucun budget ni bucket d'état à ce jour — le
-  bucket `eks-foundations-terraform-chris` appartient à un autre projet, on n'y touche pas).
-  Les modules `envs/dev` et le workflow de déploiement (guide 09) en dépendent.
-- Contraintes réelles de gouvernance des données : inconnues à ce jour, mécanisme construit
-  en phase 1 avec une politique permissive sur données publiques ; à durcir quand elles se
-  préciseront (`docs/decisions.md`, 2026-09-03).
-- Candidat d'extension post-phase 10 (noté le 2026-09-01, décision GO/NO-GO **après la
-  phase 5**, pas avant) : la boucle de données LLMOps — traces de la phase 5 → échantillonnage
-  → étiquetage par le juge calibré (phase 2) → curation → extension du golden set et jeu
-  d'entraînement du LoRA (phase 6). Pas de phase « pipeline de données » au sens data
-  engineering (Kafka/Spark/dbt/CDC) : hors positionnement, données statiques, doublon de la
-  phase 3 — voir `JOURNAL.md` 2026-09-01.
+- **AWS bootstrap to be applied by Christophe** following `docs/infra/00-bootstrap.md`
+  (existing AWS account, eu-west-3 region, no budget and no state bucket to date — the
+  `eks-foundations-terraform-chris` bucket belongs to another project, we do not touch it).
+  The `envs/dev` modules and the deployment workflow (guide 09) depend on it.
+- **PD-5 to update in the program** (`~/Roadmaps/program`, `docs/07-decisions.md` and
+  `docs/02-shared-rules.md`): its exception "roadmap-ai-engineer is a French brief … stays as
+  written" no longer holds since ADR 010; to be done from a program session.
+- Actual data governance constraints: unknown to date, mechanism built in phase 1 with a
+  permissive policy on public data; to be hardened when they become clearer
+  (`docs/decisions.md`, 2026-09-03).
+- Post-phase-10 extension candidate (noted on 2026-09-01, GO/NO-GO decision **after
+  phase 5**, not before): the LLMOps data loop — phase 5 traces → sampling → labeling by
+  the calibrated judge (phase 2) → curation → extension of the golden set and of the LoRA
+  training set (phase 6). No "data pipeline" phase in the data engineering sense
+  (Kafka/Spark/dbt/CDC): outside the positioning, static data, duplicate of phase 3 — see
+  `JOURNAL.md` 2026-09-01.
 
-## Amendements inscrits pour les phases à venir (2026-10-15)
+## Amendments recorded for upcoming phases (2026-10-15)
 
-Pas de roadmap « pipeline » séparée (`JOURNAL.md` 2026-10-15 et 2026-09-01). Les trois
-obligations ajoutées (Dagster livrable nommé en phase 3, file + worker en phase 5, manifeste de
-run en 5B et 6) sont intégrées dans `docs/roadmap/phase-3.md`, `phase-5.md`, `phase-5b.md` et
-`phase-6.md`.
+No separate "pipeline" roadmap (`JOURNAL.md` 2026-10-15 and 2026-09-01). The three added
+obligations (Dagster as a named deliverable in phase 3, queue + worker in phase 5, run
+manifest in 5B and 6) are integrated into `docs/roadmap/phase-3.md`, `phase-5.md`,
+`phase-5b.md` and `phase-6.md`.
 
-## Amendements du 2026-10-19 (audit de reprise, ADR 009)
+## Amendments of 2026-10-19 (resumption audit, ADR 009)
 
-Règle d'entrée des services AWS (`CLAUDE.md` §4) et ses premières applications : Bedrock
-Knowledge Bases en bras de comparaison du notebook 4 de la phase 3 ; SQS (abstraction à deux
-implémentations, Postgres `SKIP LOCKED` en local), ADOT, Karpenter et Cost Anomaly Detection en
-phase 5 ; node group GPU sur l'EKS existant comme seconde cible mesurée de la phase 6 ;
-Guardrails (phase 7) et AgentCore (phase 4) en option. Le CV sort de la phase 8 (tenu par le
-programme). Un seul environnement `dev`. Déploiement par GitHub Actions et OIDC (guide 09). Les
-notebooks 1 et 2 tournent sur `claude-sonnet-5-5`.
+AWS services entry rule (`CLAUDE.md` §4) and its first applications: Bedrock Knowledge Bases
+as a comparison arm in notebook 4 of phase 3; SQS (abstraction with two implementations,
+Postgres `SKIP LOCKED` locally), ADOT, Karpenter and Cost Anomaly Detection in phase 5; GPU
+node group on the existing EKS as the second measured target of phase 6; Guardrails
+(phase 7) and AgentCore (phase 4) as options. The CV leaves phase 8 (held by the program).
+A single `dev` environment. Deployment via GitHub Actions and OIDC (guide 09). Notebooks 1
+and 2 run on `claude-sonnet-5-5`.
 
-## Organisation du brief (2026-10-16)
+## Brief organization (2026-10-16)
 
-`CLAUDE.md` ne garde que le contrat de travail ; roadmap dans `docs/roadmap/` (un fichier par
-phase), registre des décisions dans `docs/decisions.md`. Reprise de session : `STATE.md`,
-`JOURNAL.md`, `docs/decisions.md`, 3 derniers ADR, fichier de la phase en cours.
+`CLAUDE.md` keeps only the working contract; roadmap in `docs/roadmap/` (one file per
+phase), decision log in `docs/decisions.md`. Session resumption: `STATE.md`, `JOURNAL.md`,
+`docs/decisions.md`, last 3 ADRs, current phase file.
 
-## Rangement des notebooks (2026-10-19)
+## Notebook layout (2026-10-19)
 
-Un sous-dossier par phase : `notebooks/phase-N/NN_slug.ipynb` (`phase-0/00_guided_tour`,
-`phase-1/01_robust_llm_call`, `phase-1/02_document_to_index`). CI et `make notebooks-ci`
-exécutent tout le dossier `notebooks/` ; les chemins et `.env` s'ancrent sur `find_repo_root()`.
+One subfolder per phase: `notebooks/phase-N/NN_slug.ipynb` (`phase-0/00_guided_tour`,
+`phase-1/01_robust_llm_call`, `phase-1/02_document_to_index`). CI and `make notebooks-ci`
+run the whole `notebooks/` folder; paths and `.env` are anchored on `find_repo_root()`.
 
-## Contraintes actées
+## Language (2026-10-20)
 
-- Clés API : OpenAI, Anthropic, OpenRouter (Mistral via OpenRouter).
-- Budget : pas de plafond a priori ; alerte AWS à 55 USD/mois ; chaque poste documenté.
-- Rythme : pas de calendrier, les « semaines » du brief sont des unités d'effort.
+Everything in English, no French anywhere in the repository (ADR 010, `CLAUDE.md` §2.B.5):
+prose, notebooks, docstrings, messages, test data, prompts (`chat_answer` and
+`structured_output_*` at v2, refusal sentinel in English) and file names. Commit messages
+before 2026-10-20 stay in French in the history.
+
+## Recorded constraints
+
+- API keys: OpenAI, Anthropic, OpenRouter (Mistral via OpenRouter).
+- Budget: no cap a priori; AWS alert at 55 USD/month; each cost item documented.
+- Pace: no calendar, the brief's "weeks" are units of effort.

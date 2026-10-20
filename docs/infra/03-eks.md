@@ -1,110 +1,109 @@
-# Guide 03 — EKS : plan de contrôle, nœuds Graviton, accès, identités de pods, déploiement
+# Guide 03 — EKS: control plane, Graviton nodes, access, pod identities, deployment
 
-**Durée** : 45 minutes dont ~20 d'attente Terraform. **Prérequis** : guides 00 à 02.
-**Coût** : ~0,25 $/h allumé (README de l'environnement) ; **`make infra-down` en fin de
-session**. **Code** : `infra/terraform/envs/dev/eks.tf`, `iam.tf`, `outputs.tf`, cibles
-`make infra-up`, `kubeconfig`, `cluster-addons`, `deploy`.
+**Duration**: 45 minutes, ~20 of them waiting on Terraform. **Prerequisites**: guides 00
+to 02. **Cost**: ~$0.25/h when on (environment README); **`make infra-down` at the end of
+the session**. **Code**: `infra/terraform/envs/dev/eks.tf`, `iam.tf`, `outputs.tf`,
+targets `make infra-up`, `kubeconfig`, `cluster-addons`, `deploy`.
 
 ---
 
-## Le problème
+## The problem
 
-Faire tourner Kubernetes soi-même, vous savez faire. La question sur AWS est *ce qu'on
-délègue* : le plan de contrôle (EKS le gère, 0,10 $/h), les nœuds (groupes managés,
-Fargate, ou Auto Mode), les add-ons (CNI, DNS, proxy, métriques), et surtout **comment
-un pod obtient des droits AWS** sans clé partagée — le point qui bloque tout le monde et
-la première question d'entretien sur EKS.
+Running Kubernetes yourself is something you know how to do. The question on AWS is *what
+you delegate*: the control plane (EKS manages it, $0.10/h), the nodes (managed groups,
+Fargate, or Auto Mode), the add-ons (CNI, DNS, proxy, metrics), and above all **how a pod
+gets AWS permissions** without a shared key — the point that trips everyone up and the
+first interview question about EKS.
 
-## Les options
+## The options
 
-**Les nœuds.**
-
-| Option | Verdict |
-|---|---|
-| **Groupe de nœuds managé** (Graviton `t4g.medium`) | **Retenu** : AWS gère l'AMI et les mises à jour, on garde le contrôle du dimensionnement. Graviton : ~20 % moins cher qu'x86 et **même architecture que l'image construite sur Mac M1** — pas de build croisé. |
-| Fargate | Pas de nœud à gérer, mais démarrage lent, pas de volumes, pas de DaemonSet : mal adapté à une API à probes et à Langfuse. |
-| EKS Auto Mode | Karpenter et les add-ons gérés par AWS, facturé en plus par nœud. Séduisant, mais il cache précisément ce qu'on veut apprendre ici. |
-
-**Les identités de pods.**
+**The nodes.**
 
 | Option | Verdict |
 |---|---|
-| Clé AWS dans un Secret | Jamais : une clé partagée, sans expiration, dans le cluster. |
-| IRSA (rôle par ServiceAccount via OIDC) | L'ancien standard, encore requis par certains charts ; annotation sur le ServiceAccount, fournisseur OIDC par cluster. |
-| **EKS Pod Identity** | **Retenu** : une association (cluster, namespace, ServiceAccount) → rôle, créée par Terraform ; aucune annotation, aucun OIDC à gérer. L'agent est un add-on. |
+| **Managed node group** (Graviton `t4g.medium`) | **Chosen**: AWS manages the AMI and updates, we keep control of sizing. Graviton: ~20% cheaper than x86 and **the same architecture as the image built on an M1 Mac** — no cross-build. |
+| Fargate | No node to manage, but slow startup, no volumes, no DaemonSet: a poor fit for an API with probes and for Langfuse. |
+| EKS Auto Mode | Karpenter and the add-ons managed by AWS, billed extra per node. Tempting, but it hides precisely what we want to learn here. |
 
-**L'accès humain au cluster.**
+**Pod identities.**
 
 | Option | Verdict |
 |---|---|
-| ConfigMap `aws-auth` | En voie de disparition ; les cours l'enseignent encore. |
-| **Access entries** (`authentication_mode = "API"`) | **Retenu** : les droits d'accès sont des ressources AWS, pas un YAML dans le cluster. |
+| AWS key in a Secret | Never: a shared key, with no expiry, inside the cluster. |
+| IRSA (role per ServiceAccount via OIDC) | The former standard, still required by some charts; annotation on the ServiceAccount, one OIDC provider per cluster. |
+| **EKS Pod Identity** | **Chosen**: an association (cluster, namespace, ServiceAccount) → role, created by Terraform; no annotation, no OIDC to manage. The agent is an add-on. |
 
-## Lecture guidée du code réel
+**Human access to the cluster.**
 
-**[`eks.tf`](../../infra/terraform/envs/dev/eks.tf)** :
+| Option | Verdict |
+|---|---|
+| `aws-auth` ConfigMap | On its way out; courses still teach it. |
+| **Access entries** (`authentication_mode = "API"`) | **Chosen**: access rights are AWS resources, not YAML inside the cluster. |
 
-- `kubernetes_version = "1.33"` : chaque version a ~14 mois de support standard, puis le
-  **support étendu est facturé** six fois plus cher. Une variable, pour monter de version
-  délibérément.
-- `endpoint_public_access` + `endpoint_private_access` : l'API Kubernetes est joignable
-  de votre Mac (public, filtré par `public_access_cidrs`) et des nœuds (privé).
-- `authentication_mode = "API"` et `enable_cluster_creator_admin_permissions = true` :
-  l'identité qui lance `terraform apply` devient administrateur du cluster par une access
-  entry — c'est ce qui rend `kubectl` possible dès la fin de l'apply.
-- `access_entries` : le rôle de déploiement GitHub Actions (bootstrap, `github.tf`) reçoit
-  `AmazonEKSClusterAdminPolicy` sur le cluster de dev — c'est ce qui permet au workflow du
-  guide 09 de faire `helm upgrade`. Le moindre privilège (`AmazonEKSEditPolicy` limitée au
-  namespace, plus un ClusterRole pour les CRD External Secrets) y est discuté.
-- `enable_irsa = true` : le fournisseur OIDC existe quand même, pour les charts qui ne
-  parlent pas encore Pod Identity.
-- `create_kms_key = true` : chiffrement des secrets Kubernetes au repos avec une clé KMS
-  dédiée (~1 $/mois).
-- `enabled_log_types` : journaux du plan de contrôle (API, audit, authentification) dans
-  CloudWatch, gardés 7 jours.
-- `addons` : les cinq add-ons managés. `before_compute = true` pour le CNI et l'agent
-  Pod Identity : ils doivent exister avant les nœuds, sinon les premiers pods démarrent
-  sans réseau ou sans identité. **`metrics-server` en add-on managé** : c'est lui que
-  l'HPA du chart (guide 06) interroge.
-- `eks_managed_node_groups.default` : AMI Amazon Linux 2023 **arm64**, `t4g.medium`
-  (2 vCPU, 4 Go), 1 à 3 nœuds, 2 au démarrage, disque de 30 Go.
+## Guided reading of the real code
 
-**[`iam.tf`](../../infra/terraform/envs/dev/iam.tf)** — la partie à lire lentement :
+**[`eks.tf`](../../infra/terraform/envs/dev/eks.tf)**:
 
-- `pod_identity_trust` : la politique de confiance que tout rôle Pod Identity porte —
-  le service `pods.eks.amazonaws.com` peut assumer le rôle et étiqueter la session.
-- Rôle `api` : `bedrock:InvokeModel` et `InvokeModelWithResponseStream` sur les modèles
-  de fondation de la région et sur les profils d'inférence `eu.*` (les modèles Claude en
-  Europe sont souvent servis par un profil inter-régions UE). Rien d'autre.
-- Rôle `external_secrets` : lire les secrets sous le préfixe `llm-testbench/dev/*`,
-  et seulement ceux-là.
-- Deux `aws_eks_pod_identity_association` : (namespace `llm-testbench`, ServiceAccount
-  `api`) → rôle API ; (namespace `external-secrets`, ServiceAccount `external-secrets`)
-  → rôle ESO. Le nom du ServiceAccount de l'API est le nom de la release Helm (`api`),
-  d'où `var.api_service_account`.
+- `kubernetes_version = "1.33"`: each version gets ~14 months of standard support, then
+  **extended support is billed** at six times the price. A variable, to upgrade
+  deliberately.
+- `endpoint_public_access` + `endpoint_private_access`: the Kubernetes API is reachable
+  from your Mac (public, filtered by `public_access_cidrs`) and from the nodes (private).
+- `authentication_mode = "API"` and `enable_cluster_creator_admin_permissions = true`:
+  the identity that runs `terraform apply` becomes cluster administrator through an access
+  entry — this is what makes `kubectl` possible as soon as the apply finishes.
+- `access_entries`: the GitHub Actions deployment role (bootstrap, `github.tf`) receives
+  `AmazonEKSClusterAdminPolicy` on the dev cluster — this is what lets the guide 09
+  workflow run `helm upgrade`. Least privilege (`AmazonEKSEditPolicy` scoped to the
+  namespace, plus a ClusterRole for the External Secrets CRDs) is discussed there.
+- `enable_irsa = true`: the OIDC provider exists anyway, for charts that do not speak Pod
+  Identity yet.
+- `create_kms_key = true`: encryption of Kubernetes secrets at rest with a dedicated KMS
+  key (~$1/month).
+- `enabled_log_types`: control plane logs (API, audit, authentication) in CloudWatch, kept
+  7 days.
+- `addons`: the five managed add-ons. `before_compute = true` for the CNI and the Pod
+  Identity agent: they must exist before the nodes, otherwise the first pods start without
+  networking or without identity. **`metrics-server` as a managed add-on**: it is what the
+  chart's HPA (guide 06) queries.
+- `eks_managed_node_groups.default`: Amazon Linux 2023 **arm64** AMI, `t4g.medium`
+  (2 vCPU, 4 GB), 1 to 3 nodes, 2 at startup, 30 GB disk.
 
-**[`outputs.tf`](../../infra/terraform/envs/dev/outputs.tf)** — ce que les cibles `make`
-consomment : l'URL ECR, la commande `update-kubeconfig`, les noms des secrets à remplir.
+**[`iam.tf`](../../infra/terraform/envs/dev/iam.tf)** — the part to read slowly:
 
-## Exécution
+- `pod_identity_trust`: the trust policy every Pod Identity role carries — the
+  `pods.eks.amazonaws.com` service can assume the role and tag the session.
+- `api` role: `bedrock:InvokeModel` and `InvokeModelWithResponseStream` on the region's
+  foundation models and on the `eu.*` inference profiles (Claude models in Europe are often
+  served through an EU cross-region profile). Nothing else.
+- `external_secrets` role: read the secrets under the `llm-testbench/dev/*` prefix, and
+  only those.
+- Two `aws_eks_pod_identity_association`: (namespace `llm-testbench`, ServiceAccount
+  `api`) → API role; (namespace `external-secrets`, ServiceAccount `external-secrets`)
+  → ESO role. The API's ServiceAccount name is the Helm release name (`api`), hence
+  `var.api_service_account`.
 
-**1. Créer l'environnement** (~20 minutes ; le plan de contrôle EKS est la partie longue).
+**[`outputs.tf`](../../infra/terraform/envs/dev/outputs.tf)** — what the `make` targets
+consume: the ECR URL, the `update-kubeconfig` command, the names of the secrets to fill in.
+
+## Run
+
+**1. Create the environment** (~20 minutes; the EKS control plane is the long part).
 
 ```bash
 make infra-up
 ```
 
-Répondez `yes`. À la fin, le Makefile enchaîne `make kubeconfig`. Vérifiez :
+Answer `yes`. At the end, the Makefile chains `make kubeconfig`. Check:
 
 ```bash
-kubectl config current-context           # arn:aws:eks:eu-west-3:<compte>:cluster/llm-testbench-dev
-kubectl get nodes -o wide                 # 2 nœuds Ready, ARCH arm64
+kubectl config current-context           # arn:aws:eks:eu-west-3:<account>:cluster/llm-testbench-dev
+kubectl get nodes -o wide                 # 2 nodes Ready, ARCH arm64
 kubectl get pods -A                       # coredns, kube-proxy, aws-node, eks-pod-identity-agent, metrics-server
-kubectl top nodes                         # metrics-server répond
+kubectl top nodes                         # metrics-server responds
 ```
 
-**2. Les add-ons hors Terraform** : External Secrets Operator (Helm) et le magasin de
-secrets.
+**2. The add-ons outside Terraform**: External Secrets Operator (Helm) and the secret store.
 
 ```bash
 make cluster-addons
@@ -112,123 +111,116 @@ kubectl -n external-secrets get pods
 kubectl get clustersecretstore aws-secrets-manager     # READY True
 ```
 
-`READY True` prouve la chaîne complète : le pod ESO a obtenu, par Pod Identity, des
-identifiants temporaires lui permettant de lister nos secrets. Aucune clé n'a été
-créée nulle part.
+`READY True` proves the whole chain: the ESO pod obtained, through Pod Identity, temporary
+credentials allowing it to list our secrets. No key was created anywhere.
 
-**3. Renseigner les secrets** (guide 05, à faire maintenant si vous voulez un `/chat`
-fonctionnel) puis **déployer l'API** :
+**3. Fill in the secrets** (guide 05, to do now if you want a working `/chat`) then
+**deploy the API**:
 
 ```bash
 make deploy
 kubectl -n llm-testbench get pods -w
 ```
 
-`make deploy` : connexion à ECR, build de l'image (arm64, comme les nœuds), push au SHA
-git, `helm upgrade` avec `values-dev.yaml`. Comme en local, le pod restera `0/1` tant
-que l'index n'existe pas dans RDS : c'est le guide 04.
+`make deploy`: ECR login, image build (arm64, like the nodes), push tagged with the git
+SHA, `helm upgrade` with `values-dev.yaml`. As locally, the pod will stay `0/1` as long as
+the index does not exist in RDS: that is guide 04.
 
-**4. Vérifier l'identité de pod de l'API**, sans clé :
+**4. Check the API's pod identity**, without a key:
 
 ```bash
 kubectl -n llm-testbench exec deploy/api -- env | grep AWS_CONTAINER_CREDENTIAL_FULL_URI
 ```
 
-Cette variable, injectée par l'agent Pod Identity, est l'endroit où le SDK AWS ira
-chercher des identifiants temporaires pour le rôle `api`. Le provider Bedrock de la
-couche LLM (backend `bedrock`, `config/llm_backends.toml`) s'en sert tel quel.
+This variable, injected by the Pod Identity agent, is where the AWS SDK will go to fetch
+temporary credentials for the `api` role. The LLM layer's Bedrock provider (`bedrock`
+backend, `config/llm_backends.toml`) uses it as is.
 
-**5. En fin de session :**
+**5. At the end of the session:**
 
 ```bash
 make infra-down
 ```
 
-Vérifiez sur Cost Explorer le lendemain : rien ne doit apparaître hormis les secrets
-(centimes) et, éventuellement, des logs CloudWatch résiduels.
+Check Cost Explorer the next day: nothing should appear apart from the secrets (cents) and,
+possibly, leftover CloudWatch logs.
 
-## Les pièges
+## Pitfalls
 
-- **Le support étendu EKS** : une version qui passe en support étendu coûte 0,60 $/h au
-  lieu de 0,10 $/h, sans prévenir autrement que par un e-mail. Mettez la version à jour
-  avant l'échéance (la variable existe pour ça).
-- **`before_compute`** : oublié, les premiers nœuds démarrent avant le CNI, les pods
-  système échouent, puis tout finit par converger — après vingt minutes de confusion.
-- **L'access entry du créateur** : si `terraform apply` est lancé par une autre identité
-  que celle de votre `kubectl` (un rôle assumé, par exemple), vous n'aurez pas accès au
-  cluster. Ajoutez des `access_entries` pour les autres identités.
-- **Pod Identity ne marche que pour les pods lancés après l'association**. Un pod
-  déjà en marche ne reçoit pas l'identité : redémarrez-le.
-- **Une image amd64 sur des nœuds Graviton** ne démarre pas (`exec format error`).
-  L'image du Mac est arm64 ; si vous passez à des nœuds x86, `docker buildx build
-  --platform linux/amd64`.
-- **`make infra-down` peut échouer sur des ressources créées par Kubernetes** (un
-  LoadBalancer, des volumes EBS) que Terraform ne connaît pas. Supprimez d'abord les
-  Services de type LoadBalancer et les PVC, puis relancez.
-- **Les logs CloudWatch du plan de contrôle** persistent après la destruction (groupe de
-  logs à rétention 7 jours) : quelques centimes, mais visibles sur la facture.
+- **EKS extended support**: a version that moves into extended support costs $0.60/h
+  instead of $0.10/h, with no warning other than an email. Upgrade the version before the
+  deadline (the variable exists for that).
+- **`before_compute`**: if forgotten, the first nodes start before the CNI, the system pods
+  fail, then everything eventually converges — after twenty minutes of confusion.
+- **The creator's access entry**: if `terraform apply` is run by a different identity from
+  your `kubectl` one (an assumed role, for example), you will not have access to the
+  cluster. Add `access_entries` for the other identities.
+- **Pod Identity only works for pods launched after the association**. A pod already
+  running does not receive the identity: restart it.
+- **An amd64 image on Graviton nodes** does not start (`exec format error`). The Mac image
+  is arm64; if you move to x86 nodes, `docker buildx build --platform linux/amd64`.
+- **`make infra-down` can fail on resources created by Kubernetes** (a LoadBalancer, EBS
+  volumes) that Terraform does not know about. Delete the LoadBalancer-type Services and the
+  PVCs first, then rerun.
+- **Control plane CloudWatch logs** persist after destruction (log group with 7-day
+  retention): a few cents, but visible on the bill.
 
-## Questions d'entretien
+## Interview questions
 
-<details><summary><b>1. Comment un pod obtient-il des droits AWS, et pourquoi pas une clé ?</b></summary>
+<details><summary><b>1. How does a pod get AWS permissions, and why not a key?</b></summary>
 
-Par une identité de pod : le ServiceAccount du pod est associé à un rôle IAM, l'agent
-sur le nœud fournit des identifiants temporaires que le SDK récupère automatiquement.
-Une clé statique ne expire pas, se partage entre tous les pods qui la lisent, et fuit
-avec n'importe quel `kubectl get secret`. Deux mécanismes : IRSA (OIDC, annotation sur
-le ServiceAccount) et Pod Identity (association AWS, sans annotation), le second
-remplaçant progressivement le premier.
+Through a pod identity: the pod's ServiceAccount is associated with an IAM role, the agent
+on the node provides temporary credentials that the SDK picks up automatically. A static
+key does not expire, is shared among all the pods that read it, and leaks with any
+`kubectl get secret`. Two mechanisms: IRSA (OIDC, annotation on the ServiceAccount) and Pod
+Identity (AWS association, no annotation), the second gradually replacing the first.
 </details>
 
-<details><summary><b>2. Access entries contre aws-auth ?</b></summary>
+<details><summary><b>2. Access entries versus aws-auth?</b></summary>
 
-`aws-auth` est un ConfigMap dans le cluster qui mappe des identités IAM à des groupes
-Kubernetes : modifiable par quiconque édite le ConfigMap, invisible d'IAM, facile à
-casser (une erreur de YAML et plus personne n'entre). Les access entries sont des
-ressources AWS gérées par API, avec des politiques prédéfinies (admin, view…), auditées
-par CloudTrail.
+`aws-auth` is a ConfigMap inside the cluster that maps IAM identities to Kubernetes groups:
+modifiable by anyone who edits the ConfigMap, invisible to IAM, easy to break (one YAML
+error and nobody gets in anymore). Access entries are AWS resources managed through the API,
+with predefined policies (admin, view…), audited by CloudTrail.
 </details>
 
-<details><summary><b>3. Quand choisir Fargate, un groupe managé, ou Karpenter ?</b></summary>
+<details><summary><b>3. When do you choose Fargate, a managed group, or Karpenter?</b></summary>
 
-Fargate pour des charges isolées, sans DaemonSet ni volume, où l'on ne veut aucun nœud
-à gérer. Groupe managé pour un cluster stable à la taille prévisible. Karpenter quand la
-charge varie et que le choix d'instance (famille, Spot) doit se faire à la demande :
-c'est le mot-clé des offres, et le sujet de la phase 5 quand il y aura du trafic à
-absorber.
+Fargate for isolated workloads, with no DaemonSet or volume, where you want no node to
+manage at all. A managed group for a stable cluster of predictable size. Karpenter when the
+load varies and the instance choice (family, Spot) must be made on demand: it is the keyword
+in job postings, and the topic of phase 5 when there is traffic to absorb.
 </details>
 
-<details><summary><b>4. Que contient le prix d'EKS ?</b></summary>
+<details><summary><b>4. What does the EKS price include?</b></summary>
 
-0,10 $/h pour le plan de contrôle quelle que soit la taille, puis les nœuds au tarif EC2,
-le stockage EBS, la NAT, les équilibreurs, et 0,60 $/h en support étendu. Le plan de
-contrôle seul est ~73 $/mois : c'est pour ça qu'un cluster de dev doit s'éteindre.
+$0.10/h for the control plane whatever the size, then the nodes at the EC2 rate, EBS
+storage, the NAT, the load balancers, and $0.60/h under extended support. The control plane
+alone is ~$73/month: that is why a dev cluster must be shut down.
 </details>
 
-<details><summary><b>5. Comment expose-t-on un service sur EKS ?</b></summary>
+<details><summary><b>5. How do you expose a service on EKS?</b></summary>
 
-Un `Service type: LoadBalancer` crée un équilibreur (classique par défaut, NLB/ALB avec
-l'AWS Load Balancer Controller) dans les sous-réseaux tagués `kubernetes.io/role/elb`.
-Un Ingress demande le contrôleur. Chaque équilibreur coûte ~0,02 $/h : en dev, le
-port-forward suffit.
+A `Service type: LoadBalancer` creates a load balancer (classic by default, NLB/ALB with the
+AWS Load Balancer Controller) in the subnets tagged `kubernetes.io/role/elb`. An Ingress
+requires the controller. Each load balancer costs ~$0.02/h: in dev, port-forward is enough.
 </details>
 
-## Ce qu'on n'a pas fait, et pourquoi
+## What we did not do, and why
 
-- **Pas de Karpenter** : un groupe de nœuds fixe suffit tant qu'il n'y a pas de charge
-  variable (phase 5).
-- **Pas d'AWS Load Balancer Controller ni d'Ingress** : port-forward en dev ; l'exposition
-  publique arrivera avec l'UI de chat (phase 5).
-- **Pas de Spot** : les nœuds Spot coûtent ~70 % de moins mais peuvent disparaître ;
-  pertinent pour le générateur de trafic ou les jobs d'évaluation, pas pour l'API en
-  phase 1.
-- **Pas d'IAM Identity Center** : un seul humain sur un compte personnel ; la réponse de
-  production reste notée (guide 00).
-- **Le pipeline de déploiement est au guide 09** (depuis le 2026-10-19) : `make deploy`
-  depuis le poste, et le même déploiement par GitHub Actions avec un rôle OIDC ; la CI de
-  tests reste hors ligne (ADR 003).
-- **Pas de restriction de l'endpoint public à une IP** : `public_access_cidrs` reste ouvert,
-  et c'est une décision (ADR 009) — le pipeline déploie depuis des runners GitHub à IP
-  variable, et l'authentification est IAM (access entries, journaux d'audit). Le jour où le
-  déploiement passe en mode pull (GitOps) ou par un runner dans le VPC, on ferme ; d'ici là,
-  `TF_VAR_public_access_cidrs='["votre.ip/32"]'` si vous ne déployez que depuis votre poste.
+- **No Karpenter**: a fixed node group is enough as long as there is no variable load
+  (phase 5).
+- **No AWS Load Balancer Controller or Ingress**: port-forward in dev; public exposure will
+  come with the chat UI (phase 5).
+- **No Spot**: Spot nodes cost ~70% less but can disappear; relevant for the traffic
+  generator or the evaluation jobs, not for the API in phase 1.
+- **No IAM Identity Center**: a single human on a personal account; the production answer
+  stays noted (guide 00).
+- **The deployment pipeline is in guide 09** (since 2026-10-19): `make deploy` from the
+  workstation, and the same deployment through GitHub Actions with an OIDC role; the test CI
+  stays offline (ADR 003).
+- **No restriction of the public endpoint to one IP**: `public_access_cidrs` stays open, and
+  that is a decision (ADR 009) — the pipeline deploys from GitHub runners with variable IPs,
+  and authentication is IAM (access entries, audit logs). The day deployment moves to pull
+  mode (GitOps) or to a runner inside the VPC, we close it; until then,
+  `TF_VAR_public_access_cidrs='["your.ip/32"]'` if you only deploy from your workstation.

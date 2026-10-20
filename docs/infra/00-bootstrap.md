@@ -1,149 +1,147 @@
-# Guide 00 — Bootstrap AWS : l'état distant et l'alerte de budget avant le premier euro
+# Guide 00 — AWS bootstrap: remote state and the budget alert before the first euro
 
-**Durée** : 15 minutes. **Prérequis** : compte AWS, AWS CLI configurée, Terraform ≥ 1.10.
-**Coût** : ~0 €/mois. **Code** : `infra/terraform/bootstrap/` (`main.tf`, `github.tf`, `variables.tf`, `outputs.tf`).
+**Duration**: 15 minutes. **Prerequisites**: AWS account, AWS CLI configured, Terraform ≥ 1.10.
+**Cost**: ~€0/month. **Code**: `infra/terraform/bootstrap/` (`main.tf`, `github.tf`, `variables.tf`, `outputs.tf`).
 
-Ce guide s'exécute une seule fois par compte. Tout ce qui suit dans la phase 1 (réseau, EKS,
-RDS) stocke son état dans le bucket créé ici et vit sous l'alerte de budget créée ici.
+This guide runs once per account. Everything that follows in phase 1 (network, EKS, RDS)
+stores its state in the bucket created here and lives under the budget alert created here.
 
 ---
 
-## Le problème
+## The problem
 
-Deux problèmes d'œuf et de poule, à régler avant toute autre ressource cloud.
+Two chicken-and-egg problems, to settle before any other cloud resource.
 
-**1. L'état Terraform a besoin d'un endroit où vivre.** Terraform garde la correspondance
-entre le code et les ressources réelles dans un fichier d'état. En local, ce fichier est un
-point de défaillance unique : un disque perdu et Terraform ne sait plus ce qu'il a créé ; deux
-`apply` concurrents et l'état est corrompu. Il faut donc un stockage distant, chiffré,
-versionné et verrouillable. Mais ce stockage est lui-même une ressource cloud, que quelque
-chose doit créer.
+**1. Terraform state needs somewhere to live.** Terraform keeps the mapping between the code
+and the real resources in a state file. Locally, that file is a single point of failure: a
+lost disk and Terraform no longer knows what it created; two concurrent `apply` runs and the
+state is corrupted. So it needs remote storage that is encrypted, versioned and lockable. But
+that storage is itself a cloud resource, which something has to create.
 
-**2. L'alerte de budget doit exister avant la première ressource facturée.** Le brief interdit
-les postes dormants. Or les postes dormants sont silencieux par nature : une NAT Gateway
-oubliée coûte ~35 €/mois sans jamais se signaler, un plan de contrôle EKS ~70 €/mois. Sans
-alerte, on découvre la dérive sur la facture du mois suivant.
+**2. The budget alert must exist before the first billed resource.** The brief forbids idle
+cost items. And idle items are silent by nature: a forgotten NAT Gateway costs ~€35/month
+without ever announcing itself, an EKS control plane ~€70/month. Without an alert, you
+discover the drift on the following month's bill.
 
-## Les options
+## The options
 
-**Pour l'état.**
-
-| Option | Verdict |
-|---|---|
-| Fichier local | Refusé : point de défaillance unique, pas de verrou, pas d'historique. Accepté *uniquement* pour ce module-ci (voir plus bas). |
-| S3 + table DynamoDB pour le verrou | La réponse classique jusqu'en 2024. Deux services à gérer pour un verrou. Encore dans la plupart des tutoriels. |
-| **S3 avec verrou natif** (`use_lockfile`, Terraform ≥ 1.10) | **Retenu.** Le verrou est un objet `.tflock` écrit conditionnellement dans le bucket lui-même. Un seul service. |
-| HCP Terraform (ex-Terraform Cloud) | Refusé : dépendance à un SaaS pour un projet qui veut montrer qu'il sait opérer. |
-
-**Pour l'alerte.**
+**For the state.**
 
 | Option | Verdict |
 |---|---|
-| **AWS Budgets** | **Retenu.** Gratuit pour les deux premiers budgets, seuils au réel et au prévisionnel, e-mail sans infrastructure. |
-| Alarme CloudWatch sur la métrique de facturation | Métrique uniquement en `us-east-1`, à activer à la main dans la console, pas de prévisionnel. |
-| Cost Anomaly Detection | Complémentaire (détection statistique, gratuite), pas un plafond. Candidat pour la phase 5. |
+| Local file | Rejected: single point of failure, no lock, no history. Accepted *only* for this very module (see below). |
+| S3 + DynamoDB table for the lock | The classic answer until 2024. Two services to manage for one lock. Still in most tutorials. |
+| **S3 with native locking** (`use_lockfile`, Terraform ≥ 1.10) | **Chosen.** The lock is a `.tflock` object written conditionally in the bucket itself. A single service. |
+| HCP Terraform (formerly Terraform Cloud) | Rejected: dependency on a SaaS for a project that wants to show it knows how to operate. |
 
-## Lecture guidée du code réel
+**For the alert.**
 
-Ouvrez [`infra/terraform/bootstrap/main.tf`](../../infra/terraform/bootstrap/main.tf).
+| Option | Verdict |
+|---|---|
+| **AWS Budgets** | **Chosen.** Free for the first two budgets, thresholds on actual and forecasted spend, email with no infrastructure. |
+| CloudWatch alarm on the billing metric | Metric only in `us-east-1`, to be enabled by hand in the console, no forecast. |
+| Cost Anomaly Detection | Complementary (statistical detection, free), not a cap. Candidate for phase 5. |
 
-**Le bloc `terraform`** fixe `required_version = ">= 1.10"`. Ce n'est pas une coquetterie : le
-verrou natif S3 n'existe pas avant. Le provider AWS est épinglé en `~> 5.60` (toute 5.x à
-partir de 5.60, jamais 6.x) : une montée de version majeure du provider se décide, elle ne
-s'attrape pas.
+## Guided reading of the real code
 
-**Le bloc `provider`** porte des `default_tags`. Chaque ressource créée par ce module hérite
-de `Project`, `ManagedBy`, `Module`. C'est ce qui rendra possible, plus tard, un coût *par
-module* dans Cost Explorer : sans tags, la facture est un total indifférencié.
+Open [`infra/terraform/bootstrap/main.tf`](../../infra/terraform/bootstrap/main.tf).
 
-**`data "aws_caller_identity"`** lit l'identifiant du compte courant. Il sert au nom du
-bucket : les noms de buckets S3 sont uniques *au monde*, pas par compte. Suffixer par
-l'identifiant de compte évite la collision avec le `llm-testbench-tfstate` de quelqu'un
-d'autre.
+**The `terraform` block** sets `required_version = ">= 1.10"`. This is not an affectation:
+native S3 locking does not exist before that. The AWS provider is pinned to `~> 5.60` (any
+5.x from 5.60 on, never 6.x): a major provider upgrade is decided, not caught.
 
-**Le bucket** a un `lifecycle { prevent_destroy = true }`. Terraform refusera de le détruire,
-même sur un `terraform destroy` explicite. C'est voulu : ce bucket contiendra l'état de tout
-le reste, sa destruction accidentelle serait le pire incident possible du projet.
+**The `provider` block** carries `default_tags`. Every resource created by this module
+inherits `Project`, `ManagedBy`, `Module`. This is what will later make a *per-module* cost
+possible in Cost Explorer: without tags, the bill is an undifferentiated total.
 
-**Trois ressources annexes** configurent le bucket. Depuis le provider 4.x, ces réglages sont
-des ressources séparées, plus des arguments du bucket :
+**`data "aws_caller_identity"`** reads the current account ID. It is used in the bucket
+name: S3 bucket names are unique *worldwide*, not per account. Suffixing with the account ID
+avoids colliding with someone else's `llm-testbench-tfstate`.
 
-- `aws_s3_bucket_versioning` : chaque écriture d'état garde la version précédente. Un
-  `apply` raté se répare en restaurant la version d'avant.
-- `aws_s3_bucket_server_side_encryption_configuration` : chiffrement `aws:kms` avec la clé
-  gérée par AWS (`aws/s3`). Chiffré au repos sans créer de clé, donc sans le coût mensuel
-  d'une clé personnalisée. `bucket_key_enabled = true` réduit le nombre d'appels KMS
-  facturés. L'état Terraform mérite ce soin : il contiendra un jour le mot de passe RDS en
-  clair.
-- `aws_s3_bucket_public_access_block` : les quatre verrous anti-exposition publique. Un
-  bucket d'état public est une fuite de secrets.
+**The bucket** has a `lifecycle { prevent_destroy = true }`. Terraform will refuse to destroy
+it, even on an explicit `terraform destroy`. This is intended: this bucket will hold the state
+of everything else, and its accidental destruction would be the worst possible incident of
+the project.
 
-**Le budget** est en USD : AWS Budgets ne connaît pas l'euro (55 USD ≈ 50 €). Le bloc
-`dynamic "notification"` déroule trois alertes à partir d'une liste : 80 % et 100 % du
-**réel**, 100 % du **prévisionnel**. Le prévisionnel est le plus utile : AWS extrapole la
-consommation du mois et prévient des jours avant que le réel ne crève le plafond.
+**Three ancillary resources** configure the bucket. Since provider 4.x, these settings are
+separate resources, no longer bucket arguments:
 
-**[`variables.tf`](../../infra/terraform/bootstrap/variables.tf)** : région, plafond, et
-l'adresse e-mail d'alerte, seule variable sans défaut. **[`outputs.tf`](../../infra/terraform/bootstrap/outputs.tf)** :
-le nom du bucket, un bloc `backend "s3"` prêt à coller dans les modules d'environnement,
-avec `use_lockfile = true`, et l'ARN du rôle de déploiement.
+- `aws_s3_bucket_versioning`: every state write keeps the previous version. A failed
+  `apply` is repaired by restoring the version before it.
+- `aws_s3_bucket_server_side_encryption_configuration`: `aws:kms` encryption with the
+  AWS-managed key (`aws/s3`). Encrypted at rest without creating a key, so without the
+  monthly cost of a custom key. `bucket_key_enabled = true` reduces the number of billed KMS
+  calls. Terraform state deserves this care: one day it will contain the RDS password in
+  plain text.
+- `aws_s3_bucket_public_access_block`: the four locks against public exposure. A public
+  state bucket is a secrets leak.
 
-**[`github.tf`](../../infra/terraform/bootstrap/github.tf)** : le fournisseur OIDC de GitHub
-et le rôle que le workflow de déploiement assume, lus ligne à ligne au guide 09. Ils sont ici,
-et pas dans `envs/dev`, parce que c'est une identité de compte : stable, gratuite, et qui doit
-survivre au `make infra-down` du soir.
+**The budget** is in USD: AWS Budgets does not know the euro (USD 55 ≈ €50). The
+`dynamic "notification"` block unrolls three alerts from a list: 80% and 100% of **actual**,
+100% of **forecasted**. The forecast is the most useful: AWS extrapolates the month's
+consumption and warns days before the actual spend breaks through the cap.
 
-## Exécution
+**[`variables.tf`](../../infra/terraform/bootstrap/variables.tf)**: region, cap, and the
+alert email address, the only variable without a default. **[`outputs.tf`](../../infra/terraform/bootstrap/outputs.tf)**:
+the bucket name, a `backend "s3"` block ready to paste into the environment modules, with
+`use_lockfile = true`, and the ARN of the deployment role.
 
-**1. Vérifier l'identité et l'outillage.**
+**[`github.tf`](../../infra/terraform/bootstrap/github.tf)**: GitHub's OIDC provider and the
+role the deployment workflow assumes, read line by line in guide 09. They live here, and not
+in `envs/dev`, because this is an account identity: stable, free, and it must survive the
+evening `make infra-down`.
+
+## Run
+
+**1. Check identity and tooling.**
 
 ```bash
 aws sts get-caller-identity
 terraform version
 ```
 
-Attendu : votre identifiant de compte et l'ARN de votre utilisateur ; Terraform ≥ 1.10.
-Si `get-caller-identity` échoue, rien d'autre ne marchera : réglez `aws configure` d'abord.
+Expected: your account ID and your user's ARN; Terraform ≥ 1.10. If `get-caller-identity`
+fails, nothing else will work: fix `aws configure` first.
 
-**2. Fournir l'adresse d'alerte sans l'écrire dans un fichier.**
+**2. Provide the alert address without writing it to a file.**
 
 ```bash
-export TF_VAR_alert_email="vous@exemple.fr"
+export TF_VAR_alert_email="you@example.com"
 ```
 
-Terraform lit toute variable `TF_VAR_<nom>` de l'environnement. On évite ainsi un fichier
-`terraform.tfvars` contenant une adresse personnelle dans un dépôt public (`*.tfvars` est
-désormais ignoré par git, ceinture et bretelles). Sans cet export, `terraform apply` vous
-demandera la valeur interactivement : ça marche aussi.
+Terraform reads any `TF_VAR_<name>` variable from the environment. This avoids a
+`terraform.tfvars` file containing a personal address in a public repository (`*.tfvars` is
+now ignored by git, belt and braces). Without this export, `terraform apply` will ask you for
+the value interactively: that works too.
 
-**3. Initialiser et planifier.**
+**3. Initialize and plan.**
 
 ```bash
 make bootstrap-plan
 ```
 
-`terraform init` télécharge le provider AWS et affiche `Terraform has been successfully
-initialized!`. Le plan doit se terminer par :
+`terraform init` downloads the AWS provider and prints `Terraform has been successfully
+initialized!`. The plan must end with:
 
 ```
 Plan: 8 to add, 0 to change, 0 to destroy.
 ```
 
-Huit ressources : le bucket, son versioning, son chiffrement, son blocage d'accès public, le
-budget, puis le fournisseur OIDC GitHub, le rôle de déploiement et sa politique (guide 09). Si
-le chiffre diffère, arrêtez-vous et lisez le plan.
+Eight resources: the bucket, its versioning, its encryption, its public access block, the
+budget, then the GitHub OIDC provider, the deployment role and its policy (guide 09). If the
+number differs, stop and read the plan.
 
-**4. Appliquer.**
+**4. Apply.**
 
 ```bash
 make bootstrap-apply
 ```
 
-Répondez `yes`. En fin d'exécution, trois sorties : `tfstate_bucket`, `backend_example` et
-`github_deploy_role_arn` (à poser dans le dépôt GitHub, guide 09). Notez le nom du bucket :
-`llm-testbench-tfstate-<identifiant de compte>`.
+Answer `yes`. At the end of the run, three outputs: `tfstate_bucket`, `backend_example` and
+`github_deploy_role_arn` (to set in the GitHub repository, guide 09). Note the bucket name:
+`llm-testbench-tfstate-<account ID>`.
 
-**5. Contrôler ce qui a été créé.** Ne croyez pas Terraform sur parole, interrogez AWS.
+**5. Check what was created.** Do not take Terraform's word for it, query AWS.
 
 ```bash
 cd infra/terraform/bootstrap
@@ -158,122 +156,119 @@ aws budgets describe-notifications-for-budget --account-id "$ACCOUNT" \
   --budget-name llm-testbench-monthly --output table
 ```
 
-Attendu, dans l'ordre : `"Status": "Enabled"` ; `SSEAlgorithm: aws:kms` et
-`BucketKeyEnabled: true` ; quatre `true` ; un budget `llm-testbench-monthly` à `55 USD` ;
-trois notifications (`ACTUAL 80`, `ACTUAL 100`, `FORECASTED 100`).
+Expected, in order: `"Status": "Enabled"`; `SSEAlgorithm: aws:kms` and
+`BucketKeyEnabled: true`; four `true`; a `llm-testbench-monthly` budget at `55 USD`; three
+notifications (`ACTUAL 80`, `ACTUAL 100`, `FORECASTED 100`).
 
-**6. Regarder où est l'état de ce module.**
+**6. Look at where this module's state lives.**
 
 ```bash
 ls infra/terraform/bootstrap/terraform.tfstate
 git check-ignore infra/terraform/bootstrap/terraform.tfstate
 ```
 
-Il est **local**, et git l'ignore. C'est l'exception assumée : ce module crée le bucket
-d'état, il ne peut pas y ranger le sien. Il ne contient que huit ressources stables. S'il
-est perdu, `terraform import` les récupère en quelques minutes (les identifiants sont le
-nom du bucket, `<compte>:llm-testbench-monthly` pour le budget, l'ARN du fournisseur OIDC et
-le nom du rôle).
+It is **local**, and git ignores it. This is the deliberate exception: this module creates
+the state bucket, it cannot store its own state there. It contains only eight stable
+resources. If it is lost, `terraform import` recovers them in a few minutes (the IDs are the
+bucket name, `<account>:llm-testbench-monthly` for the budget, the OIDC provider's ARN and
+the role name).
 
-**7. Me dire que c'est fait**, avec le nom du bucket. Les modules `envs/dev` en ont besoin
-pour leur bloc `backend`.
+**7. Tell me it is done**, with the bucket name. The `envs/dev` modules need it for their
+`backend` block.
 
-## Les pièges
+## Pitfalls
 
-- **L'alerte prévisionnelle est muette au début.** AWS a besoin d'environ cinq semaines
-  d'historique de consommation pour produire une prévision. Sur un compte neuf, seules les
-  alertes au réel fonctionnent le premier mois.
-- **Un budget n'est pas un disjoncteur.** AWS Budgets rafraîchit ses données jusqu'à trois
-  fois par jour : entre la dérive et l'e-mail, il peut s'écouler huit heures. Le vrai kill
-  switch sur dérive de coût est un livrable de la phase 5, pas de ce guide.
-- **`prevent_destroy` bloque aussi le ménage volontaire.** Pour supprimer réellement le
-  bucket un jour : retirer le bloc `lifecycle`, vider le bucket *y compris toutes les
-  versions* (un bucket versionné non vidé refuse la suppression), puis `destroy`.
-- **La clé `aws/s3` n'est pas une clé à vous.** Chiffré, oui ; mais pas de rotation
-  pilotée, pas de politique de clé, pas de partage inter-comptes. Suffisant pour un état
-  Terraform personnel ; en entreprise, on passe à une clé gérée par le client.
-- **Vos identifiants sont ceux d'un utilisateur IAM à clés longues.** Acceptable sur un
-  compte personnel. La réponse de production est IAM Identity Center (SSO, identifiants
-  temporaires) pour les humains et OIDC pour la CI — ce second point est fait, guide 09.
-- **Le fichier `.terraform.lock.hcl` est ignoré par git** depuis la phase 0. Pour ce module,
-  c'est sans conséquence ; pour les modules d'environnement, on le versionnera avec les
-  empreintes des deux plateformes (`darwin_arm64` pour vous, `linux_amd64` pour une CI
-  future), sinon deux machines peuvent résoudre deux versions de provider différentes.
-- **Le bucket est en `eu-west-3`, le budget est global.** AWS Budgets n'a pas de région :
-  ne cherchez pas le budget dans la console Paris, il est dans « Billing and Cost
-  Management ».
-- **Un autre bucket d'état existe sur ce compte**, créé par un autre projet. Ce module n'y
-  touche pas et crée le sien : un état par projet, jamais de partage.
+- **The forecast alert is silent at first.** AWS needs about five weeks of consumption
+  history to produce a forecast. On a new account, only the actual-spend alerts work the
+  first month.
+- **A budget is not a circuit breaker.** AWS Budgets refreshes its data up to three times a
+  day: up to eight hours can pass between the drift and the email. The real kill switch on
+  cost drift is a phase 5 deliverable, not this guide's.
+- **`prevent_destroy` also blocks deliberate cleanup.** To actually delete the bucket one
+  day: remove the `lifecycle` block, empty the bucket *including all versions* (a versioned
+  bucket that is not emptied refuses deletion), then `destroy`.
+- **The `aws/s3` key is not your own key.** Encrypted, yes; but no controlled rotation, no
+  key policy, no cross-account sharing. Enough for a personal Terraform state; in a company,
+  you move to a customer-managed key.
+- **Your credentials are those of an IAM user with long-lived keys.** Acceptable on a
+  personal account. The production answer is IAM Identity Center (SSO, temporary
+  credentials) for humans and OIDC for CI — the latter is done, guide 09.
+- **The `.terraform.lock.hcl` file is ignored by git** since phase 0. For this module, it
+  makes no difference; for the environment modules, we will version it with the hashes of
+  both platforms (`darwin_arm64` for you, `linux_amd64` for a future CI), otherwise two
+  machines can resolve two different provider versions.
+- **The bucket is in `eu-west-3`, the budget is global.** AWS Budgets has no region: do not
+  look for the budget in the Paris console, it is in "Billing and Cost Management".
+- **Another state bucket exists on this account**, created by another project. This module
+  does not touch it and creates its own: one state per project, never shared.
 
-## Questions d'entretien
+## Interview questions
 
-<details><summary><b>1. Pourquoi un état distant, et que se passe-t-il sans verrou ?</b></summary>
+<details><summary><b>1. Why remote state, and what happens without a lock?</b></summary>
 
-L'état est la seule mémoire de Terraform : perdu, Terraform recréera tout en doublon.
-Sans verrou, deux `apply` simultanés lisent le même état, écrivent chacun le leur, et le
-second écrase les ressources créées par le premier dans l'état sans les détruire dans le
-cloud : ressources orphelines, facturées, invisibles de Terraform.
+State is Terraform's only memory: lose it, and Terraform will recreate everything as
+duplicates. Without a lock, two simultaneous `apply` runs read the same state, each writes
+its own, and the second overwrites in the state the resources created by the first without
+destroying them in the cloud: orphaned resources, billed, invisible to Terraform.
 </details>
 
-<details><summary><b>2. S3 + DynamoDB ou verrou natif S3 : quelle différence ?</b></summary>
+<details><summary><b>2. S3 + DynamoDB or native S3 locking: what is the difference?</b></summary>
 
-Même garantie (exclusion mutuelle des opérations), mécanisme différent : DynamoDB utilise
-une table avec écriture conditionnelle ; le verrou natif utilise l'écriture conditionnelle
-de S3 (`If-None-Match`) sur un objet `.tflock`. Le natif exige Terraform ≥ 1.10 et supprime
-un service à gérer. Les deux peuvent coexister pendant une migration.
+Same guarantee (mutual exclusion of operations), different mechanism: DynamoDB uses a table
+with a conditional write; native locking uses S3's conditional write (`If-None-Match`) on a
+`.tflock` object. Native locking requires Terraform ≥ 1.10 and removes one service to manage.
+Both can coexist during a migration.
 </details>
 
-<details><summary><b>3. Le versioning du bucket d'état sert à quoi concrètement ?</b></summary>
+<details><summary><b>3. What does versioning the state bucket concretely buy you?</b></summary>
 
-À revenir en arrière après un `apply` qui a corrompu l'état, et à retrouver l'état d'avant
-une manipulation `terraform state rm` malheureuse. C'est aussi une piste d'audit : qui a
-changé quoi, quand.
+Rolling back after an `apply` that corrupted the state, and recovering the state from before
+an unfortunate `terraform state rm`. It is also an audit trail: who changed what, when.
 </details>
 
-<details><summary><b>4. Pourquoi chiffrer l'état, et SSE-S3 ou SSE-KMS ?</b></summary>
+<details><summary><b>4. Why encrypt the state, and SSE-S3 or SSE-KMS?</b></summary>
 
-L'état contient des valeurs sensibles en clair : mots de passe de base de données, jetons,
-adresses privées. SSE-S3 (AES-256 géré par S3) suffit à la conformité de base ; SSE-KMS
-ajoute la traçabilité CloudTrail des accès à la clé et, avec une clé personnalisée, le
-contrôle de sa politique. On a pris SSE-KMS avec la clé AWS : la trace sans le coût.
+The state contains sensitive values in plain text: database passwords, tokens, private
+addresses. SSE-S3 (AES-256 managed by S3) meets basic compliance; SSE-KMS adds CloudTrail
+traceability of key access and, with a custom key, control over its policy. We took SSE-KMS
+with the AWS key: the trail without the cost.
 </details>
 
-<details><summary><b>5. Comment gère-t-on le problème de l'œuf et de la poule du bootstrap ?</b></summary>
+<details><summary><b>5. How do you handle the bootstrap chicken-and-egg problem?</b></summary>
 
-Trois réponses connues : état local assumé pour le seul module bootstrap (notre choix, avec
-`import` comme plan de reprise) ; création manuelle du bucket puis import ; ou un premier
-`apply` en local suivi d'une migration de l'état vers le bucket qu'il vient de créer
-(`terraform init -migrate-state`). La troisième est élégante mais crée une dépendance
-circulaire à expliquer à chaque reprise.
+Three known answers: deliberate local state for the bootstrap module only (our choice, with
+`import` as the recovery plan); manual creation of the bucket followed by an import; or a
+first `apply` locally followed by migrating the state into the bucket it just created
+(`terraform init -migrate-state`). The third is elegant but creates a circular dependency
+that has to be explained at every resumption.
 </details>
 
-<details><summary><b>6. Une alerte de budget suffit-elle à maîtriser les coûts ?</b></summary>
+<details><summary><b>6. Is a budget alert enough to keep costs under control?</b></summary>
 
-Non : elle détecte, elle n'empêche pas, et avec un retard de plusieurs heures. La maîtrise
-vient de l'architecture (rien de dormant : `make infra-down`), des tags pour attribuer, de
-la détection d'anomalies pour les surprises, et d'un mécanisme d'arrêt automatique pour
-les dérives rapides. Le budget est le filet, pas la ceinture.
+No: it detects, it does not prevent, and with a delay of several hours. Control comes from
+the architecture (nothing idle: `make infra-down`), tags for attribution, anomaly detection
+for surprises, and an automatic shutdown mechanism for fast drifts. The budget is the safety
+net, not the seat belt.
 </details>
 
-## Ce qu'on n'a pas fait, et pourquoi
+## What we did not do, and why
 
-- **Pas de DynamoDB** : le verrou natif suffit et c'est un service de moins.
-- **L'OIDC pour la CI est ici depuis le 2026-10-19** (`github.tf`, ADR 009) : la CI de
-  *tests* reste hors ligne et sans secret (ADR 003) ; seul le workflow de déploiement,
-  déclenché à la main, assume le rôle (guide 09).
-- **Pas de clé KMS personnalisée** : pas de besoin de contrôle de politique de clé sur un
-  compte personnel.
-- **Pas de Cost Anomaly Detection** : complémentaire, à ajouter en phase 5 avec le reste
-  de la maîtrise des coûts.
-- **Pas d'IAM Identity Center** : compte personnel, un seul humain ; noté comme réponse de
-  production au guide 03.
+- **No DynamoDB**: native locking is enough and it is one service fewer.
+- **OIDC for CI has been here since 2026-10-19** (`github.tf`, ADR 009): the *test* CI stays
+  offline and secret-free (ADR 003); only the deployment workflow, triggered by hand, assumes
+  the role (guide 09).
+- **No custom KMS key**: no need for key policy control on a personal account.
+- **No Cost Anomaly Detection**: complementary, to be added in phase 5 with the rest of cost
+  control.
+- **No IAM Identity Center**: personal account, a single human; noted as the production
+  answer in guide 03.
 
-## Coût
+## Cost
 
-| Ressource | Coût mensuel |
+| Resource | Monthly cost |
 |---|---|
-| Bucket S3 d'état (quelques ko, versionné) | ~0 € |
-| Appels KMS sur la clé `aws/s3` | ~0 € (centimes au pire) |
-| AWS Budgets (deux premiers budgets) | 0 € |
-| Fournisseur OIDC GitHub, rôle IAM | 0 € |
-| **Total** | **~0 €** |
+| S3 state bucket (a few KB, versioned) | ~€0 |
+| KMS calls on the `aws/s3` key | ~€0 (cents at worst) |
+| AWS Budgets (first two budgets) | €0 |
+| GitHub OIDC provider, IAM role | €0 |
+| **Total** | **~€0** |

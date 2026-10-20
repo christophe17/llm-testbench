@@ -1,95 +1,95 @@
-# Guide 07 — Observabilité : Langfuse self-hosted, traces OpenTelemetry, coût par span
+# Guide 07 — Observability: self-hosted Langfuse, OpenTelemetry traces, cost per span
 
-**Durée** : 30 minutes dont 10 d'attente. **Prérequis** : guide 01 (cluster local), VM
-Docker à 12 Go recommandé (8 Go passent, à l'étroit). **Coût** : 0 € en local. **Code** :
+**Duration**: 30 minutes, 10 of them waiting. **Prerequisites**: guide 01 (local cluster), Docker
+VM at 12 GB recommended (8 GB works, tightly). **Cost**: €0 locally. **Code**:
 `src/llm_testbench/obs/tracing.py`, `infra/k8s/local/observability/`,
-`infra/helm/langfuse/values-local.yaml`, cibles `make langfuse-*`.
+`infra/helm/langfuse/values-local.yaml`, `make langfuse-*` targets.
 
 ---
 
-## Le problème
+## The problem
 
-Un appel LLM sans trace est une boîte noire facturée : on ne sait ni quel prompt exact est
-parti, ni quel modèle a répondu, ni combien de tokens ont été lus depuis le cache, ni ce que
-ça a coûté, ni pourquoi c'était lent. Et quand la qualité baisse « sans changement de code »
-(runbook de la phase 5), la trace est la seule preuve. Il faut donc, dès le premier appel,
-**une trace par appel** avec ses attributs, envoyée à un système qui sait les lire, les
-agréger et les afficher — **chez nous**, parce que les traces contiennent les prompts, donc
-les données (gouvernance, ADR 006).
+An LLM call without a trace is a billed black box: you know neither which exact prompt
+went out, nor which model answered, nor how many tokens were read from the cache, nor what
+it cost, nor why it was slow. And when quality drops "with no code change"
+(phase 5 runbook), the trace is the only proof. So, from the very first call, we need
+**one trace per call** with its attributes, sent to a system that can read them,
+aggregate them and display them — **on our own infrastructure**, because the traces contain
+the prompts, hence the data (governance, ADR 006).
 
-## Les options
+## The options
 
 | Option | Verdict |
 |---|---|
-| SDK Langfuse dans le code (décorateurs, `langfuse.trace()`) | Simple, mais le code applicatif dépend d'un fournisseur de traces. Refusé : on instrumente en **OpenTelemetry**, standard, et Langfuse n'est qu'un récepteur. |
-| Langfuse Cloud | Zéro infra, mais les prompts partent chez un tiers : contraire au brief (self-hosted). |
-| **Langfuse self-hosted, alimenté en OTLP** | **Retenu** : le code n'a qu'un exporteur OTel ; Langfuse, Tempo ou Jaeger se branchent sans le modifier. |
-| Grafana Tempo + dashboards maison | Générique, sans la lecture « LLM » (prompts, coûts, sessions). Prometheus/Grafana arrivent en phase 5 pour les métriques, pas pour remplacer Langfuse. |
+| Langfuse SDK in the code (decorators, `langfuse.trace()`) | Simple, but the application code depends on a trace provider. Rejected: we instrument with **OpenTelemetry**, a standard, and Langfuse is only a receiver. |
+| Langfuse Cloud | Zero infra, but the prompts go to a third party: contrary to the brief (self-hosted). |
+| **Self-hosted Langfuse, fed over OTLP** | **Chosen**: the code has only an OTel exporter; Langfuse, Tempo or Jaeger plug in without modifying it. |
+| Grafana Tempo + homemade dashboards | Generic, without the "LLM" reading (prompts, costs, sessions). Prometheus/Grafana arrive in phase 5 for metrics, not to replace Langfuse. |
 
-**Pour ClickHouse en local** (Langfuse v4 stocke les événements dans ClickHouse) : le chart
-officiel 2.x le déploie via un **opérateur** (CRD, trois keepers, 2 Go de mémoire réservés) —
-trop lourd pour « le strict nécessaire » sur un Mac. Le chart accepte un ClickHouse externe
-non clusterisé : **un StatefulSet de 60 lignes**, image officielle multi-arch, fait l'affaire.
+**For ClickHouse locally** (Langfuse v4 stores events in ClickHouse): the official
+2.x chart deploys it through an **operator** (CRD, three keepers, 2 GB of reserved memory) —
+too heavy for "the strict minimum" on a Mac. The chart accepts an external, non-clustered
+ClickHouse: **a 60-line StatefulSet**, official multi-arch image, does the job.
 
-## Lecture guidée du code réel
+## Guided reading of the real code
 
-**[`obs/tracing.py`](../../src/llm_testbench/obs/tracing.py)** — deux familles d'attributs
-posés sur chaque span : `gen_ai.*` (**conventions sémantiques GenAI** d'OpenTelemetry :
-opération, provider, modèle demandé et servi, tokens, raison de fin) et `llm_testbench.*`
-(ce que la convention ne couvre pas et que le banc mesure : coût, cache, tentatives,
-gouvernance, empreinte du prompt). `configure_tracing` installe un fournisseur de traces
-avec, au choix, un exporteur fourni (mémoire, pour les tests et les notebooks) ou un
-exporteur **OTLP/HTTP** vers un endpoint ; `langfuse_otlp_headers` fabrique l'en-tête
-Basic auth `clé publique:clé secrète` que Langfuse attend.
+**[`obs/tracing.py`](../../src/llm_testbench/obs/tracing.py)** — two families of attributes
+set on every span: `gen_ai.*` (OpenTelemetry **GenAI semantic conventions**:
+operation, provider, requested and served model, tokens, finish reason) and `llm_testbench.*`
+(what the convention does not cover and the testbench measures: cost, cache, attempts,
+governance, prompt hash). `configure_tracing` installs a tracer provider
+with either a supplied exporter (in-memory, for tests and notebooks) or an
+**OTLP/HTTP** exporter to an endpoint; `langfuse_otlp_headers` builds the Basic auth
+header `public key:secret key` that Langfuse expects.
 
-**[`app/main.py`](../../src/llm_testbench/app/main.py)**, `_configure_tracing_from` : l'API
-lit `LLM_TESTBENCH_OTLP_ENDPOINT` et les deux clés dans ses réglages ; sans endpoint, les
-spans sont des no-op — le code applicatif ne change pas d'une ligne.
+**[`app/main.py`](../../src/llm_testbench/app/main.py)**, `_configure_tracing_from`: the API
+reads `LLM_TESTBENCH_OTLP_ENDPOINT` and the two keys from its settings; with no endpoint, the
+spans are no-ops — the application code does not change by a single line.
 
 **[`infra/k8s/local/observability/clickhouse.yaml`](../../infra/k8s/local/observability/clickhouse.yaml)**
-— un StatefulSet mono-nœud, mot de passe en clair (local uniquement), sonde `/ping`,
-10 Go de volume `local-path`.
+— a single-node StatefulSet, plaintext password (local only), `/ping` probe,
+10 GB `local-path` volume.
 
 **[`infra/helm/langfuse/values-local.yaml`](../../infra/helm/langfuse/values-local.yaml)** —
-les points à lire :
+the points to read:
 
 - `clickhouse.deploy: false`, `crdCheck: false`, `host`, `cluster.enabled: false`,
-  `migration.url` : le chart utilise notre ClickHouse et ne cherche pas l'opérateur ;
-- `postgresql`, `redis` (Valkey), `s3` (SeaweedFS) embarqués, volumes réduits — Langfuse v4
-  a besoin des quatre : Postgres pour les métadonnées, ClickHouse pour les événements,
-  Redis pour les files, S3 pour les charges utiles brutes ;
-- `langfuse.additionalEnv` avec `LANGFUSE_INIT_*` : **initialisation headless** —
-  organisation, projet, utilisateur et **clés d'API** créés au premier démarrage, pour que
-  l'API du banc puisse tracer sans qu'un humain clique dans l'interface. Les valeurs sont des
-  constantes de dev ; en cloud (phase 5), elles viendront de Secrets Manager.
+  `migration.url`: the chart uses our ClickHouse and does not look for the operator;
+- `postgresql`, `redis` (Valkey), `s3` (SeaweedFS) embedded, reduced volumes — Langfuse v4
+  needs all four: Postgres for metadata, ClickHouse for events,
+  Redis for queues, S3 for raw payloads;
+- `langfuse.additionalEnv` with `LANGFUSE_INIT_*`: **headless initialization** —
+  organization, project, user and **API keys** created at first startup, so that
+  the testbench API can trace without a human clicking in the UI. The values are
+  dev constants; in the cloud (phase 5), they will come from Secrets Manager.
 
-## Exécution
+## Run
 
-**1. Déployer** (images ~1,5 Go la première fois, ~10 minutes) :
+**1. Deploy** (~1.5 GB of images the first time, ~10 minutes):
 
 ```bash
 make langfuse-up
 kubectl -n observability get pods
 ```
 
-Attendu : `clickhouse-0`, `langfuse-postgresql-0`, `langfuse-redis-*`, `langfuse-s3-*`,
-`langfuse-web-*`, `langfuse-worker-*` en `Running`. Le pod `web` redémarre deux ou trois
-fois pendant les migrations ClickHouse (46 migrations) : normal. **Si le `worker` a démarré
-avant la fin des migrations, redémarrez-le** (`kubectl -n observability rollout restart
-deploy/langfuse-worker`) : il aurait sinon des erreurs « table does not exist » et ne
-consommerait pas les files.
+Expected: `clickhouse-0`, `langfuse-postgresql-0`, `langfuse-redis-*`, `langfuse-s3-*`,
+`langfuse-web-*`, `langfuse-worker-*` in `Running`. The `web` pod restarts two or three
+times during the ClickHouse migrations (46 migrations): normal. **If the `worker` started
+before the migrations finished, restart it** (`kubectl -n observability rollout restart
+deploy/langfuse-worker`): otherwise it would get "table does not exist" errors and would
+not consume the queues.
 
-**2. Ouvrir l'interface** :
+**2. Open the UI**:
 
 ```bash
 make langfuse-port-forward &
 open http://localhost:3000     # dev@llm-testbench.local / local-only-password
 ```
 
-Projet `phase-1` déjà créé (initialisation headless).
+Project `phase-1` already created (headless initialization).
 
-**3. Envoyer une trace depuis la couche LLM, sans clé ni réseau** — le provider simulé
-suffit, la trace est réelle :
+**3. Send a trace from the LLM layer, with no key and no network** — the simulated provider
+is enough, the trace is real:
 
 ```bash
 uv run python - <<'PY'
@@ -104,93 +104,93 @@ tp = configure_tracing(otlp_endpoint="http://localhost:3000/api/public/otel/v1/t
 client = LLMClient.from_settings(tracer=get_tracer(tp))
 client.register_provider("anthropic", scripted_anthropic_provider([Step(json_body=anthropic_message("Paris.", input_tokens=900, output_tokens=7))])[0])
 req = CompletionRequest(model=ModelRef.parse("anthropic/claude-sonnet-5"),
-                        messages=(Message(role=Role.USER, content="Capitale de la France ?"),), data_class=DataClass.PUBLIC)
+                        messages=(Message(role=Role.USER, content="Capital of France?"),), data_class=DataClass.PUBLIC)
 print(asyncio.run(client.complete(req)).cost_usd); tp.force_flush(); tp.shutdown()
 PY
 ```
 
-**4. La relire par l'API v2** (Langfuse v4 fonctionne en mode `events_only` : les anciens
-endpoints `/api/public/traces` et `/observations` répondent 404, c'est documenté) :
+**4. Read it back through the v2 API** (Langfuse v4 runs in `events_only` mode: the old
+`/api/public/traces` and `/observations` endpoints return 404, this is documented):
 
 ```bash
 curl -s -u pk-lf-local-0000000000000000:sk-lf-local-0000000000000000 \
   "http://localhost:3000/api/public/v2/observations?limit=1" | python3 -m json.tool | head -40
 ```
 
-Attendu : une observation `GENERATION` nommée `chat anthropic/claude-sonnet-5`, `model`
-`claude-sonnet-5`, `usage` 900/7, et un **coût calculé par Langfuse** (`calculatedTotalCost`)
-égal à celui de notre table de prix (0,00187 $ pour 900 + 7 tokens sur Sonnet 5). Deux
-tables de prix indépendantes qui tombent d'accord : un contrôle croisé gratuit.
+Expected: a `GENERATION` observation named `chat anthropic/claude-sonnet-5`, `model`
+`claude-sonnet-5`, `usage` 900/7, and a **cost computed by Langfuse** (`calculatedTotalCost`)
+equal to the one from our pricing table ($0.00187 for 900 + 7 tokens on Sonnet 5). Two
+independent pricing tables that agree: a free cross-check.
 
-**5. Brancher l'API du cluster** : `values-local.yaml` porte déjà l'endpoint in-cluster
-(`http://langfuse-web.observability:3000/...`) et les clés locales. Redéployez l'API
-(guide 01, étape 4 ou `tilt up`) : chaque `/chat` produit une trace.
+**5. Connect the cluster's API**: `values-local.yaml` already carries the in-cluster endpoint
+(`http://langfuse-web.observability:3000/...`) and the local keys. Redeploy the API
+(guide 01, step 4 or `tilt up`): every `/chat` produces a trace.
 
-**6. Lire une trace dans l'interface** : Tracing → Observations. Ouvrez-en une : les
-attributs `gen_ai.*` et `llm_testbench.*` sont dans les métadonnées, le modèle et l'usage
-dans l'en-tête, le coût calculé à droite.
+**6. Read a trace in the UI**: Tracing → Observations. Open one: the
+`gen_ai.*` and `llm_testbench.*` attributes are in the metadata, the model and usage
+in the header, the computed cost on the right.
 
-## Les pièges
+## Pitfalls
 
-- **Langfuse v4 = `events_only`** : les guides et SDK d'avant 2026 parlent de
-  `/api/public/traces` ; ils renvoient 404. Les lectures passent par
-  `/api/public/v2/observations` (bornez par `fromStartTime`/`toStartTime`) et Metrics v2.
-- **L'ordre de démarrage** : le worker qui démarre pendant les migrations reste en erreur
-  sans redémarrer. Le symptôme : les charges utiles sont bien dans le bucket S3
-  (`otel/<projet>/...json`), rien n'arrive dans ClickHouse. Un `rollout restart` suffit.
-- **Le coût Langfuse à 0 sur la toute première observation** : sa table de prix se charge
-  en cache au premier passage ; la deuxième observation est chiffrée. Notre coût, lui, est
-  calculé côté client : c'est celui qu'on utilise pour les tableaux.
-- **L'OTLP renvoie 200 même sur un corps vide** : un 200 ne prouve pas l'ingestion ;
-  seule la relecture (étape 4) la prouve.
-- **Mémoire** : ClickHouse + SeaweedFS + Postgres + Valkey + web + worker ≈ 2,5 Go réservés.
-  À 8 Go de VM avec notre Postgres et l'API, ça passe ; avec un modèle local (phase 6), non.
-- **`$path` en zsh est `PATH`** : une boucle `for path in …` dans un script de vérification
-  a effacé le PATH du shell pendant le diagnostic. Vingt minutes perdues pour un nom de
-  variable — consigné pour que ça n'arrive qu'une fois.
+- **Langfuse v4 = `events_only`**: guides and SDKs from before 2026 talk about
+  `/api/public/traces`; those calls return 404. Reads go through
+  `/api/public/v2/observations` (bound them with `fromStartTime`/`toStartTime`) and Metrics v2.
+- **Startup order**: a worker that starts during the migrations stays in error
+  without restarting. The symptom: the payloads are indeed in the S3 bucket
+  (`otel/<project>/...json`), nothing arrives in ClickHouse. A `rollout restart` is enough.
+- **Langfuse cost at 0 on the very first observation**: its pricing table is loaded
+  into cache on the first pass; the second observation is priced. Our cost, on the other hand,
+  is computed client-side: it is the one we use for the tables.
+- **OTLP returns 200 even on an empty body**: a 200 does not prove ingestion;
+  only the read-back (step 4) proves it.
+- **Memory**: ClickHouse + SeaweedFS + Postgres + Valkey + web + worker ≈ 2.5 GB reserved.
+  With an 8 GB VM plus our Postgres and the API, it fits; with a local model (phase 6), it does not.
+- **`$path` in zsh is `PATH`**: a `for path in …` loop in a verification script
+  wiped the shell's PATH during the diagnosis. Twenty minutes lost to a variable
+  name — recorded so that it only happens once.
 
-## Questions d'entretien
+## Interview questions
 
-<details><summary><b>1. Pourquoi instrumenter en OpenTelemetry plutôt qu'avec le SDK de Langfuse ?</b></summary>
+<details><summary><b>1. Why instrument with OpenTelemetry rather than with the Langfuse SDK?</b></summary>
 
-Pour que le code applicatif ne dépende d'aucun fournisseur de traces : un exporteur OTLP se
-pointe vers Langfuse, Tempo, Jaeger ou un collecteur sans changer une ligne. Les conventions
-sémantiques GenAI donnent un vocabulaire que tous savent lire. Le prix : quelques attributs
-spécifiques (sessions, scores) sont moins directs qu'avec le SDK natif.
+So that the application code depends on no trace provider: an OTLP exporter can be pointed
+at Langfuse, Tempo, Jaeger or a collector without changing a line. The GenAI semantic
+conventions provide a vocabulary they can all read. The price: a few specific
+attributes (sessions, scores) are less direct than with the native SDK.
 </details>
 
-<details><summary><b>2. Que contient une trace d'appel LLM utile, et pourquoi ces champs ?</b></summary>
+<details><summary><b>2. What does a useful LLM call trace contain, and why these fields?</b></summary>
 
-Le modèle demandé *et* le modèle servi (un provider peut changer de révision), les tokens
-d'entrée, de sortie, lus et écrits en cache (le coût en dépend), la raison de fin (une réponse
-tronquée n'est pas une réponse), le coût, le nombre de tentatives, la décision de gouvernance,
-l'empreinte du prompt (pour relier un chiffre au texte exact qui l'a produit).
+The requested model *and* the served model (a provider can change revision), the input
+and output tokens, the tokens read from and written to the cache (the cost depends on them),
+the finish reason (a truncated answer is not an answer), the cost, the number of attempts,
+the governance decision, the prompt hash (to tie a number to the exact text that produced it).
 </details>
 
-<details><summary><b>3. Pourquoi Langfuse a-t-il besoin de quatre stockages ?</b></summary>
+<details><summary><b>3. Why does Langfuse need four stores?</b></summary>
 
-Postgres pour les métadonnées transactionnelles (projets, utilisateurs, clés), ClickHouse
-pour les événements analytiques (volumineux, requêtés par agrégats), Redis pour les files
-d'ingestion asynchrone, S3 pour les charges utiles brutes (prompts, réponses) qu'on ne veut
-pas dans une base. C'est l'architecture d'un système d'analytique événementielle, pas
-d'une application CRUD.
+Postgres for transactional metadata (projects, users, keys), ClickHouse
+for analytical events (voluminous, queried through aggregates), Redis for the asynchronous
+ingestion queues, S3 for raw payloads (prompts, responses) you do not want
+in a database. It is the architecture of an event analytics system, not
+of a CRUD application.
 </details>
 
-<details><summary><b>4. Les traces contiennent les prompts : quelles conséquences ?</b></summary>
+<details><summary><b>4. Traces contain the prompts: what are the consequences?</b></summary>
 
-Elles contiennent donc les données des utilisateurs : même politique de gouvernance que les
-appels eux-mêmes (self-hosted, rétention, accès), masquage des PII avant export (phase 7),
-et un contrôle d'accès à l'interface. Une trace envoyée à un SaaS de traces est une donnée
-qui sort.
+So they contain user data: the same governance policy as the
+calls themselves (self-hosted, retention, access), PII masking before export (phase 7),
+and access control on the UI. A trace sent to a tracing SaaS is data
+that leaves.
 </details>
 
-## Ce qu'on n'a pas fait, et pourquoi
+## What we did not do, and why
 
-- **Pas de collecteur OTel ni de Prometheus/Grafana** : phase 5, quand il y aura des
-  métriques de charge à agréger (générateur de trafic) ; en phase 1, Langfuse suffit.
-- **Pas de Langfuse en cloud** : il suivra l'API sur EKS en phase 5 avec le même chart
-  (ClickHouse via l'opérateur, cette fois, sur des nœuds dimensionnés).
-- **Pas de scores ni de sessions** : ils arrivent avec le juge (phase 2) et la mémoire
-  d'agent (phase 4).
-- **Pas de masquage des prompts dans les traces** : données publiques en phase 1 ; Presidio
-  en phase 7.
+- **No OTel collector or Prometheus/Grafana**: phase 5, when there are
+  load metrics to aggregate (traffic generator); in phase 1, Langfuse is enough.
+- **No Langfuse in the cloud**: it will follow the API onto EKS in phase 5 with the same chart
+  (ClickHouse via the operator this time, on properly sized nodes).
+- **No scores or sessions**: they arrive with the judge (phase 2) and agent
+  memory (phase 4).
+- **No prompt masking in traces**: public data in phase 1; Presidio
+  in phase 7.

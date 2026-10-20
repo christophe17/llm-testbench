@@ -1,67 +1,67 @@
-# PHASE 3 — RAG avancé (semaines 7–8)
+# PHASE 3 — Advanced RAG (weeks 7–8)
 
-**Chaque technique est derrière un flag et mesurée sur les jeux publics.** Gain non significatif
-→ on retire et on documente pourquoi. Une technique retirée avec preuve chiffrée vaut mieux que
-dix techniques empilées.
+**Each technique is behind a flag and measured on the public datasets.** Non-significant gain
+→ we remove it and document why. A technique removed with quantified evidence is worth more
+than ten stacked techniques.
 
-Ordre de rentabilité constatée :
+Order of observed payoff:
 
-1. recherche hybride BM25 + dense avec fusion RRF ;
-2. re-ranking cross-encoder ;
-3. comparaison de 4 stratégies de chunking (recursive, sémantique, parent-document, late
-   chunking) sur **documents bruts** avec QASPER — et parsing PDF, reporté de la phase 1 et
-   mesuré ici ;
-4. contextual retrieval ;
-5. transformation de requête (HyDE, multi-query, décomposition multi-hop, routage) ;
-6. filtrage par métadonnées ;
-7. **GraphRAG** (extraction d'un graphe d'entités du corpus, retrieval par graphe) — en dernier :
-   coût d'indexation élevé pour des gains incertains dans la littérature ; c'est le candidat le
-   plus sérieux au retrait chiffré, et c'est très bien ainsi.
+1. hybrid BM25 + dense search with RRF fusion;
+2. cross-encoder re-ranking;
+3. comparison of 4 chunking strategies (recursive, semantic, parent-document, late
+   chunking) on **raw documents** with QASPER — and PDF parsing, postponed from phase 1 and
+   measured here;
+4. contextual retrieval;
+5. query transformation (HyDE, multi-query, multi-hop decomposition, routing);
+6. metadata filtering;
+7. **GraphRAG** (extracting an entity graph from the corpus, graph-based retrieval) — last:
+   high indexing cost for uncertain gains in the literature; it is the most serious
+   candidate for a quantified removal, and that is just fine.
 
-## Le pipeline d'ingestion opéré — livrable nommé
+## The operated ingestion pipeline — named deliverable
 
-C'est lui qui répond au mot « pipeline » des offres AI Engineer ; « aller vite dessus » veut
-dire ne pas s'y perdre, pas le bâcler.
+It is what answers the word "pipeline" in AI Engineer job postings; "going fast on it" means
+not getting lost in it, not botching it.
 
-L'ingestion devient un pipeline orchestré. Sa raison d'être n'est pas la fraîcheur du corpus,
-statique sur les jeux publics, mais la **matrice d'expériences** : chaque combinaison jeu de
-données × stratégie de chunking × modèle d'embeddings × paramètres de retrieval produit un index
-distinct, et il y en aura plus d'une centaine entre les phases 2 et 3.
+Ingestion becomes an orchestrated pipeline. Its reason to exist is not the freshness of the
+corpus, which is static on the public datasets, but the **experiment matrix**: each combination
+of dataset × chunking strategy × embedding model × retrieval parameters produces a distinct
+index, and there will be more than a hundred of them between phases 2 and 3.
 
-Ce que tu construis : jobs paramétrés et partitionnés sur ces dimensions, idempotence, cache des
-étapes coûteuses (les embeddings se paient), relance de ce qui a changé uniquement, reprise
-après échec, **lineage** reliant chaque chiffre du tableau de résultats à l'index et au code qui
-l'ont produit, et **validation des données en entrée avec Pandera** (schéma des fichiers de
-benchmark, encodage, doublons, champs manquants).
+What you build: jobs parameterized and partitioned on these dimensions, idempotency, caching
+of the expensive steps (embeddings cost money), rerunning only what changed, resuming
+after failure, **lineage** linking each number in the results table to the index and the code
+that produced it, and **input data validation with Pandera** (schema of the benchmark files,
+encoding, duplicates, missing fields).
 
-Trois obligations :
+Three obligations:
 
-- un **ADR orchestrateur** : Dagster contre Airflow contre Prefect ;
-- une ligne du tableau maître « **régénération d'une ligne depuis zéro** : durée, coût, part
-  servie par le cache » ;
-- le notebook (5) ci-dessous, entièrement consacré au pipeline.
+- an **orchestrator ADR**: Dagster vs Airflow vs Prefect;
+- a row in the master table "**regenerating a row from scratch**: duration, cost, share
+  served by the cache";
+- notebook (5) below, entirely devoted to the pipeline.
 
-**Critère d'acceptation** : je dois pouvoir régénérer n'importe quelle ligne du tableau maître à
-partir de zéro, avec une seule commande. C'est ce qui sépare « j'ai fait un RAG » de « j'ai
-opéré un RAG ».
+**Acceptance criterion**: I must be able to regenerate any row of the master table
+from scratch, with a single command. That is what separates "I built a RAG" from "I
+operated a RAG".
 
-**Sur le petit corpus maison de la phase 2**, démontre en plus le cas vivant : ajout, mise à
-jour et suppression de documents, détection de changement, réindexation incrémentale sans tout
-reconstruire.
+**On the small in-house corpus of phase 2**, also demonstrate the living case: adding,
+updating and deleting documents, change detection, incremental reindexing without rebuilding
+everything.
 
-## Livrables
+## Deliverables
 
-**Livrable clé** : tableau « technique → gain qualité avec intervalle de confiance → coût
-latence p95 → coût € », plus l'écart à la littérature.
+**Key deliverable**: table "technique → quality gain with confidence interval → p95
+latency cost → € cost", plus the gap to the literature.
 
-**Notebooks** : (1) pourquoi le hybrid search sauve les acronymes et le jargon ; (2) le duel des
-stratégies de chunking sur documents bruts ; (3) transformation de requête : quand ça aide,
-quand ça coûte pour rien ; (4) notre pipeline contre **LlamaIndex** out-of-the-box **et contre
-Bedrock Knowledge Bases** (le RAG managé d'AWS : ingestion depuis S3, chunking, retrieval et
-génération en quelques clics, sur le magasin vectoriel le moins cher disponible, créé et détruit
-dans la journée) sur le même jeu BEIR — où le framework ou le service managé fait gagner du
-temps, où il plafonne, chiffré (le nôtre d'abord, puis la comparaison ; les deux ports vivent
-dans le matériel de benchmark, pas dans `src/` — règle d'entrée des services AWS, `CLAUDE.md`
-§4) ; (5) la
-matrice d'expériences : régénérer cent index sans tout recalculer — partitions, taux de cache,
-backfill, reprise après échec et lineage visibles en sortie.
+**Notebooks**: (1) why hybrid search saves acronyms and jargon; (2) the showdown of the
+chunking strategies on raw documents; (3) query transformation: when it helps,
+when it costs for nothing; (4) our pipeline against **LlamaIndex** out of the box **and against
+Bedrock Knowledge Bases** (AWS's managed RAG: ingestion from S3, chunking, retrieval and
+generation in a few clicks, on the cheapest vector store available, created and destroyed
+within the day) on the same BEIR dataset — where the framework or the managed service saves
+time, where it plateaus, quantified (ours first, then the comparison; both ports live
+in the benchmark material, not in `src/` — AWS services entry rule, `CLAUDE.md`
+§4); (5) the
+experiment matrix: regenerating a hundred indexes without recomputing everything — partitions,
+cache rate, backfill, resume after failure and lineage visible in the output.

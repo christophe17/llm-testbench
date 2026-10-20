@@ -1,92 +1,92 @@
-# Vérification des jeux de données du banc d'essai — 2026-08-26
+# Testbench dataset verification — 2026-08-26
 
-Vérification web (nom, version, licence, taille, mode de récupération) de chaque entrée du tableau
-de la section 4 de `CLAUDE.md` à cette date (tableau désormais dans `docs/roadmap/README.md`). Contexte outillage : les scripts de chargement Hugging Face sont
-dépréciés (`datasets` ≥ 3.x ne les exécute plus) — le critère « se charge proprement aujourd'hui »
-signifie : dépôt HF en Parquet natif, ou téléchargement direct versionné.
+Web verification (name, version, license, size, retrieval method) of each entry in the table
+of section 4 of `CLAUDE.md` as of this date (table now in `docs/roadmap/README.md`). Tooling context: Hugging Face loading scripts are
+deprecated (`datasets` ≥ 3.x no longer runs them) — the criterion "loads cleanly today"
+means: HF repository in native Parquet, or versioned direct download.
 
-## Retrieval et embeddings
+## Retrieval and embeddings
 
 ### BEIR — SciFact, NFCorpus, FiQA-2018
-- **Hébergement** : org HF `BeIR` (convertie en Parquet natif ~2026) : `BeIR/scifact` + `BeIR/scifact-qrels` (idem nfcorpus, fiqa). Aussi : zips UKP Darmstadt, paquet `beir` v2.2.0, `ir_datasets`.
-- **Licence** : CC BY-SA 4.0 sur les cartes HF — mais le README BEIR précise qu'ils ne garantissent pas les licences amont. À noter dans l'ADR.
-- **Tailles** : SciFact 5 183 docs / 1 109 requêtes (300 test) / 1 258 qrels quasi binaires / 4,55 MB. NFCorpus 3 633 docs / 323 requêtes test / ~134k qrels gradués / 3,25 MB. FiQA 57 638 docs / 648 requêtes test / 28 MB.
-- **Chargement** : `load_dataset("BeIR/scifact", "corpus")` — script-free. Les qrels sont dans un dépôt séparé : le loader joint 3 dépôts.
-- **Problèmes** : aucun bloquant.
+- **Hosting**: HF org `BeIR` (converted to native Parquet ~2026): `BeIR/scifact` + `BeIR/scifact-qrels` (same for nfcorpus, fiqa). Also: UKP Darmstadt zips, `beir` package v2.2.0, `ir_datasets`.
+- **License**: CC BY-SA 4.0 on the HF cards — but the BEIR README states that they do not guarantee upstream licenses. To note in the ADR.
+- **Sizes**: SciFact 5,183 docs / 1,109 queries (300 test) / 1,258 near-binary qrels / 4.55 MB. NFCorpus 3,633 docs / 323 test queries / ~134k graded qrels / 3.25 MB. FiQA 57,638 docs / 648 test queries / 28 MB.
+- **Loading**: `load_dataset("BeIR/scifact", "corpus")` — script-free. The qrels are in a separate repository: the loader joins 3 repositories.
+- **Issues**: no blocker.
 
 ### MTEB
-- Paquet `mteb` v2.20.2 (2026-08-25), très actif. **API v2 cassante** vs v1 (`mteb.get_benchmark(...)` / `mteb.evaluate(...)`) — les tutoriels anciens sont périmés.
-- **Français : oui** — benchmark intégré `MTEB(fra, v1)`, 22 tâches (Ciancone et al. 2024, arXiv:2405.20468).
-- Licence code Apache-2.0 ; les datasets de tâches se téléchargent de HF à la demande.
+- `mteb` package v2.20.2 (2026-08-25), very active. **Breaking v2 API** vs v1 (`mteb.get_benchmark(...)` / `mteb.evaluate(...)`) — older tutorials are outdated.
+- **French: yes** — built-in benchmark `MTEB(fra, v1)`, 22 tasks (Ciancone et al. 2024, arXiv:2405.20468).
+- Code license Apache-2.0; the task datasets are downloaded from HF on demand.
 
-## QA / multi-hop / sans réponse / documents bruts
+## QA / multi-hop / unanswerable / raw documents
 
 ### HotpotQA — OK
-- HF `hotpotqa/hotpot_qa`, configs `distractor` et `fullwiki`, Parquet natif. CC BY-SA 4.0. 90 447 train / 7 405 val, ~1,27 GB. Réponses du test cachées → évaluer sur validation.
+- HF `hotpotqa/hotpot_qa`, configs `distractor` and `fullwiki`, native Parquet. CC BY-SA 4.0. 90,447 train / 7,405 val, ~1.27 GB. Test answers hidden → evaluate on validation.
 
-### SQuAD 2.0 — OK, le plus propre
-- HF `rajpurkar/squad_v2`, Parquet natif. CC BY-SA 4.0. 130 319 train / 11 873 val (~50k non répondables), 46,5 MB. Pas de flag booléen : non répondable = liste `answers.text` vide.
+### SQuAD 2.0 — OK, the cleanest
+- HF `rajpurkar/squad_v2`, native Parquet. CC BY-SA 4.0. 130,319 train / 11,873 val (~50k unanswerable), 46.5 MB. No boolean flag: unanswerable = empty `answers.text` list.
 
-### QASPER — OK avec une réserve
-- HF `allenai/qasper` (allenai.org redirige vers HF). CC BY 4.0. 1 585 articles complets / ~5 049 questions / ~26 MB, avec spans de preuve.
-- **Piège** : le dépôt principal ne contient que le script `qasper.py` → `load_dataset` échoue avec `datasets` ≥ 3. Charger via `revision="refs/convert/parquet"` (branche vérifiée présente) ou vendorer le JSONL.
+### QASPER — OK with one caveat
+- HF `allenai/qasper` (allenai.org redirects to HF). CC BY 4.0. 1,585 full papers / ~5,049 questions / ~26 MB, with evidence spans.
+- **Trap**: the main repository only contains the `qasper.py` script → `load_dataset` fails with `datasets` ≥ 3. Load via `revision="refs/convert/parquet"` (branch verified present) or vendor the JSONL.
 
 ### MuSiQue — fragile
-- Canonique : GitHub `StonyBrookNLP/musique`, données via **Google Drive** (quotas gdown = panne connue). CC BY 4.0. ~25k questions (variante ans). Miroir HF communautaire `dgslibisey/MuSiQue` (Parquet, provenance non officielle, sans tag de licence, sans split test).
+- Canonical: GitHub `StonyBrookNLP/musique`, data via **Google Drive** (gdown quotas = known failure). CC BY 4.0. ~25k questions (ans variant). Community HF mirror `dgslibisey/MuSiQue` (Parquet, unofficial provenance, no license tag, no test split).
 
 ### 2WikiMultihopQA — fragile
-- Canonique : GitHub `Alab-NII/2wikimultihop`, données en **zip Dropbox**. Apache-2.0. 192 606 exemples. Non maintenu depuis ~2021. Miroir HF communautaire `framolfese/2WikiMultihopQA` (Parquet, provenance non vérifiée) ; `xanhho/...` à script → cassé.
+- Canonical: GitHub `Alab-NII/2wikimultihop`, data in a **Dropbox zip**. Apache-2.0. 192,606 examples. Unmaintained since ~2021. Community HF mirror `framolfese/2WikiMultihopQA` (Parquet, unverified provenance); `xanhho/...` script-based → broken.
 
-### Natural Questions — impraticable en entier
-- HF `google-research-datasets/natural_questions`. CC BY-SA 3.0. **45 GB téléchargés / ~100 GB générés** pour le config complet ; chaque exemple embarque une page Wikipédia tokenisée. Le « sans réponse » est indirect (moins de 2 annotateurs sur 5 trouvent une réponse — logique à implémenter soi-même). Config `dev` seul praticable. **Décision proposée : SQuAD 2.0 couvre le besoin « sans réponse », NQ retiré du banc.**
+### Natural Questions — impractical in full
+- HF `google-research-datasets/natural_questions`. CC BY-SA 3.0. **45 GB downloaded / ~100 GB generated** for the full config; each example embeds a tokenized Wikipedia page. The "no answer" signal is indirect (fewer than 2 annotators out of 5 find an answer — logic to implement yourself). Only the `dev` config is practical. **Proposed decision: SQuAD 2.0 covers the "no answer" need, NQ removed from the testbench.**
 
-## Text-to-SQL et agents
+## Text-to-SQL and agents
 
-### Spider 1.0 — OK avec contamination assumée
-- Questions+SQL : HF `xlangai/spider` (Parquet, 7 000 train / 1 030 dev). **Les bases SQLite ne sont que sur Google Drive** (lien du site Yale) → prévoir une copie cachée. CC BY-SA 4.0. ~200 DBs. Repo d'éval gelé depuis 2020 ; test gated ; contamination d'entraînement massive et documentée (c'est précisément un des sujets du banc). Spider 2.0 = autre benchmark (Snowflake/BigQuery, comptes payants) — hors périmètre.
+### Spider 1.0 — OK with accepted contamination
+- Questions+SQL: HF `xlangai/spider` (Parquet, 7,000 train / 1,030 dev). **The SQLite databases are only on Google Drive** (link from the Yale site) → plan a cached copy. CC BY-SA 4.0. ~200 DBs. Eval repo frozen since 2020; gated test; massive and documented training contamination (precisely one of the testbench's subjects). Spider 2.0 = a different benchmark (Snowflake/BigQuery, paid accounts) — out of scope.
 
-### BIRD — passer par Mini-Dev
-- Complet : 12 751 questions / 95 DBs / **33,4 GB**. Dev 1 534 exemples, zips directs (OSS Alibaba, lent depuis l'UE).
-- **Mini-Dev** (`github.com/bird-bench/mini_dev`, HF `birdsql/bird_mini_dev`) : 500 instances SELECT sur 11 DBs (+270 CRUD) — **livre les bases en SQLite, MySQL ET PostgreSQL**, ce qui réduit le travail de conversion sqlglot prévu (reste utile pour Spider). CC BY-SA 4.0. Maintenu.
+### BIRD — go through Mini-Dev
+- Full: 12,751 questions / 95 DBs / **33.4 GB**. Dev 1,534 examples, direct zips (Alibaba OSS, slow from the EU).
+- **Mini-Dev** (`github.com/bird-bench/mini_dev`, HF `birdsql/bird_mini_dev`): 500 SELECT instances on 11 DBs (+270 CRUD) — **ships the databases in SQLite, MySQL AND PostgreSQL**, which reduces the planned sqlglot conversion work (still useful for Spider). CC BY-SA 4.0. Maintained.
 
-### τ-bench — DÉPRÉCIÉ, remplacer
-- `sierra-research/tau-bench` porte un avertissement explicite de dépréciation. Successeur : **`sierra-research/tau2-bench`** (τ²→τ³ : banking, voice, 75+ corrections de tâches). MIT, Python ≥3.12 <3.14 (compatible). C'est un harness complet (agent LLM + utilisateur simulé LLM → coût double), pas un dataset. Les chiffres publiés du papier τ-bench 2024 ne sont plus comparables après les corrections.
+### τ-bench — DEPRECATED, replace
+- `sierra-research/tau-bench` carries an explicit deprecation warning. Successor: **`sierra-research/tau2-bench`** (τ²→τ³: banking, voice, 75+ task fixes). MIT, Python ≥3.12 <3.14 (compatible). It is a complete harness (LLM agent + LLM-simulated user → double cost), not a dataset. The published numbers of the 2024 τ-bench paper are no longer comparable after the fixes.
 
-### BFCL — V4, conflit Python
-- Monorepo `ShishirPatil/gorilla`, `pip install bfcl-eval` (pas `bfcl`). Apache-2.0. **Pin Python 3.10** → environnement uv séparé obligatoire (seul conflit dur avec notre 3.12). La catégorie web_search V4 exige une clé SerpAPI payante. Scores comparables uniquement à version BFCL identique.
+### BFCL — V4, Python conflict
+- Monorepo `ShishirPatil/gorilla`, `pip install bfcl-eval` (not `bfcl`). Apache-2.0. **Python 3.10 pin** → separate uv environment mandatory (the only hard conflict with our 3.12). The V4 web_search category requires a paid SerpAPI key. Scores comparable only at an identical BFCL version.
 
 ### AgentDojo — OK
-- `pip install agentdojo` v0.1.35 (2025-10-27), MIT, Python 3.10–3.12. 4 suites (workspace, Slack, banking, travel), 97 tâches / 27 injections → 629 cas. API pré-1.0, instable par nature.
+- `pip install agentdojo` v0.1.35 (2025-10-27), MIT, Python 3.10–3.12. 4 suites (workspace, Slack, banking, travel), 97 tasks / 27 injections → 629 cases. Pre-1.0 API, unstable by nature.
 
-**Note transverse** : τ²/τ³, BFCL et AgentDojo sont des harness à installer et piloter, pas des datasets chargeables — ils n'entrent pas dans l'interface de loaders de la phase 0 et seront intégrés comme runners externes en phase 4.
+**Cross-cutting note**: τ²/τ³, BFCL and AgentDojo are harnesses to install and drive, not loadable datasets — they do not fit the phase 0 loader interface and will be integrated as external runners in phase 4.
 
-## Tableaux et raisonnement numérique
+## Tables and numerical reasoning
 
-- **TAT-QA** — le meilleur du lot : GitHub `NExTplusplus/TAT-QA` + HF `next-tat/TAT-QA`, JSON brut sans script, CC BY 4.0, 16 552 questions / 17 MB, vérité du test publiée depuis 2024.
-- **WikiTableQuestions** — v1.0.2 (2016). Dépôt HF `stanfordnlp/wikitablequestions` à script seul → passer par le GitHub `ppasupat/WikiTableQuestions` (tout en dépôt). Licence : **CC BY-SA 4.0** d'après le dépôt d'origine (la carte HF dit CC BY 4.0 — erreur du miroir).
-- **HybridQA** — 69 611 questions, données éclatées sur 3 sources (repo + WikiTables-WithLinks + S3), dépôt HF à script. CC BY 4.0 / MIT. Utilisable mais coûteux à intégrer — optionnel.
-- **FinQA** — GitHub `czyssrs/FinQA`, MIT, ~8,3k questions (chiffre papier), non maintenu depuis 2022. **Piège** : bug pré-2022 dans `table_row_to_text` qui gonflait des exactitudes publiées — ne comparer qu'aux chiffres post-correction.
+- **TAT-QA** — the best of the lot: GitHub `NExTplusplus/TAT-QA` + HF `next-tat/TAT-QA`, raw JSON without a script, CC BY 4.0, 16,552 questions / 17 MB, test ground truth published since 2024.
+- **WikiTableQuestions** — v1.0.2 (2016). HF repository `stanfordnlp/wikitablequestions` script-only → go through the GitHub `ppasupat/WikiTableQuestions` (everything in the repository). License: **CC BY-SA 4.0** according to the original repository (the HF card says CC BY 4.0 — mirror error).
+- **HybridQA** — 69,611 questions, data scattered across 3 sources (repo + WikiTables-WithLinks + S3), script-based HF repository. CC BY 4.0 / MIT. Usable but costly to integrate — optional.
+- **FinQA** — GitHub `czyssrs/FinQA`, MIT, ~8.3k questions (paper figure), unmaintained since 2022. **Trap**: pre-2022 bug in `table_row_to_text` that inflated published accuracies — compare only to post-fix numbers.
 
 ## Images
 
-- **DocVQA (Task 1)** — site officiel RRC : inscription obligatoire **et certificat TLS cassé constaté ce jour**. Passer par les miroirs HF non gated : `pixparse/docvqa-single-page-questions` (complet, 12,4 GB, réponses test absentes) ou `lmms-lab/DocVQA` (val+test, léger). Licence d'origine non standard ; les licences des miroirs (MIT/Apache) sont auto-attribuées — à signaler dans le README. Évaluer sur validation.
-- **ChartQA** — HF `ahmed-masry/ChartQA`, Parquet, 32 719 questions / 1,45 GB. **Licence GPL-3.0** (copyleft sur des données, juridiquement bancal — acceptable pour un banc d'essai, à signaler). Séparer splits humain vs augmenté dans les résultats, comme la littérature.
-- **CORD v2** — HF `naver-clova-ix/cord-v2`, Parquet, CC BY 4.0, 2,31 GB. **Seuls 1 000 reçus publiés** sur les 11 000+ du papier → comparabilité partielle avec les chiffres publiés.
-- **FUNSD** — zip direct sur le site officiel, sans inscription. 199 formulaires (tout petit). **Licence custom non commerciale**, images RVL-CDIP avec responsabilité de licence reportée sur l'utilisateur : ne jamais redistribuer les images dans le repo. Annotations bruitées documentées (FUNSD-r existe).
+- **DocVQA (Task 1)** — official RRC site: registration mandatory **and broken TLS certificate observed today**. Go through the non-gated HF mirrors: `pixparse/docvqa-single-page-questions` (complete, 12.4 GB, test answers absent) or `lmms-lab/DocVQA` (val+test, light). Non-standard original license; the mirrors' licenses (MIT/Apache) are self-assigned — to flag in the README. Evaluate on validation.
+- **ChartQA** — HF `ahmed-masry/ChartQA`, Parquet, 32,719 questions / 1.45 GB. **GPL-3.0 license** (copyleft on data, legally shaky — acceptable for a testbench, to flag). Separate the human vs augmented splits in the results, as the literature does.
+- **CORD v2** — HF `naver-clova-ix/cord-v2`, Parquet, CC BY 4.0, 2.31 GB. **Only 1,000 receipts published** out of the paper's 11,000+ → partial comparability with the published numbers.
+- **FUNSD** — direct zip on the official site, no registration. 199 forms (very small). **Custom non-commercial license**, RVL-CDIP images with license responsibility passed on to the user: never redistribute the images in the repo. Noisy annotations documented (FUNSD-r exists).
 
-## Synthèse des drapeaux
+## Flag summary
 
-| Drapeau | Jeux concernés |
+| Flag | Datasets concerned |
 |---|---|
-| Chargement HF propre aujourd'hui | BEIR×3, HotpotQA, SQuAD 2.0, TAT-QA, ChartQA, CORD v2, BIRD Mini-Dev, Spider (questions), miroirs DocVQA |
-| Chemin de récupération fragile (Drive/Dropbox/script) | MuSiQue, 2WikiMultihopQA, QASPER (branche parquet), HybridQA, WikiTableQuestions, Spider (DBs), FUNSD (zip direct : ok) |
-| Licence à signaler | ChartQA (GPL-3.0), FUNSD (non commercial), DocVQA (floue), BEIR (non garantie amont), WTQ (share-alike + carte HF fausse) |
-| Volumes | NQ 145 GB (retiré), BIRD complet 33 GB (→ Mini-Dev), DocVQA 12,4 GB (→ échantillon val), le reste < 2,5 GB |
-| Remplacement | τ-bench → **tau2-bench (τ³)** ; NQ → SQuAD 2.0 suffit |
+| Clean HF loading today | BEIR×3, HotpotQA, SQuAD 2.0, TAT-QA, ChartQA, CORD v2, BIRD Mini-Dev, Spider (questions), DocVQA mirrors |
+| Fragile retrieval path (Drive/Dropbox/script) | MuSiQue, 2WikiMultihopQA, QASPER (parquet branch), HybridQA, WikiTableQuestions, Spider (DBs), FUNSD (direct zip: ok) |
+| License to flag | ChartQA (GPL-3.0), FUNSD (non-commercial), DocVQA (unclear), BEIR (not guaranteed upstream), WTQ (share-alike + wrong HF card) |
+| Volumes | NQ 145 GB (removed), full BIRD 33 GB (→ Mini-Dev), DocVQA 12.4 GB (→ val sample), the rest < 2.5 GB |
+| Replacement | τ-bench → **tau2-bench (τ³)**; NQ → SQuAD 2.0 is enough |
 
-## Sous-ensemble de démarrage recommandé (phase 0)
+## Recommended starter subset (phase 0)
 
-**Un seul loader de référence : BEIR/SciFact.** 5 183 docs, 300 requêtes test, qrels quasi binaires,
-4,55 MB, Parquet natif sur HF, scores publiés abondants (nDCG@10 BM25 ≈ 0,67–0,69 dans la littérature
-BEIR) — le repère objectif le plus simple à valider. NFCorpus est plus petit en disque (3,25 MB) mais
-ses ~134k qrels gradués compliquent la validation du harness ; FiQA est 6× plus gros.
+**A single reference loader: BEIR/SciFact.** 5,183 docs, 300 test queries, near-binary qrels,
+4.55 MB, native Parquet on HF, abundant published scores (BM25 nDCG@10 ≈ 0.67–0.69 in the BEIR
+literature) — the simplest objective reference point to validate against. NFCorpus is smaller on disk (3.25 MB) but
+its ~134k graded qrels complicate harness validation; FiQA is 6× bigger.

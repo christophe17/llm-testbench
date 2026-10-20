@@ -1,36 +1,37 @@
-# ADR 003 — Conventions de code et d'outillage
+# ADR 003 — Code and tooling conventions
 
-- **Date** : 2026-08-26
-- **Statut** : accepté
+- **Date**: 2026-08-26
+- **Status**: accepted; language clause superseded by 010
 
-## Contexte
+## Context
 
-Décisions figées du brief (§4) à matérialiser en configuration exécutable, plus quelques
-arbitrages laissés ouverts.
+Frozen decisions from the brief (§4) to materialize as executable configuration, plus a few
+trade-offs left open.
 
-## Décisions
+## Decisions
 
-- **Python 3.12 exclusivement** (`requires-python = ">=3.12,<3.13"`), géré par `uv`
-  (lockfile versionné, `uv sync --frozen` en CI). Exception connue : BFCL (phase 4)
-  impose 3.10 → environnement séparé, ADR 001.
-- **Package `llm_testbench`**, layout `src/`, `py.typed`. Prose en français, identifiants
-  et code en anglais ; docstrings en français car le premier lecteur est l'apprenant.
-- **ruff** (lint + format, ligne 100, règles E/W/F/I/UP/B/SIM/RUF/PT/T20) ; **mypy strict**
-  sur tout `src/` et `tests/`.
-- **Tests hors ligne par défaut** : le marqueur `network` isole tout test qui télécharge ;
-  la CI n'exécute que `-m "not network"`. Les loaders acceptent un répertoire de fixtures
-  (`LLM_TESTBENCH_FIXTURES_DIR`) pour que la même logique de jointure tourne sur fixtures
-  et données réelles — on ne teste pas un mock de la logique, on rejoue la vraie logique
-  sur des données minuscules.
-- **Mode échantillon** : `LLM_TESTBENCH_SAMPLE=1` + `sampled=True` porté par les données
-  elles-mêmes. Tout chiffre issu d'un jeu `sampled` est non publiable, par construction.
-- **CI GitHub Actions sans secret** : lint, typecheck, tests hors ligne, notebooks via
-  nbmake en mode échantillon sur fixtures. Les exécutions complètes (chiffres publiés)
-  sont manuelles et archivées.
-- **pre-commit** : hooks fichiers + ruff + mypy. `check-added-large-files` à 2 MB pour
-  bloquer un commit de données par accident.
+- **Python 3.12 exclusively** (`requires-python = ">=3.12,<3.13"`), managed by `uv`
+  (versioned lockfile, `uv sync --frozen` in CI). Known exception: BFCL (phase 4)
+  requires 3.10 → separate environment, ADR 001.
+- **Package `llm_testbench`**, `src/` layout, `py.typed`. Prose in French, identifiers
+  and code in English; docstrings in French because the first reader is the learner.
+  *Superseded on 2026-10-20 by ADR 010: everything in English.*
+- **ruff** (lint + format, line 100, rules E/W/F/I/UP/B/SIM/RUF/PT/T20); **mypy strict**
+  on all of `src/` and `tests/`.
+- **Offline tests by default**: the `network` marker isolates any test that downloads;
+  CI only runs `-m "not network"`. Loaders accept a fixtures directory
+  (`LLM_TESTBENCH_FIXTURES_DIR`) so that the same join logic runs on fixtures
+  and real data — we do not test a mock of the logic, we replay the real logic
+  on tiny data.
+- **Sample mode**: `LLM_TESTBENCH_SAMPLE=1` + `sampled=True` carried by the data
+  itself. Any number coming from a `sampled` dataset is unpublishable, by construction.
+- **GitHub Actions CI without secrets**: lint, typecheck, offline tests, notebooks via
+  nbmake in sample mode on fixtures. Full runs (published numbers)
+  are manual and archived.
+- **pre-commit**: file hooks + ruff + mypy. `check-added-large-files` at 2 MB to
+  block an accidental data commit.
 
-## Conséquences
+## Consequences
 
-`make check` reproduit la CI localement. Le coût : mypy strict impose des annotations
-partout, y compris dans les tests — assumé, c'est le niveau attendu du code de prod.
+`make check` reproduces CI locally. The cost: mypy strict requires annotations
+everywhere, including in tests — accepted, it is the level expected of production code.

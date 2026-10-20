@@ -1,90 +1,90 @@
-# ADR 005 — Phase 5B « Le pont » : mesurer l'arbitrage ML classique / LLM
+# ADR 005 — Phase 5B "The bridge": measuring the classic ML / LLM trade-off
 
-- **Date** : 2026-08-31
-- **Statut** : accepté
+- **Date**: 2026-08-31
+- **Status**: accepted
 
-## Contexte
+## Context
 
-Le banc mesure des techniques LLM entre elles ; il ne dit jamais quand un LLM est la
-mauvaise réponse face à un modèle classique, alors que c'est la première question posée
-en entretien de system design et la décision la plus coûteuse en production. La section 6
-du brief interdit la prédiction et la modélisation métier — règle protectrice contre la
-dérive vers un second projet, mais qui, lue à la lettre, interdit aussi de mesurer cet
-arbitrage. Le brief exige par ailleurs un seul harness et un seul système.
+The testbench measures LLM techniques against each other; it never says when an LLM is the
+wrong answer compared to a classic model, even though that is the first question asked
+in a system design interview and the costliest decision in production. Section 6
+of the brief forbids prediction and business modeling — a protective rule against
+drifting into a second project, but one that, read literally, also forbids measuring this
+trade-off. The brief also requires a single harness and a single system.
 
-## Options considérées
+## Options considered
 
-1. **Ne rien faire** — cohérent avec la règle, mais laisse un trou dans l'argumentaire
-   « je choisis une architecture sur preuve » ; l'arbitrage resterait une opinion.
-2. **Une phase courte (5B) qui étend le harness** — le modèle classique n'existe que
-   comme bras de comparaison ; règle de la section 6 reformulée avec une exception
-   nommée et trois verrous. Coût : ~1 semaine, ~20–50 $ d'API avec un modèle « mini »
-   (~300 $ avec un modèle frontier — d'où un seul modèle, échantillonnage stratifié du
-   test s'il est cher), une dépendance (xgboost + shap, roues arm64 disponibles).
-3. **Un repo séparé « ML classique vs LLM »** — viole « jamais un second projet » et
-   perdrait l'instrumentation coût/latence et le bootstrap du harness.
+1. **Do nothing** — consistent with the rule, but leaves a hole in the
+   "I choose an architecture on evidence" argument; the trade-off would remain an opinion.
+2. **A short phase (5B) that extends the harness** — the classic model exists only
+   as a comparison arm; the section 6 rule is reworded with a named exception
+   and three locks. Cost: ~1 week, ~$20–50 of API with a "mini" model
+   (~$300 with a frontier model — hence a single model, stratified sampling of the
+   test split if it is expensive), one dependency (xgboost + shap, arm64 wheels available).
+3. **A separate "classic ML vs LLM" repo** — violates "never a second project" and
+   would lose the cost/latency instrumentation and the harness bootstrap.
 
-## Décision
+## Decision
 
-Option 2. Phase 5B après la phase 5 (elle consomme son instrumentation coût/latence —
-elle en est le premier client externe, ce qui teste l'abstraction), avant la phase 6
-(qui rejouera son bras LLM en self-hosted). Numérotation conservée : renuméroter 6–10
-casserait les références des ADR 001–003, du JOURNAL et de STATE pour un gain nul ; le
-« B » signifie « insérée après coup », pas « sous-partie de 5 ».
+Option 2. Phase 5B after phase 5 (it consumes its cost/latency instrumentation — it
+is its first external client, which tests the abstraction), before phase 6
+(which will replay its LLM arm self-hosted). Numbering kept: renumbering 6–10
+would break the references in ADRs 001–003, JOURNAL and STATE for zero gain; the
+"B" means "inserted after the fact", not "subpart of 5".
 
-Deux tâches, une tabulaire à texte libre et une classification de texte, sur jeux
-publics à référence publiée. Bras obligatoires : baseline stupide, règle simple, GBM
-texte ignoré, **GBM + n-grams TF-IDF** (sans lui l'hybride LLM serait comparé à un homme
-de paille — Shi et al. 2021 mesurent sur fake_job_postings : GBM sans texte AUC 0,697,
-GBM + n-grams 0,968, GBM + embeddings 0,926), LLM zéro-coup et few-shot en contexte,
-hybride embeddings → GBM. Un seul modèle LLM par bras. Axes : qualité avec IC bootstrap,
-latence p95, coût/1 000, déterminisme, reproductibilité, auditabilité, défendabilité
-(les deux derniers en grille discrète déclarée qualitative + un proxy mesuré chacun).
-Livrable : `docs/decision-tree-ml-vs-llm.md`, chaque branche adossée à un chiffre.
-Module `src/llm_testbench/classic/`, testé et typé, jamais exposé par l'API ni appelé
-par l'agent.
+Two tasks, one tabular with free text and one text classification, on public
+datasets with a published reference. Mandatory arms: dumb baseline, simple rule, GBM
+with text ignored, **GBM + TF-IDF n-grams** (without it the LLM hybrid would be compared to a
+straw man — Shi et al. 2021 measure on fake_job_postings: GBM without text AUC 0.697,
+GBM + n-grams 0.968, GBM + embeddings 0.926), zero-shot and few-shot in-context LLM,
+embeddings → GBM hybrid. A single LLM model per arm. Axes: quality with bootstrap CI,
+p95 latency, cost/1,000, determinism, reproducibility, auditability, defensibility
+(the last two on a discrete grid declared qualitative + one measured proxy each).
+Deliverable: `docs/decision-tree-ml-vs-llm.md`, each branch backed by a number.
+Module `src/llm_testbench/classic/`, tested and typed, never exposed by the API nor called
+by the agent.
 
-## Jeux de données — vérification du 2026-08-31, arbitrés le même jour
+## Datasets — verification of 2026-08-31, decided the same day
 
-Protocole de la phase 0 (disponibilité, taille, licence, redistribution). Aucune donnée
-n'est versionnée dans le dépôt. **Retenus : `fake_job_postings2` et Banking77.** Les
-autres colonnes restent comme substituts documentés si un chemin de chargement casse.
+Phase 0 protocol (availability, size, license, redistribution). No data
+is versioned in the repository. **Selected: `fake_job_postings2` and Banking77.** The
+other columns remain as documented substitutes if a loading path breaks.
 
-**Tabulaire à texte libre** (référence : benchmark multimodal AutoGluon, Shi et al.
-2021, NeurIPS D&B ; copies hébergées sur S3 `automl-mm-bench`, HEAD 200 vérifié, sha1
-dans le loader d'origine ; licence des copies CC BY-NC-SA) :
+**Tabular with free text** (reference: AutoGluon multimodal benchmark, Shi et al.
+2021, NeurIPS D&B; copies hosted on S3 `automl-mm-bench`, HEAD 200 verified, sha1
+in the original loader; license of the copies CC BY-NC-SA):
 
-| | fake_job_postings2 (EMSCAD) — **recommandé** | women_clothing_review | employee_salaries |
+| | fake_job_postings2 (EMSCAD) — **recommended** | women_clothing_review | employee_salaries |
 |---|---|---|---|
-| Tâche | binaire (fraude, ~5 % positifs), ROC-AUC | régression note 1–5, R² | régression salaire, R² |
-| Taille | 12 725 / 3 182, 21 MB | 18 788 / 4 698, 4 MB | 9 228 lignes, 1,3 MB |
-| Texte | titre, description, exigences (long, réel) | titre + avis | intitulé de poste (385 valeurs courtes) |
-| Licence | copie NC ; site EMSCAD d'origine mort (page d'hébergement générique) ; copie Kaggle non vérifiable sans compte | copie NC ; original Kaggle annoncé CC0 ; miroir HF `Censius-AI` Parquet | **CC0 confirmé** (API OpenML 42125) |
-| Références | GBM sans texte 0,697 · + n-grams 0,968 · pre-embedding 0,926 · Text-Net 0,963 · stack 0,964 | sans texte 0,001 · + n-grams 0,654 · pre-embedding 0,642 · stack 0,751 | skrub docs : MinHash + HGB R² 0,911 ± 0,014 |
-| Verdict | seul jeu où tabulaire **et** texte portent du signal ; fraude → axes audit/régulateur sensés ; contamination probable (2014) | tabulaire seul ≈ 0 : l'hybride mesure texte contre texte | « texte » de 3 mots ; régression |
+| Task | binary (fraud, ~5% positives), ROC-AUC | rating regression 1–5, R² | salary regression, R² |
+| Size | 12,725 / 3,182, 21 MB | 18,788 / 4,698, 4 MB | 9,228 rows, 1.3 MB |
+| Text | title, description, requirements (long, real) | title + review | job title (385 short values) |
+| License | NC copy; original EMSCAD site dead (generic hosting page); Kaggle copy unverifiable without an account | NC copy; Kaggle original announced as CC0; HF mirror `Censius-AI` Parquet | **CC0 confirmed** (OpenML API 42125) |
+| References | GBM without text 0.697 · + n-grams 0.968 · pre-embedding 0.926 · Text-Net 0.963 · stack 0.964 | without text 0.001 · + n-grams 0.654 · pre-embedding 0.642 · stack 0.751 | skrub docs: MinHash + HGB R² 0.911 ± 0.014 |
+| Verdict | only dataset where tabular **and** text both carry signal; fraud → audit/regulator axes make sense; probable contamination (2014) | tabular alone ≈ 0: the hybrid measures text against text | 3-word "text"; regression |
 
-Rejeté : `product_sentiment_machine_hack` (tabulaire = une colonne, licence introuvable).
-Référence méthodologique du bras zéro-coup : TabLLM (Hegselmann 2023, AISTATS) — son
-few-shot est du fine-tuning, **non comparable** à notre few-shot en contexte.
+Rejected: `product_sentiment_machine_hack` (tabular = one column, license not found).
+Methodological reference for the zero-shot arm: TabLLM (Hegselmann 2023, AISTATS) — its
+few-shot is fine-tuning, **not comparable** to our in-context few-shot.
 
-**Classification de texte** :
+**Text classification**:
 
-| | Banking77 — **recommandé** | MASSIVE fr-FR | AG News |
+| | Banking77 — **recommended** | MASSIVE fr-FR | AG News |
 |---|---|---|---|
-| Tâche | 77 intentions bancaires, 10 003 / 3 080 | 60 intentions, ~11,5 k / 2 k / 3 k (locale fr-FR) | 4 thèmes, 120 k / 7,6 k |
-| Licence | CC BY 4.0 | CC BY 4.0 | « non-commercial research », HF : unknown |
-| Chargement | HF `PolyAI/banking77` à script → cassé (`datasets` ≥ 3) ; PR Parquet `refs/pr/6` (2025-08), miroir `gtfintechlab/banking77`, ou CSV GitHub PolyAI | `AmazonScience/massive`, Parquet natif | Parquet natif |
-| Références | BERT fine-tuné 93,66 % (83,42 % à 10 ex./intention), USE 92,81 % ; LLM zéro-coup 10–25 pts en dessous | XLM-R base 86,3 %, mT5 87,2 % ; MTEB `MassiveIntentClassification (fr)` : embeddings + linéaire publiés par modèle | n-grams TF-IDF 92,36 % (Zhang 2015) |
-| Verdict | littérature LLM-vs-fine-tuné la plus riche ; 77 étiquettes dans le prompt amplifient l'écart de coût et rendent le cache de prompt mesurable | seule tâche francophone du banc ; référence directe pour le bras « embeddings + linéaire » | trop facile, licence floue — rejeté |
+| Task | 77 banking intents, 10,003 / 3,080 | 60 intents, ~11.5k / 2k / 3k (fr-FR locale) | 4 topics, 120k / 7.6k |
+| License | CC BY 4.0 | CC BY 4.0 | "non-commercial research", HF: unknown |
+| Loading | HF `PolyAI/banking77` script-based → broken (`datasets` ≥ 3); Parquet PR `refs/pr/6` (2025-08), mirror `gtfintechlab/banking77`, or PolyAI GitHub CSV | `AmazonScience/massive`, native Parquet | native Parquet |
+| References | fine-tuned BERT 93.66% (83.42% at 10 ex./intent), USE 92.81%; zero-shot LLM 10–25 pts below | XLM-R base 86.3%, mT5 87.2%; MTEB `MassiveIntentClassification (fr)`: embeddings + linear published per model | TF-IDF n-grams 92.36% (Zhang 2015) |
+| Verdict | richest LLM-vs-fine-tuned literature; 77 labels in the prompt amplify the cost gap and make the prompt cache measurable | the testbench's only French-language task; direct reference for the "embeddings + linear" arm | too easy, unclear license — rejected |
 
-## Conséquences
+## Consequences
 
-Le README gagne l'argument « quand ne pas utiliser de LLM », chiffré. La section 6
-porte une exception explicite ; toute réutilisation du module `classic/` hors 5B est
-une violation, pas une extension. Les jeux choisis sont anciens et omniprésents :
-contamination mesurée (phase 2), pas ignorée. Attente déclarée avant mesure pour la
-tâche texte (écart qualité faible, écart coût de plusieurs ordres de grandeur) — la
-littérature sur Banking77 laisse penser qu'elle ne tiendra pas telle quelle sur 77
-intentions fines ; ce sera une branche de l'arbre, pas un résultat à maquiller.
-À revisiter si la phase 5 ne livre pas un coût par appel réutilisable hors de son
-contexte.
+The README gains the "when not to use an LLM" argument, quantified. Section 6
+carries an explicit exception; any reuse of the `classic/` module outside 5B is
+a violation, not an extension. The chosen datasets are old and ubiquitous:
+contamination measured (phase 2), not ignored. Expectation declared before measurement for the
+text task (small quality gap, cost gap of several orders of magnitude) — the
+Banking77 literature suggests it will not hold as is on 77 fine-grained
+intents; that will be a branch of the tree, not a result to dress up.
+To revisit if phase 5 does not deliver a per-call cost reusable outside its
+context.

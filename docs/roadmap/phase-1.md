@@ -1,47 +1,49 @@
-# PHASE 1 — Squelette de production (semaines 2–3)
+# PHASE 1 — Production skeleton (weeks 2–3)
 
-**Statut : construite** (fusionnée dans `main` le 2026-10-16) ; restent les actions de
-Christophe listées dans `STATE.md` (clés, exécutions complètes, bootstrap AWS).
+**Status: built** (merged into `main` on 2026-10-16); what remains are Christophe's
+actions listed in `STATE.md` (keys, full runs, AWS bootstrap).
 
-La qualité n'est pas encore le sujet : on construit la structure qu'on mesurera ensuite.
+Quality is not yet the topic: we build the structure that we will measure afterwards.
 
-**Couche LLM** : abstraction provider, structured outputs avec validation et réparation,
-timeouts, retry/backoff, circuit breaker, budget de tokens, cache exact et sémantique,
-streaming SSE annulable. **Gouvernance des données** dès cette phase, comme propriété de la
-couche : classe de données portée par chaque requête, registre de backends avec métadonnées
-(entité, région, rétention, entraînement, sous-traitants), politique qui refuse par défaut,
-décision tracée dans l'audit, appliquée aussi aux embeddings et au juge. Les contraintes
-réelles ne sont pas encore connues : politique initiale permissive sur données publiques, à
-durcir quand elles se préciseront (ADR 006).
+**LLM layer**: provider abstraction, structured outputs with validation and repair,
+timeouts, retry/backoff, circuit breaker, token budget, exact and semantic cache,
+cancellable SSE streaming. **Data governance** from this phase on, as a property of the
+layer: data class carried by every request, backend registry with metadata
+(entity, region, retention, training, subprocessors), deny-by-default policy,
+decision traced in the audit, also applied to embeddings and the judge. The actual
+constraints are not known yet: an initial permissive policy on public data, to be
+tightened when they become clearer (ADR 006).
 
-**Abstraction des sources dès maintenant.** Le système interrogera à terme des documents, une
-base SQL, des API, des données structurées et des images (phase 4). Interface `Source`
-générique — capacités déclarées, métadonnées, provenance uniforme, citation homogène quelle
-que soit l'origine — et d'abord le connecteur documentaire. La phase 4 devient un branchement
-au lieu d'un refactor (ADR 007).
+**Source abstraction right now.** The system will eventually query documents, a
+SQL database, APIs, structured data and images (phase 4). Generic `Source` interface
+— declared capabilities, metadata, uniform provenance, consistent citation whatever
+the origin — and first the document connector. Phase 4 becomes a plug-in
+instead of a refactor (ADR 007).
 
-**Ingestion** : parsing soigné (le parsing fait la moitié de la qualité d'un RAG), chunking
-recursive volontairement naïf comme baseline à battre, métadonnées de traçabilité, comparaison
-chiffrée d'au moins 3 modèles d'embeddings via MTEB.
+**Ingestion**: careful parsing (parsing makes half of a RAG's quality), deliberately naive
+recursive chunking as a baseline to beat, traceability metadata, measured
+comparison of at least 3 embedding models via MTEB.
 
-**API** : `/chat` avec citations obligatoires et refus explicite quand le contexte ne permet
-pas de répondre. Déployé sur le cluster, pas seulement en local.
+**API**: `/chat` with mandatory citations and explicit refusal when the context does not
+allow an answer. Deployed on the cluster, not only locally.
 
-**Infra** : Langfuse (reporté de la phase 0, ADR 002) et modules AWS. Chaque brique expliquée
-dans un guide `docs/infra/`.
+**Infra**: Langfuse (postponed from phase 0, ADR 002) and AWS modules. Each building block
+explained in a `docs/infra/` guide.
 
-**Notebooks** : (1) anatomie d'un appel LLM robuste — ce qui casse en prod et comment on
-l'encaisse ; (2) du document au chunk indexé, avec toutes les sorties intermédiaires visibles.
+**Notebooks**: (1) anatomy of a robust LLM call — what breaks in prod and how we
+absorb it; (2) from document to indexed chunk, with all the intermediate outputs visible.
 
-## Arbitrages du plan (2026-09-03)
+## Plan decisions (2026-09-03)
 
-- Providers : Anthropic natif (+ Bedrock) et compatible OpenAI ; générateur par défaut
-  `anthropic/claude-sonnet-5` ; OpenAI second provider et juge de la phase 2 (ADR 006).
-- Documents longs : QASPER (texte intégral déjà structuré, CC BY 4.0) ; parsing PDF reporté en
-  phase 3, où il sera mesuré.
-- Embeddings comparés via `mteb` sur SciFact : OpenAI text-embedding-3-small,
-  BAAI/bge-base-en-v1.5 (local), all-MiniLM-L6-v2 (témoin « tutoriel »). Les nDCG@10 obtenus
-  sont un repère que le harness de la phase 2 devra reproduire.
-- Langfuse par Helm sur k3d (VM Docker à 12 GB).
-- Déploiement cloud manuel par `make`, pas de pipeline OIDC.
-- psycopg 3 en SQL brut, index HNSW.
+- Providers: native Anthropic (+ Bedrock) and OpenAI-compatible; default generator
+  `anthropic/claude-sonnet-5`; OpenAI as second provider and phase 2 judge (ADR 006).
+- Long documents: QASPER (full text already structured, CC BY 4.0); PDF parsing postponed to
+  phase 3, where it will be measured.
+- Embeddings compared via `mteb` on SciFact: OpenAI text-embedding-3-small,
+  BAAI/bge-base-en-v1.5 (local), all-MiniLM-L6-v2 ("tutorial" control). The nDCG@10 values
+  obtained are a benchmark that the phase 2 harness will have to reproduce.
+- Langfuse via Helm on k3d (Docker VM with 12 GB).
+- Manual cloud deployment through `make`, no OIDC pipeline. *Superseded on 2026-10-19 (ADR
+  009): `make deploy`, plus the same deployment by GitHub Actions with an OIDC role, triggered
+  manually.*
+- psycopg 3 with raw SQL, HNSW index.

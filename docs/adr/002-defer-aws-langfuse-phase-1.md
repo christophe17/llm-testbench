@@ -1,37 +1,37 @@
-# ADR 002 — Cloud AWS et Langfuse reportés en phase 1, bootstrap seul en phase 0
+# ADR 002 — AWS cloud and Langfuse deferred to phase 1, bootstrap only in phase 0
 
-- **Date** : 2026-08-26
-- **Statut** : accepté
+- **Date**: 2026-08-26
+- **Status**: accepted
 
-## Contexte
+## Context
 
-Le brief place « infra Terraform + Helm » et Langfuse en phase 0. Or rien ne se déploie
-avant la phase 1 (aucune API), et rien n'appelle un LLM avant la phase 1 (rien à tracer).
-Le brief interdit par ailleurs les postes dormants. Langfuse v3 self-hosted traîne
-ClickHouse, Redis et un stockage objet — lourd pour un k3d sur Mac, à vide.
+The brief places "Terraform + Helm infra" and Langfuse in phase 0. Yet nothing is deployed
+before phase 1 (no API), and nothing calls an LLM before phase 1 (nothing to trace).
+The brief also forbids idle cost items. Self-hosted Langfuse v3 drags along
+ClickHouse, Redis and object storage — heavy for k3d on a Mac, running empty.
 
-## Options considérées
+## Options considered
 
-1. **Tout monter en phase 0** (EKS, RDS, Langfuse) — conforme à la lettre du brief, mais
-   paie un cluster et opère une stack d'observabilité sans aucune charge à observer.
-2. **Bootstrap seul en phase 0, le reste en phase 1** — l'alerte de budget existe avant
-   le premier euro de cloud ; l'infra arrive quand quelque chose la consomme.
-3. **Zéro AWS en phase 0** — repousse aussi l'alerte de budget, qui est justement la
-   protection qu'on veut en place avant tout le reste.
+1. **Stand everything up in phase 0** (EKS, RDS, Langfuse) — compliant with the letter of the
+   brief, but pays for a cluster and operates an observability stack with no load to observe.
+2. **Bootstrap only in phase 0, the rest in phase 1** — the budget alert exists before
+   the first euro of cloud spend; the infra arrives when something consumes it.
+3. **Zero AWS in phase 0** — also postpones the budget alert, which is precisely the
+   protection we want in place before everything else.
 
-## Décision
+## Decision
 
-Option 2. Phase 0 : module `infra/terraform/bootstrap/` uniquement (bucket d'état S3
-chiffré/versionné avec verrouillage natif S3 — pas de DynamoDB, Terraform ≥ 1.10 — et
-budget mensuel 55 USD ≈ 50 € avec alertes 80 %/100 % réel + 100 % prévisionnel). L'état
-du bootstrap reste local (il crée le bucket d'état, œuf et poule). Langfuse s'installe
-en phase 1 avec le premier appel LLM. Le dev local (k3d + Postgres/pgvector) est, lui,
-bien livré en phase 0 : les loaders et la CI n'en dépendent pas, mais la phase 1 le
-consommera dès son premier jour.
+Option 2. Phase 0: `infra/terraform/bootstrap/` module only (encrypted/versioned S3 state
+bucket with native S3 locking — no DynamoDB, Terraform ≥ 1.10 — and a monthly
+budget of 55 USD ≈ €50 with alerts at 80%/100% actual + 100% forecast). The bootstrap
+state stays local (it creates the state bucket: chicken and egg). Langfuse is installed
+in phase 1 with the first LLM call. Local dev (k3d + Postgres/pgvector), on the other hand,
+is indeed delivered in phase 0: the loaders and CI do not depend on it, but phase 1 will
+consume it from its very first day.
 
-## Conséquences
+## Consequences
 
-Coût cloud de la phase 0 : ~0 €/mois. La phase 1 devra livrer : réseau + EKS + ECR + RDS
-pgvector (Terraform, backend S3 du bootstrap), rôle OIDC GitHub Actions si la CI doit
-déployer, et l'arbitrage Langfuse v3 complet vs alternative légère en local. À revisiter
-si la phase 1 glisse : l'alerte de budget, elle, est déjà en place.
+Phase 0 cloud cost: ~€0/month. Phase 1 will have to deliver: network + EKS + ECR + RDS
+pgvector (Terraform, bootstrap S3 backend), a GitHub Actions OIDC role if CI is to
+deploy, and the call between full Langfuse v3 and a lightweight local alternative. To revisit
+if phase 1 slips: the budget alert, for its part, is already in place.

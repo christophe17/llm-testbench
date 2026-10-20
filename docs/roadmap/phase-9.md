@@ -1,23 +1,23 @@
-# PHASE 9 — Voice (extension, ajoutée le 2026-08-27)
+# PHASE 9 — Voice (extension, added on 2026-08-27)
 
-Le segment voice agents monte vite dans les offres 2026 et le banc d'essai n'avait aucun
-composant audio. Même logique que tout le reste : **on branche sur le système existant, on
-mesure**.
+The voice agents segment is rising fast in 2026 job postings and the testbench had no
+audio component. Same logic as everything else: **we plug into the existing system, we
+measure**.
 
-Pipeline temps réel STT → agent existant → TTS, exposé par l'API actuelle : streaming audio
-bidirectionnel, barge-in (l'utilisateur coupe la parole à l'agent), gestion du silence et des
-tours de parole. La latence perçue devient le sujet central : le TTFT devient un
-**time-to-first-audio**, décomposé par étape (STT, agent, TTS) avec le harness d'observabilité
-de la phase 5. Coût par minute de conversation, comparé au coût par requête texte. Dégradation
-gracieuse vers le texte quand l'audio échoue.
+Real-time pipeline STT → existing agent → TTS, exposed by the current API: bidirectional
+audio streaming, barge-in (the user interrupts the agent), handling of silence and
+turn-taking. Perceived latency becomes the central topic: TTFT becomes a
+**time-to-first-audio**, broken down by step (STT, agent, TTS) with the observability harness
+of phase 5. Cost per minute of conversation, compared with the cost per text request.
+Graceful degradation to text when audio fails.
 
-**Jeux d'évaluation** à vérifier au démarrage de la phase (même protocole que la phase 0 :
-disponibilité, taille, licence) — candidats : VoiceBench et équivalents ; à défaut, rejeu audio
-des questions des jeux texte existants via TTS, avec la contamination de cette boucle
-documentée.
+**Evaluation datasets** to verify at the start of the phase (same protocol as phase 0:
+availability, size, license) — candidates: VoiceBench and equivalents; failing that, audio
+replay of the questions of the existing text datasets via TTS, with the contamination of this
+loop documented.
 
-**Notebooks** : (1) d'où vient la latence d'un agent vocal — la décomposition milliseconde par
-milliseconde ; (2) évaluer un agent qu'on écoute : ce qui change quand la sortie n'est plus du
-texte.
+**Notebooks**: (1) where the latency of a voice agent comes from — the millisecond-by-millisecond
+breakdown; (2) evaluating an agent you listen to: what changes when the output is no longer
+text.
 
-**En fin de phase** : décision GO/NO-GO sur la phase 10.
+**At the end of the phase**: GO/NO-GO decision on phase 10.

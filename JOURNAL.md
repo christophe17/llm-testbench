@@ -1,437 +1,474 @@
 # JOURNAL
 
-> Historique daté du projet, au fil de l'eau. Une entrée par session de travail significative.
+> Dated history of the project, kept as work goes. One entry per significant work session.
 >
-> Format d'entrée :
+> Entry format:
 >
 > ```
-> ## AAAA-MM-JJ — titre court
-> **Contexte** : où on en était.
-> **Fait** : ce qui a été construit, mesuré ou décidé (avec chiffres quand il y en a).
-> **Incidents / surprises** : ce qui a cassé, ce qui a contredit une hypothèse — matière première
-> des histoires d'entretien de la phase 8, à consigner sur le moment.
-> **Suite** : la prochaine étape concrète.
+> ## YYYY-MM-DD — short title
+> **Context**: where we were.
+> **Done**: what was built, measured or decided (with numbers when there are any).
+> **Incidents / surprises**: what broke, what contradicted an assumption — raw material
+> for the phase 8 interview stories, to be recorded on the spot.
+> **Next**: the next concrete step.
 > ```
 
-## 2026-08-26 — Démarrage : brief, pilotage, vérification des datasets
+## 2026-08-26 — Kickoff: brief, steering, dataset verification
 
-**Contexte** : reprise du projet à zéro sur la branche `phase-0` (un premier jet de phase 0 existait dans l'historique git ; l'arbre de travail a été volontairement vidé pour repartir du brief).
+**Context**: project restarted from scratch on the `phase-0` branch (a first draft of phase 0 existed in the git history; the working tree was deliberately emptied to start over from the brief).
 
-**Fait** : brief de mission consolidé dans `CLAUDE.md` ; `STATE.md` et `JOURNAL.md` créés ; vérification web (nom exact, version, licence, taille, mode de récupération) de chaque jeu de données du tableau de la section 4 du brief ; réponses aux questions bloquantes obtenues (clés OpenAI/Anthropic/OpenRouter, budget au besoin réel, pas de calendrier).
+**Done**: mission brief consolidated in `CLAUDE.md`; `STATE.md` and `JOURNAL.md` created; web verification (exact name, version, license, size, retrieval method) of each dataset in the table of section 4 of the brief; answers to the blocking questions obtained (OpenAI/Anthropic/OpenRouter keys, budget according to real need, no calendar).
 
-**Incidents / surprises** : —
+**Incidents / surprises**: —
 
-**Suite** : validation du sous-ensemble de démarrage et `GO PHASE 0`.
+**Next**: validation of the starting subset and `GO PHASE 0`.
 
-## 2026-08-26 — Phase 0 construite : outillage, loader SciFact, CI, k3d, bootstrap
+## 2026-08-26 — Phase 0 built: tooling, SciFact loader, CI, k3d, bootstrap
 
-**Contexte** : `GO PHASE 0` reçu ; arbitrages validés — package `llm_testbench`,
-Langfuse + modules cloud reportés en phase 1, bootstrap AWS seul avec budget ~50 €.
+**Context**: `GO PHASE 0` received; calls validated — package `llm_testbench`,
+Langfuse + cloud modules postponed to phase 1, AWS bootstrap alone with a ~EUR 50 budget.
 
-**Fait** : outillage complet (uv/ruff/mypy strict/pytest/pre-commit) ; interface de
-chargement avec validation d'intégrité référentielle et flag `sampled` porté par les
-données ; loader BEIR/SciFact (jointure de 3 dépôts HF Parquet), 13 tests hors ligne +
-smoke test réseau ; CI hors ligne (notebook en mode échantillon via nbmake) ; k3d +
-Postgres/pgvector vérifié de bout en bout (extension `vector` 0.8.6 active) ; Terraform
-bootstrap écrit et validé, non appliqué (compte AWS à créer) ; notebook 0 exécuté dans
-les deux modes, contrôle automatique des volumes contre le papier BEIR (5 183 docs,
-300 requêtes test — conforme).
+**Done**: complete tooling (uv/ruff/mypy strict/pytest/pre-commit); loading interface
+with referential integrity validation and a `sampled` flag carried by the data;
+BEIR/SciFact loader (join of 3 HF Parquet repositories), 13 offline tests + network
+smoke test; offline CI (notebook in sample mode via nbmake); k3d + Postgres/pgvector
+verified end to end (`vector` extension 0.8.6 active); bootstrap Terraform written and
+validated, not applied (AWS account to be created); notebook 0 run in both modes,
+automatic check of the volumes against the BEIR paper (5,183 docs, 300 test queries —
+compliant).
 
-**Incidents / surprises** :
-- Le kernelspec Jupyter utilisateur `python3` pointait vers un Python 3.10 Homebrew et
-  masquait le venv du projet : le notebook passait en `uv run` mais échouait sous
-  nbmake (`ModuleNotFoundError`). Correctif : kernel dédié `llm-testbench` enregistré
-  par `make setup` et par la CI. Leçon : un notebook « qui marche chez moi » peut
-  s'exécuter dans un autre interpréteur que celui qu'on croit.
-- k3d local en 5.4.6 (2022, k3s 1.24) refusait l'apiVersion `v1alpha5` ; un cluster
-  `llm-testbench` hérité du premier jet traînait encore et `kubectl apply` l'a visé
-  sans prévenir. Nettoyage, mise à jour k3d 5.9.0, recréation propre. Leçon : toujours
-  vérifier `kubectl config current-context` avant d'appliquer.
-- Les ids qrels de SciFact arrivent typés `int` côté HF alors que les ids corpus sont
-  des `str` : sans cast systématique, la jointure échoue en silence. C'est exactement
-  le genre de bug que la validation d'intégrité à la construction attrape.
+**Incidents / surprises**:
+- The user Jupyter kernelspec `python3` pointed to a Homebrew Python 3.10 and masked the
+  project venv: the notebook passed under `uv run` but failed under nbmake
+  (`ModuleNotFoundError`). Fix: a dedicated `llm-testbench` kernel registered by
+  `make setup` and by the CI. Lesson: a notebook that "works on my machine" may run in
+  another interpreter than the one you think.
+- Local k3d 5.4.6 (2022, k3s 1.24) rejected the `v1alpha5` apiVersion; an `llm-testbench`
+  cluster inherited from the first draft was still lying around and `kubectl apply`
+  targeted it without warning. Cleanup, k3d upgraded to 5.9.0, clean recreation. Lesson:
+  always check `kubectl config current-context` before applying.
+- SciFact qrels ids arrive typed `int` on the HF side while the corpus ids are `str`:
+  without a systematic cast, the join fails silently. This is exactly the kind of bug
+  that integrity validation at construction catches.
 
-**Suite** : relecture de la PR phase 0 ; `make bootstrap-apply` quand le compte AWS
-existe ; `GO PHASE 1`.
+**Next**: review of the phase 0 PR; `make bootstrap-apply` when the AWS account
+exists; `GO PHASE 1`.
 
-## 2026-08-26 — Notebook 0 réécrit après retour : « je suis totalement largué »
+## 2026-08-26 — Notebook 0 rewritten after feedback: "I'm completely lost"
 
-**Contexte** : première version du notebook 0 rejetée à la relecture — elle exposait le
-code de `src/` en supposant acquis tout le vocabulaire IR/LLM (retrieval, qrels, splits,
-BM25, nDCG), alors que ce vocabulaire est précisément ce que le projet doit enseigner.
+**Context**: first version of notebook 0 rejected at review — it exposed the code of
+`src/` assuming all the IR/LLM vocabulary was known (retrieval, qrels, splits, BM25,
+nDCG), whereas that vocabulary is precisely what the project must teach.
 
-**Fait** : réécriture complète en 38 cellules, progression imposée : problématique
-concrète → notions sur un exemple jouet de cinq lignes → données réelles explorées →
-seulement ensuite le code de `src/` lu bloc par bloc → tour du banc → expérimentations →
-lexique de 22 termes. Chaque terme est défini à sa première apparition. Règle gravée
-dans `CLAUDE.md` §8 pour tous les notebooks à venir.
+**Done**: complete rewrite in 38 cells, with an imposed progression: concrete problem →
+notions on a five-line toy example → real data explored → only then the code of `src/`
+read block by block → tour of the testbench → experiments → glossary of 22 terms. Each
+term is defined at its first appearance. Rule set in stone in `CLAUDE.md` §8 for all
+upcoming notebooks.
 
-**Incidents / surprises** : le contrat du brief (« lecture guidée du code réel ») était
-respecté à la lettre mais raté sur le fond : montrer le vrai code ne dispense pas de
-construire les concepts avant. Le bon ordre s'est révélé être : voir les données
-d'abord, lire le code ensuite — l'inverse de la v1.
+**Incidents / surprises**: the brief's contract ("guided reading of the real code") was
+followed to the letter but missed in substance: showing the real code does not exempt you
+from building the concepts first. The right order turned out to be: see the data first,
+read the code next — the reverse of v1.
 
-**Suite** : relecture de la nouvelle version du notebook.
+**Next**: review of the new version of the notebook.
 
-## 2026-08-27 — Audit marché et extension de la roadmap (8 → 10 phases)
+## 2026-08-27 — Market audit and roadmap extension (8 → 10 phases)
 
-**Contexte** : question posée — la roadmap est-elle calibrée pour un poste AI Engineer en
-France en remote ? Vérification web contre les offres et analyses de recrutement 2026.
+**Context**: question asked — is the roadmap calibrated for a remote AI Engineer position
+in France? Web check against 2026 job offers and recruitment analyses.
 
-**Fait** : cœur de la roadmap confirmé (éval, agents, MCP, observabilité, coût, vLLM —
-la « littératie en évaluation » est citée comme premier signal d'embauche). Quatre trous
-identifiés et intégrés : GraphRAG (phase 3, derrière flag, candidat assumé au retrait
-chiffré), mémoire d'agent (4.10 + notebook 7), voice agents (nouvelle phase 9), browser/
-computer use (nouvelle phase 10, optionnelle, GO/NO-GO fin de phase 9). Paysage des
-frameworks (LangChain, LlamaIndex, CrewAI, smolagents, OpenAI Agents SDK) et A2A traités
-en connaissance dans les notebooks, jamais en implémentation. UI de chat minimale ajoutée
-en fin de phase 5. Décisions actées : repo public confirmé ; 2 clients intéressés → les
-déploiements clients seront des repos séparés (portfolio « vraie prod »), le banc d'essai
-reste le laboratoire — la règle « jamais un second projet » tient, les extensions se
-branchent sur le système unique pour réutiliser harness, infra et observabilité.
+**Done**: core of the roadmap confirmed (eval, agents, MCP, observability, cost, vLLM —
+"evaluation literacy" is cited as the top hiring signal). Four gaps identified and
+integrated: GraphRAG (phase 3, behind a flag, an acknowledged candidate for measured
+removal), agent memory (4.10 + notebook 7), voice agents (new phase 9), browser/
+computer use (new phase 10, optional, GO/NO-GO at the end of phase 9). The framework
+landscape (LangChain, LlamaIndex, CrewAI, smolagents, OpenAI Agents SDK) and A2A covered
+as knowledge in the notebooks, never as implementation. Minimal chat UI added at the end
+of phase 5. Decisions recorded: public repo confirmed; 2 interested clients → client
+deployments will be separate repos ("real prod" portfolio), the testbench remains the
+laboratory — the "never a second project" rule holds, extensions plug into the single
+system to reuse the harness, infra and observability.
 
-**Incidents / surprises** : point de vigilance marché — le full remote est minoritaire
-sur ce métier en France (même Mistral attend de la présence à Paris) ; viser le remote
-réduit l'entonnoir et renforce le poids du différenciateur mesure/portfolio.
+**Incidents / surprises**: market watch point — full remote is a minority in this job in
+France (even Mistral expects presence in Paris); targeting remote narrows the funnel and
+increases the weight of the measurement/portfolio differentiator.
 
-**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+**Next**: unchanged — review of the phase 0 PR, then `GO PHASE 1`.
 
-## 2026-08-27 — Révision : les frameworks passent en comparaison chiffrée
+## 2026-08-27 — Revision: frameworks move to measured comparison
 
-**Contexte** : objection soulevée sur la décision du matin (« frameworks en connaissance
-seulement ») — une offre qui exige LangGraph/CrewAI passe par un filtre ATS avant
-d'atteindre un humain ; un mot-clé absent du CV peut être éliminatoire au tri, même si
-l'entretien se gagnerait sur les concepts.
+**Context**: objection raised against the morning's decision ("frameworks as knowledge
+only") — an offer that requires LangGraph/CrewAI goes through an ATS filter before
+reaching a human; a keyword missing from the CV can be eliminatory at screening, even if
+the interview would be won on concepts.
 
-**Fait** : décision révisée. Phase 4.1 : le même agent de référence porté sur smolagents,
-OpenAI Agents SDK et CrewAI, mesuré sur le même harness (exactitude, tokens, latence,
-lignes de code, ~1 jour par framework) — les ports sont des livrables de benchmark,
-`src/` garde une seule implémentation de production (maison + LangGraph). Phase 3 :
-notre pipeline comparé à LlamaIndex out-of-the-box sur le même jeu BEIR (pattern
-« le nôtre d'abord, puis la comparaison », déjà acté pour Ragas/promptfoo en phase 2).
-A2A reste en discussion. Bénéfice attendu : mots-clés CV honnêtement gagnés + un
-comparatif chiffré de frameworks que quasi personne ne publie.
+**Done**: decision revised. Phase 4.1: the same reference agent ported to smolagents,
+OpenAI Agents SDK and CrewAI, measured on the same harness (accuracy, tokens, latency,
+lines of code, ~1 day per framework) — the ports are benchmark deliverables,
+`src/` keeps a single production implementation (in-house + LangGraph). Phase 3:
+our pipeline compared to out-of-the-box LlamaIndex on the same BEIR dataset
+("ours first, then the comparison" pattern, already recorded for Ragas/promptfoo in phase 2).
+A2A remains under discussion. Expected benefit: honestly earned CV keywords + a
+measured framework comparison that almost nobody publishes.
 
-**Incidents / surprises** : —
+**Incidents / surprises**: —
 
-**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+**Next**: unchanged — review of the phase 0 PR, then `GO PHASE 1`.
 
-## 2026-08-31 — Amendement : phase 5B « Le pont », ML classique contre LLM
+## 2026-08-31 — Amendment: phase 5B "The bridge", classic ML vs LLM
 
-**Contexte** : demande d'une phase courte après la phase 5 pour mesurer, avec le harness
-existant, l'arbitrage ML classique / LLM / hybride — le livrable que personne n'apporte en
-entretien. Conflit apparent avec la règle §6 « pas de prédiction ».
+**Context**: request for a short phase after phase 5 to measure, with the existing
+harness, the classic ML / LLM / hybrid trade-off — the deliverable nobody brings to an
+interview. Apparent conflict with the §6 "no prediction" rule.
 
-**Fait** : phase 5B rédigée et insérée entre 5 et 6 dans `CLAUDE.md` (numérotation
-conservée, « B » = insérée après coup) ; règle §6 reformulée : exception nommée, unique,
-trois verrous (aucune autre tâche de prédiction, pas de chasse au score, module `classic/`
-jamais exposé par l'API). ADR 005 avec vérification web des jeux candidats. Trois
-corrections apportées à l'énoncé initial : (1) le bras « GBM de référence » se dédouble en
-texte-ignoré et texte-en-n-grams — la littérature (Shi et al. 2021) montre que l'hybride
-classique (AUC 0,968) bat l'hybride à embeddings LLM (0,926), donc sans ce bras le tableau
-flatterait le LLM ; (2) TabLLM n'est comparable que pour son zéro-coup, son few-shot est du
-fine-tuning ; (3) l'attente « écart qualité faible » sur le texte ne tiendra probablement
-pas sur 77 intentions fines — déclarée avant mesure, publiée telle quelle.
+**Done**: phase 5B written and inserted between 5 and 6 in `CLAUDE.md` (numbering
+kept, "B" = inserted after the fact); §6 rule reworded: a named, unique exception,
+three locks (no other prediction task, no score chasing, `classic/` module
+never exposed by the API). ADR 005 with web verification of the candidate datasets. Three
+corrections made to the initial statement: (1) the "reference GBM" arm splits into
+text-ignored and text-as-n-grams — the literature (Shi et al. 2021) shows that the classic
+hybrid (AUC 0.968) beats the hybrid with LLM embeddings (0.926), so without this arm the
+table would flatter the LLM; (2) TabLLM is comparable only for its zero-shot, its few-shot
+is fine-tuning; (3) the expectation "small quality gap" on text will probably not hold on
+77 fine-grained intents — declared before measurement, published as is.
 
-**Incidents / surprises** : le site d'origine d'EMSCAD (Université de l'Égée) est mort — il
-répond une page d'hébergement générique ; la licence d'origine du jeu tabulaire recommandé
-n'est donc plus vérifiable à la source, seule la copie du benchmark (CC BY-NC-SA) l'est.
-`PolyAI/banking77` sur HF est encore à script (cassé avec `datasets` ≥ 3), PR Parquet
-ouverte depuis août 2025 sans réponse des mainteneurs : prévoir un miroir ou le CSV GitHub.
+**Incidents / surprises**: EMSCAD's original site (University of the Aegean) is dead — it
+returns a generic hosting page; the original license of the recommended tabular dataset
+is therefore no longer verifiable at the source, only the benchmark's copy (CC BY-NC-SA) is.
+`PolyAI/banking77` on HF is still script-based (broken with `datasets` ≥ 3), a Parquet PR
+has been open since August 2025 with no answer from the maintainers: plan for a mirror or
+the GitHub CSV.
 
-**Suite** : arbitrage des deux jeux de la phase 5B (non bloquant avant cette phase) ;
-inchangé par ailleurs — relecture de la PR phase 0, puis `GO PHASE 1`.
+**Next**: decide on the two datasets of phase 5B (not blocking before that phase);
+otherwise unchanged — review of the phase 0 PR, then `GO PHASE 1`.
 
-## 2026-08-31 — Jeux de la phase 5B arbitrés
+## 2026-08-31 — Phase 5B datasets decided
 
-**Contexte** : recommandation de l'ADR 005 soumise.
+**Context**: ADR 005 recommendation submitted.
 
-**Fait** : retenus `fake_job_postings2` (tabulaire à texte libre, EMSCAD via le benchmark
-multimodal AutoGluon) et Banking77 (classification de texte, 77 intentions). Substituts
-conservés dans l'ADR : `women_clothing_review`, MASSIVE fr-FR. ADR 005 accepté sans réserve.
+**Done**: selected `fake_job_postings2` (tabular with free text, EMSCAD via the AutoGluon
+multimodal benchmark) and Banking77 (text classification, 77 intents). Substitutes
+kept in the ADR: `women_clothing_review`, MASSIVE fr-FR. ADR 005 accepted without reservation.
 
-**Incidents / surprises** : —
+**Incidents / surprises**: —
 
-**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+**Next**: unchanged — review of the phase 0 PR, then `GO PHASE 1`.
 
-## 2026-09-01 — Question : le pipeline de données est-il l'extension naturelle ?
+## 2026-09-01 — Question: is the data pipeline the natural extension?
 
-**Contexte** : question posée en relisant le brief — une phase « data pipeline » serait-elle
-la suite logique de la roadmap ?
+**Context**: question asked while rereading the brief — would a "data pipeline" phase
+be the logical continuation of the roadmap?
 
-**Fait** : réponse négative, consignée, pas de modification de la roadmap. Arguments :
-(1) la phase 3 est déjà un pipeline de données opéré (Dagster, partitions, idempotence,
-lineage, Pandera, réindexation incrémentale) avec une justification propre au banc — la
-matrice d'expériences, pas la fraîcheur ; (2) un pipeline au sens data engineering
-(Kafka, Spark, dbt, CDC) existe pour des données qui bougent — le banc n'a ni source vivante
-ni trafic, ce serait réintroduire la logique « corpus vivant » supprimée par le pivot, cas
-typique du « bloc qui flotte » de l'audit de cohérence §6 ; (3) hors positionnement — le
-data engineering est un métier voisin, l'audit marché du 27/08 ne l'a pas retenu ;
-(4) les vrais pipelines de données auront leur place dans les repos clients séparés.
-Deux extensions « données » jugées légitimes : la boucle de données LLMOps (traces →
-juge → curation → golden set / jeu LoRA, reliant les phases 2, 5 et 6, sur traces
-synthétiques à déclarer comme telles), notée en candidat post-phase 10 dans `STATE.md` ;
-et le parsing de documents à l'échelle (Docling / unstructured / marker sur le corpus
-maison difficile à parser, impact mesuré sur le retrieval), qui relève du notebook 2 de la
-phase 3 plutôt que d'une phase nouvelle. Le mot « pipeline de données » est déjà légitime
-dans le README et le CV grâce à la phase 3 : à formuler ainsi en phase 8.
+**Done**: negative answer, recorded, no change to the roadmap. Arguments:
+(1) phase 3 is already an operated data pipeline (Dagster, partitions, idempotence,
+lineage, Pandera, incremental reindexing) with a justification specific to the testbench —
+the experiment matrix, not freshness; (2) a pipeline in the data engineering sense
+(Kafka, Spark, dbt, CDC) exists for data that moves — the testbench has neither a live
+source nor traffic, it would reintroduce the "live corpus" logic removed by the pivot, a
+typical case of the "floating block" of the §6 consistency audit; (3) outside the
+positioning — data engineering is a neighboring job, the market audit of 2026-08-27 did
+not retain it; (4) real data pipelines will have their place in the separate client repos.
+Two "data" extensions judged legitimate: the LLMOps data loop (traces →
+judge → curation → golden set / LoRA set, linking phases 2, 5 and 6, on synthetic
+traces to be declared as such), noted as a post-phase-10 candidate in `STATE.md`;
+and document parsing at scale (Docling / unstructured / marker on the hard-to-parse
+in-house corpus, measured impact on retrieval), which belongs to notebook 2 of
+phase 3 rather than to a new phase. The phrase "data pipeline" is already legitimate
+in the README and the CV thanks to phase 3: to be phrased that way in phase 8.
 
-**Incidents / surprises** : —
+**Incidents / surprises**: —
 
-**Suite** : inchangée — relecture de la PR phase 0, puis `GO PHASE 1`.
+**Next**: unchanged — review of the phase 0 PR, then `GO PHASE 1`.
 
-## 2026-09-03 — Clôture de la phase 0 : notebook relu, environnement local réparé
+## 2026-09-03 — Phase 0 closing: notebook reviewed, local environment repaired
 
-**Contexte** : notebook 0 relu en entier (version pédagogique réécrite le 26/08) ; PR #1
-mergée sur `main` depuis le 27/08 ; amendements docs (phase 5B, journal du 01/09) encore
-non commités.
+**Context**: notebook 0 reviewed in full (teaching version rewritten on 2026-08-26); PR #1
+merged into `main` since 2026-08-27; docs amendments (phase 5B, journal of 2026-09-01) still
+uncommitted.
 
-**Fait** : vérification locale complète avant clôture — ruff, mypy strict, 13 tests hors
-ligne, notebook 0 exécuté en mode échantillon par nbmake — tout vert après réparation de
-l'environnement (ci-dessous). Phase 0 déclarée terminée, debrief livré. Le protocole
-s'arrête là jusqu'à `GO PHASE 1`.
+**Done**: complete local check before closing — ruff, mypy strict, 13 offline tests,
+notebook 0 run in sample mode by nbmake — all green after repairing the environment
+(below). Phase 0 declared done, debrief delivered. The protocol stops there until
+`GO PHASE 1`.
 
-**Incidents / surprises** : le dépôt a été déplacé de `~/Sites/` vers `~/Roadmaps/`. Les
-scripts console du venv (`.venv/bin/pytest`, `mypy`), le kernel Jupyter `llm-testbench` et le
-hook pre-commit portaient encore l'ancien chemin absolu (shebang / `kernel.json` /
-`INSTALL_PYTHON`). Symptômes trompeurs : `uv sync --frozen` répondait « Audited 141
-packages » (rien à faire), ruff et mypy passaient, mais `uv run pytest` échouait sur
-`ModuleNotFoundError: llm_testbench` et `--nbmake` inconnu — parce que le `pytest` qui
-s'exécutait était celui de conda base (8.4.1, sur PATH), pas celui du venv (9.1.1).
-Diagnostic décisif : `head -1 .venv/bin/pytest`. Correctif : `uv sync --reinstall`,
-réenregistrement du kernel (`make setup`), `pre-commit install`. Leçon, même famille que
-l'incident kernelspec du 26/08 : un outil qui « passe » ne prouve pas qu'il tourne dans
-l'interpréteur qu'on croit, et `uv sync` ne vérifie pas les shebangs. Durcissement :
-le Makefile invoque désormais `python -m pytest` (passe par le lien `python` du venv,
-insensible au déplacement) au lieu du script console `pytest`. Reste un chemin périmé
-purement cosmétique dans une sortie versionnée du notebook 0 (racine affichée) — sera
-rafraîchi à la prochaine exécution complète.
+**Incidents / surprises**: the repository was moved from `~/Sites/` to `~/Roadmaps/`. The
+venv console scripts (`.venv/bin/pytest`, `mypy`), the `llm-testbench` Jupyter kernel and the
+pre-commit hook still carried the old absolute path (shebang / `kernel.json` /
+`INSTALL_PYTHON`). Misleading symptoms: `uv sync --frozen` answered "Audited 141
+packages" (nothing to do), ruff and mypy passed, but `uv run pytest` failed on
+`ModuleNotFoundError: llm_testbench` and an unknown `--nbmake` — because the `pytest` that
+ran was the conda base one (8.4.1, on PATH), not the venv one (9.1.1).
+Decisive diagnosis: `head -1 .venv/bin/pytest`. Fix: `uv sync --reinstall`,
+kernel re-registration (`make setup`), `pre-commit install`. Lesson, same family as
+the kernelspec incident of 2026-08-26: a tool that "passes" does not prove that it runs in the
+interpreter you think, and `uv sync` does not check shebangs. Hardening:
+the Makefile now invokes `python -m pytest` (goes through the venv's `python` link,
+insensitive to relocation) instead of the `pytest` console script. One stale path remains,
+purely cosmetic, in a versioned output of notebook 0 (displayed root) — it will be
+refreshed at the next full run.
 
-**Suite** : PR docs pour les amendements non commités ; `GO PHASE 1`.
+**Next**: docs PR for the uncommitted amendments; `GO PHASE 1`.
 
-## 2026-09-03 — Phase 1 : squelette de production construit en une session
+## 2026-09-03 — Phase 1: production skeleton built in one session
 
-**Contexte** : `GO PHASE 1` reçu le matin après la clôture de la phase 0. Plan validé avec
-quatre arbitrages (OpenRouter en backend de largeur seulement, gouvernance des données dès la
-phase 1, guides infra pédagogiques, QASPER + trio d'embeddings).
+**Context**: `GO PHASE 1` received that morning, after the phase 0 closing. Plan validated
+with four calls (OpenRouter as a breadth backend only, data governance from
+phase 1 on, teaching infra guides, QASPER + embeddings trio).
 
-**Fait** : couche LLM complète (ADR 006), sources/ingestion/pgvector (ADR 007), API JSON + SSE,
-image + chart Helm + Tilt vérifiés sur k3d, Terraform `envs/dev` validé, Langfuse v4 sur k3d
-avec OTLP fonctionnel, 8 guides infra sur 9, notebook 1 exécuté en CI. 151 tests hors ligne,
-6 sur base. Détail dans `STATE.md`.
+**Done**: complete LLM layer (ADR 006), sources/ingestion/pgvector (ADR 007), JSON + SSE API,
+image + Helm chart + Tilt verified on k3d, Terraform `envs/dev` validated, Langfuse v4 on k3d
+with working OTLP, 8 infra guides out of 9, notebook 1 run in CI. 151 offline tests,
+6 on a database. Details in `STATE.md`.
 
-**Incidents / surprises** :
-- **Deux versions d'un même linter se contredisent.** Le hook pre-commit épinglait ruff 0.6.9,
-  le projet utilise la version résolue par uv ; une règle de style de tests (PT012) passait chez
-  l'un et bloquait chez l'autre. Correctif : les hooks passent par `uv run ruff` ; `make lint`
-  couvre aussi les notebooks, comme le hook. Même famille que le venv déplacé du matin : un outil
-  « vert » ne prouve rien sur l'outil qui tourne vraiment.
-- **`$path` en zsh est `PATH`.** Une boucle `for path in …` a effacé le PATH du shell : « curl :
-  command not found ». Vingt minutes de diagnostic pour une variable mal nommée.
-- **Les modèles Claude actuels refusent `temperature`.** Vérifié dans la référence API : le
-  provider Anthropic ignore `temperature` et `seed` (sinon 400). Le « température 0 pour le
-  déterminisme » de la phase 5B se mesurera autrement. Consigné dans le notebook 1.
-- **Le chart Langfuse 2.x exige un opérateur ClickHouse** (CRD, trois keepers) : trop lourd pour
-  le « strict nécessaire » local. Contournement : ClickHouse mono-nœud en 60 lignes de
-  StatefulSet, le chart en mode « ClickHouse externe ». Puis **Langfuse v4 est en mode
-  `events_only`** : les endpoints `/api/public/traces` et `/observations` répondent 404 ; les
-  spans OTLP sont bien en ClickHouse (`events_core`), avec tous nos attributs, et Langfuse
-  recalcule le coût (0,00187 $, identique au nôtre — un contrôle croisé gratuit). Le worker
-  démarré avant la fin des migrations avait aussi laissé des erreurs : redémarré.
-- **`helm --wait` expire sur une readiness qui refuse** : ce n'est pas un bug, c'est `/readyz`
-  qui dit « index absent ». Documenté (guides 01 et 06) plutôt que contourné.
-- **Une pipe masque un échec** (`make check | tail` sous `set -e`) : un commit a tenté de partir
-  avec mypy rouge, le hook l'a arrêté. `set -o pipefail` désormais dans les enchaînements.
-- **Les tests de chunking n'avaient jamais tourné** : chaque `make check` s'arrêtait au lint
-  avant pytest. Deux attentes fausses dans les tests, corrigées ; le chunker était juste.
+**Incidents / surprises**:
+- **Two versions of the same linter contradict each other.** The pre-commit hook pinned
+  ruff 0.6.9, the project uses the version resolved by uv; a test style rule (PT012) passed
+  in one and blocked in the other. Fix: the hooks go through `uv run ruff`; `make lint`
+  also covers the notebooks, like the hook. Same family as the morning's moved venv: a
+  "green" tool proves nothing about the tool that actually runs.
+- **`$path` in zsh is `PATH`.** A `for path in …` loop wiped the shell's PATH: "curl:
+  command not found". Twenty minutes of diagnosis for a badly named variable.
+- **Current Claude models refuse `temperature`.** Checked in the API reference: the
+  Anthropic provider ignores `temperature` and `seed` (otherwise 400). Phase 5B's
+  "temperature 0 for determinism" will be measured another way. Recorded in notebook 1.
+- **The Langfuse 2.x chart requires a ClickHouse operator** (CRD, three keepers): too heavy
+  for the local "bare minimum". Workaround: single-node ClickHouse in a 60-line
+  StatefulSet, the chart in "external ClickHouse" mode. Then **Langfuse v4 is in
+  `events_only` mode**: the `/api/public/traces` and `/observations` endpoints return 404;
+  the OTLP spans are indeed in ClickHouse (`events_core`), with all our attributes, and
+  Langfuse recomputes the cost ($0.00187, identical to ours — a free cross-check). The
+  worker, started before the migrations finished, had also left errors: restarted.
+- **`helm --wait` times out on a readiness probe that refuses**: it is not a bug, it is
+  `/readyz` saying "index missing". Documented (guides 01 and 06) rather than worked around.
+- **A pipe masks a failure** (`make check | tail` under `set -e`): a commit tried to go
+  out with mypy red, the hook stopped it. `set -o pipefail` from now on in command chains.
+- **The chunking tests had never run**: every `make check` stopped at lint before
+  pytest. Two wrong expectations in the tests, fixed; the chunker was right.
 
-**Suite** : guide 07, notebook 2 (chunking + embeddings mesurés), exécution complète avec clés,
-bootstrap et `infra-up` par Christophe, PR phase 1.
+**Next**: guide 07, notebook 2 (chunking + measured embeddings), full run with keys,
+bootstrap and `infra-up` by Christophe, phase 1 PR.
 
-## 2026-09-03 — Phase 1 : notebook 2, première mesure, clôture de la construction
+## 2026-09-03 — Phase 1: notebook 2, first measurement, end of construction
 
-**Contexte** : suite de la session ; il restait le guide 07, le notebook 2 et la comparaison
-d'embeddings.
+**Context**: continuation of the session; guide 07, notebook 2 and the embeddings
+comparison remained.
 
-**Fait** : guide 07 (Langfuse v4, OTLP prouvé jusqu'à ClickHouse, relecture par l'API v2) ;
-module `eval/embeddings_bench.py` (mteb + adaptateur sur `LLMClient.embed`) ; notebook 2
-exécuté sur la base locale ; **première mesure du banc** : bge-base-en-v1.5 0,740 nDCG@10 sur
-SciFact — **égal au chiffre publié sur sa carte (0,7404)** — et all-MiniLM-L6-v2 0,645,
-**sous BM25 (0,665)**. Le modèle de tous les tutoriels perd contre une recherche par mots-clés
-sur ce jeu : la raison d'être de la recherche hybride de la phase 3, chiffrée avant même
-qu'elle existe. Postgres en service dans la CI pour les tests `db` et le notebook 2.
+**Done**: guide 07 (Langfuse v4, OTLP proven down to ClickHouse, read back through the v2 API);
+`eval/embeddings_bench.py` module (mteb + adapter on `LLMClient.embed`); notebook 2
+run on the local database; **first measurement of the testbench**: bge-base-en-v1.5 0.740
+nDCG@10 on SciFact — **equal to the number published on its model card (0.7404)** — and
+all-MiniLM-L6-v2 0.645, **below BM25 (0.665)**. The model of every tutorial loses to a
+keyword search on this dataset: the justification for phase 3's hybrid search, quantified
+before it even exists. Postgres as a service in the CI for the `db` tests and notebook 2.
 
-**Incidents / surprises** :
-- **Feature hashing et collisions** : l'embedder « sac de mots hachés » à 32 dimensions rendait
-  un cosinus nul entre deux phrases qui partagent trois mots — deux mots tombés dans la même
-  case avec des signes opposés. À 256 dimensions le phénomène persiste (0,5 au lieu de 0,75)
-  sur cinq mots ; le test vérifie désormais la propriété (commun ≫ disjoint, identique = 1) à
-  1 024 dimensions plutôt qu'une valeur. Bonne illustration pour le notebook : un embedding est
-  une projection, et une projection perd.
-- **Un cache qui ment sur le temps** : mteb met ses résultats en cache ; la première table
-  affichait 2 s d'« indexation ». Le module force la ré-évaluation pour que la colonne durée
-  soit un temps d'encodage réel (20 s et 120 s sur M1 Pro).
-- **Une regex qui n'en était pas une** : un heredoc a doublé un antislash… puis ne l'a pas fait ;
-  la vraie cause était la collision ci-dessus. Diagnostiquer en observant (imprimer les
-  vecteurs) a coûté moins cher que deviner.
-- **Langfuse v4 events_only** (voir l'entrée précédente) : la relecture passe par
-  `/api/public/v2/observations` ; consigné dans le guide 07.
-- **La CI a attrapé ce que mon poste masquait.** Sur une base neuve, le pool psycopg
-  échouait (« vector type not found ») : chaque connexion enregistre le type `vector` à sa
-  création, avant que `ensure_schema` ait pu créer l'extension. En local, le job pgvector-init
-  de la phase 0 l'avait déjà créée : 6 tests verts, bug invisible. Correctif : le schéma passe
-  par une connexion brute dans `open()`, avant le pool ; reproduit sur une base vierge du k3d
-  (`CREATE DATABASE ci_fresh`), corrigé, CI verte. Leçon : un environnement de dev qui a de
-  l'histoire n'est pas un environnement neuf ; la CI avec un service Postgres jetable, si.
-  Première mise en scène de CI verte. Le mypy de la CI avait aussi refusé un `type: ignore`
-  que mon poste, avec `mteb` installé, rendait nécessaire — même famille.
+**Incidents / surprises**:
+- **Feature hashing and collisions**: the 32-dimension "hashed bag of words" embedder gave
+  a zero cosine between two sentences that share three words — two words landing in the
+  same bucket with opposite signs. At 256 dimensions the phenomenon persists (0.5 instead
+  of 0.75) on five words; the test now checks the property (shared ≫ disjoint,
+  identical = 1) at 1,024 dimensions rather than a value. A good illustration for the
+  notebook: an embedding is a projection, and a projection loses information.
+- **A cache that lies about time**: mteb caches its results; the first table
+  showed 2 s of "indexing". The module forces re-evaluation so that the duration column
+  is a real encoding time (20 s and 120 s on an M1 Pro).
+- **A regex that was not one**: a heredoc doubled a backslash… then did not;
+  the real cause was the collision above. Diagnosing by observing (printing the
+  vectors) cost less than guessing.
+- **Langfuse v4 events_only** (see the previous entry): reading back goes through
+  `/api/public/v2/observations`; recorded in guide 07.
+- **The CI caught what my workstation masked.** On a fresh database, the psycopg pool
+  failed ("vector type not found"): each connection registers the `vector` type at its
+  creation, before `ensure_schema` could create the extension. Locally, the phase 0
+  pgvector-init job had already created it: 6 green tests, an invisible bug. Fix: the
+  schema goes through a raw connection in `open()`, before the pool; reproduced on a blank
+  k3d database (`CREATE DATABASE ci_fresh`), fixed, CI green. Lesson: a dev environment
+  with history is not a fresh environment; CI with a disposable Postgres service is.
+  First staging of a green CI. The CI's mypy had also rejected a `type: ignore` that my
+  workstation, with `mteb` installed, made necessary — same family.
 
-**Suite** : PR `phase-1` ; actions Christophe : clés dans `.env`, exécutions complètes,
-bootstrap AWS puis `make infra-up` / `make deploy` (guides 00→05) ; puis `GO PHASE 2`.
+**Next**: `phase-1` PR; Christophe's actions: keys in `.env`, full runs,
+AWS bootstrap then `make infra-up` / `make deploy` (guides 00→05); then `GO PHASE 2`.
 
-## 2026-10-15 — Le mot « pipeline » : pas de roadmap séparée, trois amendements
+## 2026-10-15 — The word "pipeline": no separate roadmap, three amendments
 
-**Contexte** : question posée en regardant l'ensemble du portfolio (le banc d'essai plus
-quatre projets voisins spécifiés ou en cours, dont deux sans code) — le « côté pipeline »
-des offres AI Engineer est-il couvert, ou faut-il une roadmap dédiée ? Reprise de la
-question du 2026-09-01, cette fois avec les projets voisins sur la table.
+**Context**: question asked while looking at the whole portfolio (the testbench plus
+four neighboring projects, specified or in progress, two of them without code) — is the
+"pipeline side" of AI Engineer job offers covered, or is a dedicated roadmap needed?
+The question of 2026-09-01 taken up again, this time with the neighboring projects on the table.
 
-**Fait** : réponse négative confirmée, et le brief amendé. Analyse : le mot « pipeline »
-recouvre quatre choses dans les offres — pipeline RAG (phases 1 et 3), pipeline de données
-orchestré (phase 3, Dagster, partitions, lineage, Pandera), pipeline événementiel asynchrone
-(file, worker, DLQ) et plateforme d'entraînement (reproductibilité, versionnage, DDP,
-export). Les deux derniers sont portés par des projets voisins qui n'ont pas une ligne de
-code et dont l'horizon dépasse celui du CDI : le banc ne compte pas dessus. Kafka, dbt et le
-streaming restent hors périmètre (data engineering, métier voisin). Trois faiblesses
-corrigées par amendement : (1) le bloc Dagster de la phase 3 était une ligne de passage
-sans ADR ni notebook, alors que c'est le livrable qui répond au mot-clé — il devient un
-livrable nommé avec ADR, ligne du tableau maître et notebook 5 ; (2) le juge asynchrone et
-le feedback de la phase 5 n'imposaient aucune forme — ils passent par une vraie file et un
-worker, ce qui donne un pipeline événementiel codé dans ce dépôt quoi qu'il arrive
-ailleurs ; (3) aucun manifeste de run pour les entraînements de 5B et 6 — exigé désormais,
-sans outil supplémentaire. Inscrit dans `CLAUDE.md` (§5 phases 3, 5, 5B, 6 ; §6 ; §8) et
+**Done**: negative answer confirmed, and the brief amended. Analysis: the word "pipeline"
+covers four things in job offers — RAG pipeline (phases 1 and 3), orchestrated data pipeline
+(phase 3, Dagster, partitions, lineage, Pandera), asynchronous event-driven pipeline
+(queue, worker, DLQ) and training platform (reproducibility, versioning, DDP,
+export). The last two are carried by neighboring projects that do not have a single line of
+code and whose horizon extends beyond that of the permanent-position search: the testbench
+does not count on them. Kafka, dbt and streaming stay out of scope (data engineering, a
+neighboring job). Three weaknesses fixed by amendment: (1) phase 3's Dagster block was a
+passing line with no ADR or notebook, whereas it is the deliverable that answers the
+keyword — it becomes a named deliverable with an ADR, a master table row and notebook 5;
+(2) phase 5's asynchronous judge and feedback imposed no form — they go through a real
+queue and a worker, which gives an event-driven pipeline coded in this repository whatever
+happens elsewhere; (3) no run manifest for the 5B and 6 trainings — required from now on,
+with no additional tool. Written into `CLAUDE.md` (§5 phases 3, 5, 5B, 6; §6; §8) and
 `STATE.md`.
 
-**Incidents / surprises** : l'analyse d'offres du 27/08 qui a motivé l'extension des
-frameworks n'est archivée nulle part ; le raisonnement sur le sens du mot « pipeline »
-repose sur la connaissance générale des offres 2026, pas sur un corpus relu. À vérifier
-contre de vraies offres au moment de la phase 8.
+**Incidents / surprises**: the job-offer analysis of 2026-08-27 that motivated the
+frameworks extension is archived nowhere; the reasoning on the meaning of the word
+"pipeline" rests on general knowledge of 2026 job offers, not on a corpus that was reread.
+To be checked against real job offers at phase 8.
 
-**Suite** : inchangée — PR `phase-1`, actions Christophe (clés, exécutions complètes,
-bootstrap AWS), puis `GO PHASE 2`. Les amendements s'appliquent au plan des phases 3, 5,
-5B et 6.
+**Next**: unchanged — `phase-1` PR, Christophe's actions (keys, full runs,
+AWS bootstrap), then `GO PHASE 2`. The amendments apply to the plans of phases 3, 5,
+5B and 6.
 
-## 2026-10-16 — Brief restructuré, tout sur `main`
+## 2026-10-16 — Brief restructured, everything on `main`
 
-**Contexte** : `CLAUDE.md` faisait 56 Ko (~15 000 tokens) chargés à chaque session et dans
-chaque sous-agent, roadmap des phases 0 à 10 comprise ; les amendements s'empilaient en §8 au
-lieu de corriger le texte (exemple : le §1 visait encore le CDI d'AI Engineer, que la décision
-PD-8 range en repli). Trois branches ouvertes (`phase-0` fusionnée, `phase-1` et la branche
-docs en attente depuis le 2026-09-03).
+**Context**: `CLAUDE.md` was 56 KB (~15,000 tokens) loaded at every session and in
+every subagent, roadmap of phases 0 to 10 included; amendments piled up in §8 instead
+of correcting the text (example: §1 still targeted the permanent AI Engineer position,
+which decision PD-8 relegates to a fallback). Three open branches (`phase-0` merged,
+`phase-1` and the docs branch pending since 2026-09-03).
 
-**Fait** : `CLAUDE.md` réduit au contrat de travail (§1–4, §6, numérotation conservée pour les
-renvois du code) ; roadmap dans `docs/roadmap/` (vue d'ensemble + tableau des jeux, un fichier
-par phase, amendements intégrés dans le texte) ; §8 déplacé tel quel dans `docs/decisions.md`.
-PR #3 fusionnée (elle contenait la #2), branches supprimées en local et sur GitHub ; désormais
-tout sur `main` (ADR 008). Phase 2.7 reformulée en conséquence : hook `pre-push` + CI rouge au
-lieu d'une PR bloquée.
+**Done**: `CLAUDE.md` reduced to the working contract (§1–4, §6, numbering kept for the
+references from the code); roadmap in `docs/roadmap/` (overview + datasets table, one file
+per phase, amendments integrated into the text); §8 moved as is into `docs/decisions.md`.
+PR #3 merged (it contained #2), branches deleted locally and on GitHub; from now on
+everything on `main` (ADR 008). Phase 2.7 reworded accordingly: a `pre-push` hook + red CI
+instead of a blocked PR.
 
-**Incidents / surprises** : la PR #3 a été fusionnée sans relecture formelle de Christophe —
-la relecture de la phase 1 se fait désormais sur `main`. Le passage sans PR retire le seul
-mécanisme qui *bloquait* une régression : à présenter honnêtement en entretien (ADR 008).
+**Incidents / surprises**: PR #3 was merged without a formal review by Christophe —
+the phase 1 review now happens on `main`. Working without PRs removes the only
+mechanism that *blocked* a regression: to be presented honestly in interviews (ADR 008).
 
-**Suite** : inchangée — actions Christophe (clés, exécutions complètes, bootstrap AWS), puis
+**Next**: unchanged — Christophe's actions (keys, full runs, AWS bootstrap), then
 `GO PHASE 2`.
 
-## 2026-10-19 — Notebooks rangés par phase
+## 2026-10-19 — Notebooks organized by phase
 
-**Contexte** : `notebooks/` était à plat, numéroté en séquence globale (00 = phase 0, 01 et
-02 = phase 1). Le lien notebook → phase ne se lisait nulle part dans le nommage, et la roadmap
-réservait déjà des numéros (« notebook 5 » pour Dagster) que seul `STATE.md` rattachait à une
+**Context**: `notebooks/` was flat, numbered in a global sequence (00 = phase 0, 01 and
+02 = phase 1). The notebook → phase link could not be read anywhere in the naming, and the
+roadmap already reserved numbers ("notebook 5" for Dagster) that only `STATE.md` tied to a
 phase.
 
-**Fait** : un sous-dossier par phase, `notebooks/phase-N/NN_slug.ipynb`, fichiers déplacés par
-`git mv` sans renommage. Makefile et CI passent le dossier `notebooks/` entier à nbmake : tout
-notebook ajouté est exécuté par la CI sans toucher à la liste. Les trois notebooks réexécutés
-en mode échantillon (le 2 sur un conteneur pgvector jetable, le cluster k3d étant éteint).
+**Done**: one subfolder per phase, `notebooks/phase-N/NN_slug.ipynb`, files moved with
+`git mv` without renaming. The Makefile and the CI pass the whole `notebooks/` folder to
+nbmake: any added notebook is run by the CI without touching the list. The three notebooks
+re-run in sample mode (notebook 2 on a disposable pgvector container, the k3d cluster being
+off).
 
-**Incidents / surprises** : les notebooks 1 et 2 cherchaient `.env` dans `Path.cwd().parent`,
-c'est-à-dire la racine seulement tant qu'ils vivaient dans `notebooks/`. Un niveau plus bas,
-le fichier n'aurait plus été trouvé et la section « vrai provider » se serait désactivée sans
-erreur — la CI, en mode échantillon, ne l'aurait jamais vu. Ils s'ancrent désormais sur
-`find_repo_root()` comme leurs autres chemins. Leçon : un chemin relatif au répertoire
-courant dans un notebook est une dépendance cachée à l'emplacement du fichier.
+**Incidents / surprises**: notebooks 1 and 2 looked for `.env` in `Path.cwd().parent`,
+that is, the root only as long as they lived in `notebooks/`. One level lower,
+the file would no longer have been found and the "real provider" section would have been
+disabled without an error — the CI, in sample mode, would never have seen it. They now
+anchor on `find_repo_root()` like their other paths. Lesson: a path relative to the current
+directory in a notebook is a hidden dependency on the file's location.
 
-**Suite** : inchangée — actions Christophe (clés, exécutions complètes, bootstrap AWS), puis
+**Next**: unchanged — Christophe's actions (keys, full runs, AWS bootstrap), then
 `GO PHASE 2`.
 
-## 2026-10-19 — Reprise : audit du banc, un seul environnement, déploiement OIDC, règle des services AWS
+## 2026-10-19 — Resumption: testbench audit, a single environment, OIDC deployment, AWS services rule
 
-**Contexte** : projet mis de côté un mois. Christophe demande trois choses : valider que le
-banc sert la roadmap globale (`~/Roadmaps/program`) et la recherche de missions freelance,
-auditer ce qui a été généré, et juger le choix de Kubernetes face à son besoin de monter en
-compétence sur AWS sans mauvaise décision d'infra. Le programme a changé le matin même (PD-18 :
-sherpapier gelé, ce banc est la preuve pour les missions).
+**Context**: project set aside for a month. Christophe asks for three things: validate that the
+testbench serves the overall roadmap (`~/Roadmaps/program`) and the search for freelance
+engagements, audit what has been generated, and judge the choice of Kubernetes against
+Christophe's need to build AWS skills without a bad infra decision. The program changed that
+very morning (PD-18: sherpapier frozen, this testbench is the proof for engagements).
 
-**Fait** : audit livré (`docs/decisions.md`, première ligne du jour) — les deux objectifs
-tiennent, EKS confirmé, huit corrections. Puis, sur son feu vert : `prod` retiré du brief ; CV
-renvoyé au programme et nombre d'années retiré du §1 ; `docs/aws-competences.md` supprimé ;
-doc rot corrigé (README Terraform, index des guides, bandeau du README) ; **ADR 009** ;
-**déploiement par GitHub Actions et OIDC** (bootstrap `github.tf`, access entry dans
-`envs/dev`, `deploy.yml` sur runner arm64, `make deploy-trigger`, guide 09) ; **URL de la
-base composée dans le cluster** par un template External Secrets — le mot de passe RDS ne
-traverse plus l'état Terraform ; **règle d'entrée des services AWS** dans `CLAUDE.md` §4 et
-ses premières applications dans les phases 3 à 7 ; génération Claude 5.5 par défaut et table
-de prix du jour. Vérifié : `terraform validate` sur les deux modules, `helm lint` et rendu de
-l'`ExternalSecret` avec les valeurs `database.*`, `make check` (155 tests, mypy strict),
-notebooks 1 et 2 réexécutés en mode échantillon sur un pgvector jetable.
+**Done**: audit delivered (`docs/decisions.md`, first line of the day) — both objectives
+hold, EKS confirmed, eight corrections. Then, on Christophe's go-ahead: `prod` removed from
+the brief; CV sent back to the program and the number of years removed from §1;
+`docs/aws-competences.md` deleted; doc rot fixed (Terraform README, guides index, README
+banner); **ADR 009**; **deployment via GitHub Actions and OIDC** (bootstrap `github.tf`,
+access entry in `envs/dev`, `deploy.yml` on an arm64 runner, `make deploy-trigger`, guide 09);
+**database URL composed in the cluster** by an External Secrets template — the RDS password
+no longer goes through the Terraform state; **AWS services entry rule** in `CLAUDE.md` §4
+and its first applications in phases 3 to 7; Claude 5.5 generation by default and the
+price table of the day. Verified: `terraform validate` on both modules, `helm lint` and
+rendering of the `ExternalSecret` with the `database.*` values, `make check` (155 tests,
+mypy strict), notebooks 1 and 2 re-run in sample mode on a disposable pgvector.
 
-**Incidents / surprises** :
-- **Une session parallèle rangeait les notebooks** (`notebooks/phase-N/`) pendant l'audit :
-  `FileNotFoundError` sur un chemin lu dix minutes plus tôt. Son travail était complet et
-  consigné ; commité à part, avant le mien, en isolant dans le Makefile son bloc du mien par
-  un patch partiel. Leçon : deux sessions sur un même dépôt, c'est `git status` avant chaque
-  écriture, et jamais un commit global.
-- **Un script d'édition arrêté par son propre garde-fou** : une ancre recopiée sans ses `**`
-  ne correspondait plus ; l'assertion a évité une édition partielle de cinq guides. Le coût
-  d'une ancre exacte est inférieur à celui d'un fichier à moitié modifié.
-- **Restreindre l'endpoint EKS à une IP et déployer depuis GitHub sont exclusifs** sans runner
-  dans le VPC ni mode pull : la correction « hygiène » de l'audit a cédé devant le pipeline,
-  et la décision est écrite (ADR 009) plutôt que subie.
-- **Haiku 5.5 n'a pas de prix de cache publié** dans la référence relevée : la table le laisse
-  absent, et `cost_usd` rend `None` sur un appel en cache — comme prévu. Le tableau de coûts du
-  notebook 1 a cassé dessus : la cellule gérait ce `None` pour la colonne « économie » et pas
-  pour la colonne « 1 appel (cache) ». Corrigée : elle affiche « inconnu ». La règle « jamais
-  une estimation » a tenu jusque dans l'affichage, et le notebook en fait la démonstration.
-- **Le code du quota GPU n'est pas vérifiable** hors d'un compte : `STATE.md` fait chercher le
-  code par son nom plutôt que de le coder en dur.
+**Incidents / surprises**:
+- **A parallel session was reorganizing the notebooks** (`notebooks/phase-N/`) during the
+  audit: `FileNotFoundError` on a path read ten minutes earlier. Its work was complete and
+  recorded; committed separately, before mine, by isolating its Makefile block from mine with
+  a partial patch. Lesson: two sessions on the same repository means `git status` before
+  every write, and never a global commit.
+- **An editing script stopped by its own safeguard**: an anchor copied without its `**`
+  no longer matched; the assertion prevented a partial edit of five guides. The cost
+  of an exact anchor is lower than that of a half-modified file.
+- **Restricting the EKS endpoint to one IP and deploying from GitHub are mutually exclusive**
+  without a runner in the VPC or a pull mode: the audit's "hygiene" correction gave way to
+  the pipeline, and the decision is written down (ADR 009) rather than suffered.
+- **Haiku 5.5 has no published cache price** in the reference that was captured: the table
+  leaves it absent, and `cost_usd` returns `None` on a cached call — as intended. The
+  notebook 1 cost table broke on it: the cell handled this `None` for the "savings" column
+  and not for the "1 call (cache)" column. Fixed: it displays "unknown". The "never
+  an estimate" rule held even in the display, and the notebook demonstrates it.
+- **The GPU quota code cannot be verified** outside an account: `STATE.md` has the code
+  looked up by its name rather than hard-coding it.
 
-**Suite** : actions Christophe (`STATE.md`) — relire les commits du jour, clés, exécutions
-complètes, bootstrap (huit ressources), variable GitHub, demande de quota GPU — puis
+**Next**: Christophe's actions (`STATE.md`) — review the day's commits, keys, full
+runs, bootstrap (eight resources), GitHub variable, GPU quota request — then
 `GO PHASE 2`.
 
-## 2026-10-20 — Ordre de lecture du banc, demande de quota GPU
+## 2026-10-20 — Testbench reading order, GPU quota request
 
-**Contexte** : Christophe reprend la phase 1 construite et demande dans quel ordre lire les
-fichiers, puis que la liste soit écrite jusqu'à la phase 10, puis que les demandes de quota
-GPU de `STATE.md` soient envoyées.
+**Context**: Christophe resumes the built phase 1 and asks in which order to read the
+files, then for the list to be written out up to phase 10, then for the GPU quota requests
+of `STATE.md` to be sent.
 
-**Fait** : `docs/reading-order.md` (16 blocs : phases 0 et 1 au module près, phases 2 à 10
-sur les livrables nommés par la roadmap, à compléter à chaque clôture de phase), renvois dans
-`README.md` et `STATE.md`. Quota GPU : identité vérifiée (compte 749020018778, utilisateur
-`christophe`), les deux quotas G et VT à 0 en eu-west-3, aucune demande en cours, g6.xlarge et
-g6.2xlarge offerts dans la région. Demande Spot (`L-3819A6DF`) envoyée à 8 vCPU à 10 h 51 ;
-demande On-Demand (`L-DB2E81BA`) envoyée par Christophe à 10 h 54 ; les deux en `CASE_OPENED`.
+**Done**: `docs/reading-order.md` (16 blocks: phases 0 and 1 down to the module, phases 2 to 10
+on the deliverables named by the roadmap, to be completed at each phase closing), references in
+`README.md` and `STATE.md`. GPU quota: identity verified (account 749020018778, user
+`christophe`), both G and VT quotas at 0 in eu-west-3, no request pending, g6.xlarge and
+g6.2xlarge offered in the region. Spot request (`L-3819A6DF`) sent at 8 vCPU at 10:51;
+On-Demand request (`L-DB2E81BA`) sent by Christophe at 10:54; both in `CASE_OPENED`.
 
-**Incidents / surprises** :
-- **La demande On-Demand (`L-DB2E81BA`) a été refusée par le garde-fou de la session Claude**
-  (« transaction réelle »), alors que la demande Spot, strictement de même nature, est passée
-  juste après. Pas de relance à l'identique : la commande exacte a été mise dans `STATE.md`
-  et Christophe l'a lancée à la main trois minutes plus tard. Leçon : deux appels identiques
-  peuvent être jugés différemment par un classificateur ; consigner l'état après chaque
-  action réelle, pas à la fin.
-- Deux demandes de quota Standard (On-Demand et Spot, 32 vCPU) datées du 2026-09-03 sont en
-  `CASE_CLOSED` dans l'historique, un statut qui ne dit pas si elles ont été accordées ;
-  vérifié : les deux quotas sont à 32 vCPU, `make infra-up` (guide 03) n'est pas bloqué.
+**Incidents / surprises**:
+- **The On-Demand request (`L-DB2E81BA`) was refused by the Claude session's safeguard**
+  ("real transaction"), whereas the Spot request, of strictly the same nature, went through
+  right after. No identical retry: the exact command was put in `STATE.md`
+  and Christophe ran it by hand three minutes later. Lesson: two identical calls
+  can be judged differently by a classifier; record the state after each
+  real action, not at the end.
+- Two Standard quota requests (On-Demand and Spot, 32 vCPU) dated 2026-09-03 are
+  `CASE_CLOSED` in the history, a status that does not say whether they were granted;
+  verified: both quotas are at 32 vCPU, `make infra-up` (guide 03) is not blocked.
 
-**Suite** : actions Christophe (`STATE.md`) ; puis `GO PHASE 2`.
+**Next**: Christophe's actions (`STATE.md`); then `GO PHASE 2`.
+
+## 2026-10-20 — The repository goes entirely English
+
+**Context**: Christophe asks for everything to be translated into English: no French in the
+project. Until then, prose, docstrings and notebooks were in French by rule (ADR 003,
+`CLAUDE.md` §2.B.5), and the program's PD-5 exempted this repository.
+
+**Done**: work of the parallel session of the day committed separately first (`ceab409`);
+18 French-named files renamed with their in-repository references (`e568501`); then the whole
+content translated in parallel batches with a shared glossary: brief, roadmap, ADRs,
+`docs/decisions.md`, infra guides, Terraform/Helm/k8s comments and descriptions, Makefile,
+workflows, configuration notes, `src/` (docstrings, comments, error and governance messages),
+tests and their data, prompts (new versions), the three notebooks. ADR 010, decision line,
+ADR 003 and the 2026-10-16 decision annotated as superseded; the 2026-09-03 phase 1 plan
+decision on deployment annotated (superseded by ADR 009). Verification: `make check` green
+(155 passed), the 6 `db` tests green on a throwaway pgvector, the three notebooks re-executed
+in sample mode with no error, no French left (accented characters and French function words
+over every tracked file), no broken relative link.
+
+**Incidents / surprises**:
+- Test data was not translatable word for word everywhere: the toy embedders key on words
+  (`capital`, `recipe`, `weather` replace `capitale`, `recette`, `météo`), the chunking test
+  depends on paragraph lengths (longest paragraph now 318 characters, the test checks the same
+  property), and the refusal test no longer exercises accent stripping since the sentinel has
+  no accent.
+- Translated Terraform `description` arguments show up at the next plan: in-place updates
+  (bootstrap IAM role, ECR lifecycle rule, Secrets Manager secret), and a **replacement** of
+  the RDS security group if `envs/dev` were up during the apply — it is down, a fresh
+  `make infra-up` sees no difference.
+- Two miscounts in the guides fixed along the way (guide 09 "three differences" for five
+  items, guide 08 "three columns" for four); `pyproject.toml` no longer allows « » as
+  confusables.
+
+**Next**: update PD-5 in the program (`STATE.md`, decisions awaiting a call); Christophe's
+actions (`STATE.md`); then `GO PHASE 2`.

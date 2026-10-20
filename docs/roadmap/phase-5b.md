@@ -1,83 +1,84 @@
-# PHASE 5B — Le pont : ML classique ou LLM, la réponse est un tableau (~1 semaine)
+# PHASE 5B — The bridge: classical ML or LLM, the answer is a table (~1 week)
 
-Ajoutée le 2026-08-31 (ADR 005). Le « B » signifie « insérée après coup entre 5 et 6 », pas
-« sous-partie de la phase 5 ».
+Added on 2026-08-31 (ADR 005). The "B" means "inserted after the fact between 5 and 6", not
+"subpart of phase 5".
 
-Objet : mesurer, avec le harness existant, l'arbitrage entre un modèle de ML classique, un LLM
-et un hybride sur la **même tâche**. C'est l'unique livrable du projet où l'on entraîne un
-modèle classique, et il n'existe que comme bras de comparaison : on ne construit pas un système
-de prédiction, on chiffre un choix d'architecture. C'est l'exception bornée de `CLAUDE.md` §6.
+Purpose: measure, with the existing harness, the trade-off between a classical ML model, an
+LLM and a hybrid on the **same task**. It is the only deliverable of the project where we train
+a classical model, and it exists only as a comparison arm: we do not build a prediction
+system, we quantify an architecture choice. It is the bounded exception of `CLAUDE.md` §6.
 
-**Jeux arbitrés (ADR 005)** : tabulaire `fake_job_postings2` (EMSCAD via le benchmark
-multimodal AutoGluon, copie CC BY-NC-SA — **jamais redistribuée** ; site d'origine mort,
-licence amont invérifiable) et texte **Banking77** (CC BY 4.0, chargement hors script HF).
-Substituts documentés si l'un casse : `women_clothing_review`, MASSIVE fr-FR.
+**Datasets decided (ADR 005)**: tabular `fake_job_postings2` (EMSCAD via the AutoGluon
+multimodal benchmark, CC BY-NC-SA copy — **never redistributed**; original site dead,
+upstream license unverifiable) and text **Banking77** (CC BY 4.0, loaded without the HF script).
+Documented substitutes if one breaks: `women_clothing_review`, MASSIVE fr-FR.
 
-**5B.1 Tâche tabulaire à texte libre** (fake_job_postings2). Bras obligatoires, tous mesurés
-par le même runner :
+**5B.1 Tabular task with free text** (fake_job_postings2). Mandatory arms, all measured
+by the same runner:
 
-- baseline stupide (`DummyClassifier`, stratégies majoritaire et stratifiée) ;
-- une règle simple (un seul attribut, un seul seuil — un arbre de profondeur 1) ;
-- gradient boosting **texte ignoré** ;
-- gradient boosting **texte en n-grams TF-IDF** — l'hybride classique, obligatoire : sans lui
-  l'hybride LLM est comparé à un homme de paille (littérature sur fake_job_postings : 0,968
-  contre 0,926 pour l'hybride à embeddings) ;
-- LLM en zéro-coup sur lignes sérialisées (gabarit de sérialisation en fichier versionné dans
-  `prompts/`, sortie structurée validée), puis few-shot en contexte à k fixé (exemples
-  stratifiés, identiques pour toutes les lignes, graine fixée) ;
-- hybride : embeddings des champs textuels par le provider de la phase 1, injectés comme
-  features dans le gradient boosting.
+- dumb baseline (`DummyClassifier`, majority and stratified strategies);
+- a simple rule (a single attribute, a single threshold — a depth-1 tree);
+- gradient boosting **with the text ignored**;
+- gradient boosting **with the text as TF-IDF n-grams** — the classical hybrid, mandatory:
+  without it the LLM hybrid is compared to a straw man (literature on fake_job_postings: 0.968
+  versus 0.926 for the embedding hybrid);
+- zero-shot LLM on serialized rows (serialization template in a versioned file in
+  `prompts/`, validated structured output), then in-context few-shot at a fixed k (stratified
+  examples, identical for all rows, fixed seed);
+- hybrid: embeddings of the text fields by the phase 1 provider, injected as
+  features into the gradient boosting.
 
-Un seul modèle LLM par bras, choisi pour ce qu'on déploierait vraiment à ce volume ; le modèle
-est un paramètre du notebook, pas une dimension du tableau.
+A single LLM model per arm, chosen for what we would really deploy at this volume; the model
+is a parameter of the notebook, not a dimension of the table.
 
-**5B.2 Le cas inverse : classification de texte** (Banking77). Baseline stupide · TF-IDF +
-modèle linéaire · embeddings + modèle linéaire (le « milieu » : sémantique sans génération) ·
-LLM zéro-coup avec la liste des étiquettes dans le prompt · LLM few-shot. Attente déclarée avant
-mesure : écart de qualité faible pour un écart de coût de plusieurs ordres de grandeur. Si la
-mesure contredit l'attente, c'est le résultat, on le publie.
+**5B.2 The reverse case: text classification** (Banking77). Dumb baseline · TF-IDF +
+linear model · embeddings + linear model (the "middle": semantics without generation) ·
+zero-shot LLM with the list of labels in the prompt · few-shot LLM. Expectation declared
+before measurement: a small quality gap for a cost gap of several orders of magnitude. If the
+measurement contradicts the expectation, that is the result, and we publish it.
 
-**5B.3 Axes de mesure, tous dans le tableau :**
+**5B.3 Measurement axes, all in the table:**
 
-- qualité : métrique du jeu (AUC / F1 macro), N runs, intervalle bootstrap — comparée au score
-  publié ;
-- latence p95 par prédiction et débit en lot ;
-- coût pour mille prédictions : entraînement amorti + inférence pour le classique, tokens ×
-  tarif via l'instrumentation de la phase 5 pour le LLM ; effet du cache de prompt (la liste
-  d'étiquettes et les exemples few-shot sont un préfixe constant) ;
-- déterminisme : taux d'accord prédiction à prédiction entre deux exécutions identiques (graine
-  fixée pour le classique ; température 0 pour le LLM — le chiffre n'est pas 100 %, c'est le
-  point) ;
-- reproductibilité : ce qu'il faut épingler pour rejouer le chiffre dans six mois (versions,
-  graines, identifiant exact du modèle — un modèle d'API peut changer sans préavis, voir le
-  runbook de la phase 5), matérialisé par un **manifeste de run** que le runner écrit à côté
-  des résultats — config hachée, graine, révision du jeu de données, versions, identifiant
-  exact du modèle, métriques, coût ; **sans manifeste, un chiffre d'entraînement n'entre pas
-  dans le tableau** ;
-- auditabilité : existence d'une explication **par prédiction** recalculable par un tiers
-  (SHAP / coefficients) contre un justificatif généré ; un seul proxy chiffré : stabilité du
-  justificatif LLM sur la même entrée rejouée ;
-- défendabilité devant un régulateur : grille discrète (0/1/2) à critères explicites, adossée
-  aux obligations de transparence de l'AI Act et à l'art. 22 RGPD, déclarée qualitative, reliée
-  à `docs/ai-act.md` de la phase 7.
+- quality: the dataset's metric (AUC / macro F1), N runs, bootstrap interval — compared with
+  the published score;
+- p95 latency per prediction and batch throughput;
+- cost per thousand predictions: amortized training + inference for the classical model,
+  tokens × price via the phase 5 instrumentation for the LLM; effect of the prompt cache (the
+  label list and the few-shot examples are a constant prefix);
+- determinism: prediction-by-prediction agreement rate between two identical runs (fixed
+  seed for the classical model; temperature 0 for the LLM — the number is not 100%, that is
+  the point);
+- reproducibility: what must be pinned to replay the number in six months (versions,
+  seeds, exact model identifier — an API model can change without notice, see the
+  phase 5 runbook), materialized by a **run manifest** that the runner writes next to
+  the results — hashed config, seed, dataset revision, versions, exact model
+  identifier, metrics, cost; **without a manifest, a training number does not enter
+  the table**;
+- auditability: existence of a **per-prediction** explanation that a third party can
+  recompute (SHAP / coefficients) versus a generated justification; a single quantified proxy:
+  stability of the LLM justification on the same replayed input;
+- defensibility before a regulator: a discrete grid (0/1/2) with explicit criteria, grounded in
+  the transparency obligations of the AI Act and GDPR Art. 22, declared qualitative, linked
+  to `docs/ai-act.md` from phase 7.
 
-**5B.4 Contamination.** Les jeux tabulaires publics sont anciens et omniprésents sur Kaggle : le
-zéro-coup LLM est probablement flatté. Appliquer la mesure de signal de contamination de la
-phase 2 et l'écrire à côté du chiffre. Référence de littérature imparfaite et documentée :
-TabLLM fait du fine-tuning few-shot, pas du few-shot en contexte — seul son zéro-coup est
-comparable à notre bras.
+**5B.4 Contamination.** Public tabular datasets are old and ubiquitous on Kaggle: the
+LLM zero-shot is probably inflated. Apply the contamination signal measurement of
+phase 2 and write it next to the number. Imperfect and documented literature reference:
+TabLLM does few-shot fine-tuning, not in-context few-shot — only its zero-shot is
+comparable to our arm.
 
-**5B.5 Livrable clé** : `docs/decision-tree-ml-vs-llm.md`, un arbre de décision d'architecture
-où **chaque branche cite un chiffre du tableau** — quand une règle suffit, quand le ML classique,
-quand l'hybride, quand le LLM (peu de données étiquetées, étiquettes mouvantes, texte long et
-rare) — plus le seuil de volume où le coût bascule. L'arbre entre dans le README de la phase 8.
+**5B.5 Key deliverable**: `docs/decision-tree-ml-vs-llm.md`, an architecture decision tree
+where **each branch cites a number from the table** — when a rule is enough, when classical ML,
+when the hybrid, when the LLM (little labeled data, shifting labels, long and
+rare text) — plus the volume threshold where the cost tips over. The tree goes into the
+phase 8 README.
 
-**Garde-fous** : un module `src/llm_testbench/classic/` (modèles classiques, sérialisation de
-lignes, features hybrides), testé et typé, **jamais exposé par l'API ni appelé par l'agent** ;
-les runners étendent `eval/`. Hyperparamètres par défaut ou recherche bornée et documentée — pas
-de chasse au score. Pas de feature store, pas de dérive, pas de réentraînement, pas de matrice
-de modèles, pas de seconde tâche.
+**Guardrails**: a `src/llm_testbench/classic/` module (classical models, row
+serialization, hybrid features), tested and typed, **never exposed by the API nor called by
+the agent**; the runners extend `eval/`. Default hyperparameters or a bounded, documented
+search — no score hunting. No feature store, no drift, no retraining, no model
+matrix, no second task.
 
-**Notebook** : « choisir entre un XGBoost et un LLM, la réponse est un tableau » — les sorties
-intermédiaires visibles sont la ligne sérialisée, le prompt final, la réponse brute et son
-parsing, l'explication SHAP d'une prédiction, et le tableau.
+**Notebook**: "choosing between an XGBoost and an LLM, the answer is a table" — the visible
+intermediate outputs are the serialized row, the final prompt, the raw response and its
+parsing, the SHAP explanation of a prediction, and the table.

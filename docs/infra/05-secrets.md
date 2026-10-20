@@ -1,72 +1,72 @@
-# Guide 05 — Les secrets : Secrets Manager, External Secrets, identités de pods
+# Guide 05 — Secrets: Secrets Manager, External Secrets, pod identities
 
-**Durée** : 15 minutes. **Prérequis** : guide 03 (cluster et add-ons). **Coût** :
-~0,40 $/mois par secret (trois clés, plus le secret géré par RDS), détruits avec
-l'environnement. **Code** :
+**Duration**: 15 minutes. **Prerequisites**: guide 03 (cluster and add-ons). **Cost**:
+~$0.40/month per secret (three keys, plus the RDS-managed secret), destroyed with the
+environment. **Code**:
 `infra/terraform/envs/dev/secrets.tf`, `iam.tf`, `infra/k8s/dev/cluster-secret-store.yaml`,
 `infra/helm/llm-testbench-api/templates/externalsecret.yaml`.
 
 ---
 
-## Le problème
+## The problem
 
-Une clé d'API LLM donne accès à un compte facturé à l'usage : c'est un moyen de paiement.
-Elle doit arriver dans le pod sans passer par git, par une image, par un fichier de
-valeurs Helm, ni par le terminal d'un collègue. Et quand elle change (rotation, fuite),
-le changement doit se propager sans redéploiement manuel.
+An LLM API key gives access to an account billed by usage: it is a means of payment.
+It must reach the pod without going through git, an image, a Helm values file, or a
+colleague's terminal. And when it changes (rotation, leak), the change must propagate
+without a manual redeploy.
 
-## Les options
+## The options
 
 | Option | Verdict |
 |---|---|
-| `Secret` Kubernetes créé à la main | Ce qu'on fait en local (`make k8s-secrets`) : simple, mais la vérité est sur un poste de travail, et rien ne resynchronise. |
-| Secret chiffré dans git (SOPS, Sealed Secrets) | Bon pour GitOps ; mais les clés d'API changent hors de git et la source de vérité serait dédoublée. |
-| **Secrets Manager + External Secrets Operator** | **Retenu** : la vérité est dans Secrets Manager (audité, rotatif), l'opérateur la copie dans un `Secret` Kubernetes et la resynchronise ; l'authentification passe par l'identité de pod. |
-| SSM Parameter Store (SecureString) | Gratuit en standard, sans rotation intégrée ni versionnage riche. Correct pour de la configuration, moins pour des moyens de paiement. |
-| Secrets Store CSI Driver | Monte les secrets en fichiers, sans `Secret` Kubernetes ; plus de pièces mobiles pour un gain limité ici. |
+| Kubernetes `Secret` created by hand | What we do locally (`make k8s-secrets`): simple, but the source of truth sits on a workstation, and nothing resyncs it. |
+| Encrypted secret in git (SOPS, Sealed Secrets) | Good for GitOps; but API keys change outside git and the source of truth would be duplicated. |
+| **Secrets Manager + External Secrets Operator** | **Chosen**: the source of truth is in Secrets Manager (audited, rotatable), the operator copies it into a Kubernetes `Secret` and resyncs it; authentication goes through the pod identity. |
+| SSM Parameter Store (SecureString) | Free in the standard tier, with no built-in rotation or rich versioning. Fine for configuration, less so for means of payment. |
+| Secrets Store CSI Driver | Mounts secrets as files, without a Kubernetes `Secret`; more moving parts for a limited gain here. |
 
-## Lecture guidée du code réel
+## Guided reading of the real code
 
-**[`secrets.tf`](../../infra/terraform/envs/dev/secrets.tf)** — trois secrets de clés
-(`llm-testbench/dev/anthropic-api-key`, `openai-api-key`, `openrouter-api-key`), et rien
-d'autre : l'URL de base n'est pas un secret Terraform (voir le template plus bas). Deux
-détails qui comptent :
+**[`secrets.tf`](../../infra/terraform/envs/dev/secrets.tf)** — three key secrets
+(`llm-testbench/dev/anthropic-api-key`, `openai-api-key`, `openrouter-api-key`), and nothing
+else: the database URL is not a Terraform secret (see the template below). Two
+details that matter:
 
-- `recovery_window_in_days = 0` : Secrets Manager garde normalement un secret supprimé
-  30 jours (et le nom reste bloqué). Zéro, pour qu'un `infra-down` suivi d'un `infra-up`
-  ne bute pas sur « secret déjà planifié pour suppression ».
-- la version initiale vaut `REPLACE_ME` avec `ignore_changes = [secret_string]` :
-  Terraform crée le secret mais **n'en gère jamais la valeur**. Vous la posez à la main ;
-  Terraform ne l'écrasera jamais, et elle n'entrera jamais dans l'état.
+- `recovery_window_in_days = 0`: Secrets Manager normally keeps a deleted secret for
+  30 days (and the name stays locked). Zero, so that an `infra-down` followed by an `infra-up`
+  does not hit "secret already scheduled for deletion".
+- the initial version is `REPLACE_ME` with `ignore_changes = [secret_string]`:
+  Terraform creates the secret but **never manages its value**. You set it by hand;
+  Terraform will never overwrite it, and it will never enter the state.
 
-**[`iam.tf`](../../infra/terraform/envs/dev/iam.tf)** — le rôle `external_secrets` : lire
-et décrire les secrets sous le préfixe `llm-testbench/dev/*` et le secret géré par RDS
-(`module.rds.db_instance_master_user_secret_arn`), rien d'autre ; associé par
-Pod Identity au ServiceAccount `external-secrets` du namespace du même nom (créé par le
-chart de l'opérateur).
+**[`iam.tf`](../../infra/terraform/envs/dev/iam.tf)** — the `external_secrets` role: read
+and describe the secrets under the `llm-testbench/dev/*` prefix and the RDS-managed secret
+(`module.rds.db_instance_master_user_secret_arn`), nothing else; associated through
+Pod Identity with the `external-secrets` ServiceAccount in the namespace of the same name
+(created by the operator's chart).
 
-**[`cluster-secret-store.yaml`](../../infra/k8s/dev/cluster-secret-store.yaml)** — le
-`ClusterSecretStore` dit à l'opérateur *où* lire (Secrets Manager, région) et *comment*
-s'authentifier : rien de déclaré, donc la chaîne d'identifiants par défaut du SDK, qui
-trouve l'identité de pod. Pas de clé, pas d'ARN de rôle : l'association est faite par
+**[`cluster-secret-store.yaml`](../../infra/k8s/dev/cluster-secret-store.yaml)** — the
+`ClusterSecretStore` tells the operator *where* to read (Secrets Manager, region) and *how*
+to authenticate: nothing declared, so the SDK's default credential chain, which
+finds the pod identity. No key, no role ARN: the association is made by
 Terraform.
 
 **[`externalsecret.yaml`](../../infra/helm/llm-testbench-api/templates/externalsecret.yaml)**
-— dans le namespace de l'API, un `ExternalSecret` par déploiement : chaque entrée
-`data` associe une variable d'environnement à une clé Secrets Manager ; l'opérateur
-fabrique le `Secret` `llm-testbench-api-secrets` que le Deployment consomme, et le
-rafraîchit toutes les heures (`refreshInterval`). Quand `database.masterSecretArn` est
-renseigné (par `make deploy` ou le workflow, depuis les sorties Terraform / l'API RDS),
-deux entrées `data` supplémentaires lisent `username` et `password` dans le secret géré par
-RDS (`remoteRef.property`), et un bloc `target.template` (moteur v2) compose
-`LLM_TESTBENCH_DATABASE_URL` dans le cluster, mot de passe encodé par `urlquery`. Lisez les
-accolades à deux niveaux : `{{ .Values... }}` est rendu par Helm, `{{ .db_password }}` est
-laissé tel quel pour l'opérateur. C'est la réponse de production au compromis d'avant
-(ADR 009) : le mot de passe ne quitte Secrets Manager que pour le `Secret` Kubernetes.
+— in the API's namespace, one `ExternalSecret` per deployment: each `data` entry maps
+an environment variable to a Secrets Manager key; the operator
+builds the `llm-testbench-api-secrets` `Secret` that the Deployment consumes, and
+refreshes it every hour (`refreshInterval`). When `database.masterSecretArn` is
+set (by `make deploy` or the workflow, from the Terraform outputs / the RDS API),
+two extra `data` entries read `username` and `password` from the RDS-managed secret
+(`remoteRef.property`), and a `target.template` block (engine v2) composes
+`LLM_TESTBENCH_DATABASE_URL` in the cluster, with the password encoded by `urlquery`. Read the
+braces on two levels: `{{ .Values... }}` is rendered by Helm, `{{ .db_password }}` is
+left as is for the operator. This is the production answer to the earlier compromise
+(ADR 009): the password leaves Secrets Manager only for the Kubernetes `Secret`.
 
-## Exécution
+## Run
 
-**1. Poser les vraies valeurs** (une seule fois par environnement, depuis votre poste) :
+**1. Set the real values** (once per environment, from your workstation):
 
 ```bash
 aws secretsmanager put-secret-value --secret-id llm-testbench/dev/anthropic-api-key --secret-string "$ANTHROPIC_API_KEY"
@@ -74,106 +74,106 @@ aws secretsmanager put-secret-value --secret-id llm-testbench/dev/openai-api-key
 aws secretsmanager put-secret-value --secret-id llm-testbench/dev/openrouter-api-key --secret-string "$OPENROUTER_API_KEY"
 ```
 
-Chargez `.env` avant (`set -a; source .env; set +a`) pour ne pas coller de clé dans
-l'historique du shell. L'URL de base, elle, est composée par l'opérateur à partir du secret
-géré par RDS : rien à poser.
+Load `.env` first (`set -a; source .env; set +a`) so you do not paste a key into
+the shell history. The database URL, for its part, is composed by the operator from the
+RDS-managed secret: nothing to set.
 
-**2. Vérifier la synchronisation** :
+**2. Check the synchronization**:
 
 ```bash
 kubectl -n llm-testbench get externalsecret api        # STATUS SecretSynced, READY True
 kubectl -n llm-testbench get secret llm-testbench-api-secrets -o jsonpath='{.data}' | python3 -c "import sys,json; print(list(json.load(sys.stdin)))"
 ```
 
-Attendu : les quatre clés (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
-`LLM_TESTBENCH_DATABASE_URL`). Si `READY False` : `kubectl describe externalsecret api`
-donne la raison (accès refusé → association Pod Identity, préfixe ou ARN de la politique
-IAM ; secret introuvable → nom ; erreur de template → une clé `data` manquante).
+Expected: the four keys (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `OPENROUTER_API_KEY`,
+`LLM_TESTBENCH_DATABASE_URL`). If `READY False`: `kubectl describe externalsecret api`
+gives the reason (access denied → Pod Identity association, prefix or ARN in the IAM
+policy; secret not found → name; template error → a missing `data` key).
 
-Vérifiez l'URL composée **sans afficher le mot de passe** :
+Check the composed URL **without displaying the password**:
 
 ```bash
 kubectl -n llm-testbench get secret llm-testbench-api-secrets -o jsonpath='{.data.LLM_TESTBENCH_DATABASE_URL}' \
   | base64 -d | sed -E 's#//[^:]+:[^@]+@#//<user>:<password>@#'
 ```
 
-Attendu : `postgresql://<user>:<password>@<adresse RDS>:5432/testbench`. Si le pod ne se
-connecte pas alors que l'adresse est bonne, c'est l'encodage : comparez la longueur du mot
-de passe dans Secrets Manager et dans le `Secret` — `urlquery` allonge les caractères
-réservés (`%23` pour `#`).
+Expected: `postgresql://<user>:<password>@<RDS address>:5432/testbench`. If the pod does not
+connect although the address is right, it is the encoding: compare the length of the
+password in Secrets Manager and in the `Secret` — `urlquery` lengthens reserved
+characters (`%23` for `#`).
 
-**3. Prouver que le pod n'a aucune clé AWS** :
+**3. Prove that the pod has no AWS key**:
 
 ```bash
-kubectl -n llm-testbench exec deploy/api -- env | grep -c AWS_ACCESS_KEY_ID || echo "aucune clé statique"
+kubectl -n llm-testbench exec deploy/api -- env | grep -c AWS_ACCESS_KEY_ID || echo "no static key"
 kubectl -n external-secrets exec deploy/external-secrets -- env | grep AWS_CONTAINER_CREDENTIAL_FULL_URI
 ```
 
-**4. Faire tourner une clé** : changez la valeur dans Secrets Manager
-(`put-secret-value`), attendez le `refreshInterval` (ou annotez l'`ExternalSecret` avec
-`force-sync=$(date +%s)`), puis redémarrez l'API (`kubectl rollout restart deploy/api`) :
-un processus ne relit pas ses variables d'environnement.
+**4. Rotate a key**: change the value in Secrets Manager
+(`put-secret-value`), wait for the `refreshInterval` (or annotate the `ExternalSecret` with
+`force-sync=$(date +%s)`), then restart the API (`kubectl rollout restart deploy/api`):
+a process does not reread its environment variables.
 
-## Les pièges
+## Pitfalls
 
-- **La suppression avec fenêtre de récupération** bloque le nom pendant 30 jours : sans
-  `recovery_window_in_days = 0`, le deuxième `infra-up` échoue.
-- **`ignore_changes` coupe dans les deux sens** : Terraform ne restaurera pas non plus
-  une valeur effacée par erreur. La sauvegarde de la valeur, c'est vous.
-- **Le `Secret` synchronisé n'est pas relu par un pod en marche** : après une rotation,
-  redémarrez. Un outil comme Reloader peut automatiser ce redémarrage sur changement de
-  `Secret` ; à ajouter si les rotations deviennent fréquentes.
-- **Le préfixe IAM est strict** : un secret nommé hors de `llm-testbench/dev/` est
-  invisible pour l'opérateur, par construction. C'est une protection, pas un bug.
-- **Un `ClusterSecretStore` est global au cluster** : n'importe quel namespace peut y
-  créer un `ExternalSecret`. Dans un cluster partagé, un `SecretStore` par namespace et
-  des rôles distincts.
-- **Le secret RDS géré n'est pas au format attendu** par l'application (JSON
-  `{username, password}`) : d'où le template de l'`ExternalSecret`, qui lit deux propriétés et
-  compose l'URL. **`mergePolicy` vaut `Replace` par défaut** : seules les clés écrites par le
-  template entrent dans le `Secret`, donc le template redit chaque clé d'API — en oublier une,
-  c'est la faire disparaître du pod sans message d'erreur.
+- **Deletion with a recovery window** locks the name for 30 days: without
+  `recovery_window_in_days = 0`, the second `infra-up` fails.
+- **`ignore_changes` cuts both ways**: Terraform will not restore a value
+  erased by mistake either. The backup of the value is you.
+- **The synced `Secret` is not reread by a running pod**: after a rotation,
+  restart. A tool like Reloader can automate that restart on a `Secret`
+  change; to add if rotations become frequent.
+- **The IAM prefix is strict**: a secret named outside `llm-testbench/dev/` is
+  invisible to the operator, by construction. It is a protection, not a bug.
+- **A `ClusterSecretStore` is cluster-wide**: any namespace can create an
+  `ExternalSecret` against it. In a shared cluster, one `SecretStore` per namespace and
+  separate roles.
+- **The managed RDS secret is not in the format the application expects** (JSON
+  `{username, password}`): hence the `ExternalSecret` template, which reads two properties and
+  composes the URL. **`mergePolicy` defaults to `Replace`**: only the keys written by the
+  template enter the `Secret`, so the template restates every API key — forgetting one
+  makes it vanish from the pod without any error message.
 
-## Questions d'entretien
+## Interview questions
 
-<details><summary><b>1. Où est la source de vérité d'un secret, et pourquoi pas dans le cluster ?</b></summary>
+<details><summary><b>1. Where is a secret's source of truth, and why not in the cluster?</b></summary>
 
-Dans un gestionnaire de secrets (Secrets Manager) : chiffré par KMS, versionné, audité
-par CloudTrail, avec rotation. Un `Secret` Kubernetes est encodé en base64 dans etcd
-(chiffré au repos seulement si on l'a configuré, ce que `create_kms_key` fait ici) et
-lisible par quiconque a `get secrets` dans le namespace. Le `Secret` Kubernetes est une
-copie de travail, pas la vérité.
+In a secrets manager (Secrets Manager): encrypted with KMS, versioned, audited
+by CloudTrail, with rotation. A Kubernetes `Secret` is base64-encoded in etcd
+(encrypted at rest only if that was configured, which `create_kms_key` does here) and
+readable by anyone with `get secrets` in the namespace. The Kubernetes `Secret` is a
+working copy, not the source of truth.
 </details>
 
-<details><summary><b>2. Comment l'opérateur s'authentifie-t-il auprès d'AWS ?</b></summary>
+<details><summary><b>2. How does the operator authenticate to AWS?</b></summary>
 
-Par l'identité de pod : son ServiceAccount est associé à un rôle IAM dont la politique se
-limite au préfixe des secrets du projet. Aucune clé d'accès. Le SDK AWS dans le pod trouve
-les identifiants temporaires via l'agent Pod Identity, exactement comme l'API pour Bedrock.
+Through the pod identity: its ServiceAccount is associated with an IAM role whose policy is
+limited to the project's secret prefix. No access key. The AWS SDK in the pod finds
+the temporary credentials via the Pod Identity agent, exactly like the API does for Bedrock.
 </details>
 
-<details><summary><b>3. Secrets Manager ou Parameter Store ?</b></summary>
+<details><summary><b>3. Secrets Manager or Parameter Store?</b></summary>
 
-Parameter Store standard est gratuit et suffit pour de la configuration, y compris
-chiffrée (SecureString). Secrets Manager coûte 0,40 $/secret/mois et apporte la rotation
-intégrée (RDS, Lambda), le versionnage riche et la réplication. Règle simple : moyen de
-paiement ou mot de passe qui tourne → Secrets Manager ; réglage → Parameter Store.
+Standard Parameter Store is free and enough for configuration, including
+encrypted configuration (SecureString). Secrets Manager costs $0.40/secret/month and brings
+built-in rotation (RDS, Lambda), rich versioning and replication. Simple rule: a means of
+payment or a password that rotates → Secrets Manager; a setting → Parameter Store.
 </details>
 
-<details><summary><b>4. Que se passe-t-il quand une clé fuit ?</b></summary>
+<details><summary><b>4. What happens when a key leaks?</b></summary>
 
-Révoquer chez le fournisseur, poser la nouvelle valeur dans Secrets Manager, forcer la
-synchronisation, redémarrer les pods ; puis lire CloudTrail pour savoir qui a lu le secret
-et quand. La phase 5 ajoutera le kill switch de coût : une clé qui fuit se voit d'abord
-sur la facture.
+Revoke it at the provider, set the new value in Secrets Manager, force the
+sync, restart the pods; then read CloudTrail to find out who read the secret
+and when. Phase 5 will add the cost kill switch: a leaked key shows up first
+on the bill.
 </details>
 
-## Ce qu'on n'a pas fait, et pourquoi
+## What we did not do, and why
 
-- **Pas de rotation automatique des clés LLM** : les fournisseurs n'exposent pas d'API de
-  rotation ; la rotation est manuelle par construction.
-- **Pas de Reloader** : une rotation rare se gère avec un `rollout restart`.
-- **Pas d'authentification IAM à la base** (guide 04) : le mot de passe existe toujours,
-  mais il ne quitte plus Secrets Manager que pour le `Secret` Kubernetes, composé dans le
-  cluster. Le template a remplacé le compromis Terraform le 2026-10-19 (ADR 009).
-- **Pas de SecretStore par namespace** : un seul locataire sur ce cluster.
+- **No automatic rotation of LLM keys**: providers do not expose a rotation
+  API; rotation is manual by construction.
+- **No Reloader**: a rare rotation is handled with a `rollout restart`.
+- **No IAM authentication to the database** (guide 04): the password still exists,
+  but it leaves Secrets Manager only for the Kubernetes `Secret`, composed in the
+  cluster. The template replaced the Terraform compromise on 2026-10-19 (ADR 009).
+- **No per-namespace SecretStore**: a single tenant on this cluster.

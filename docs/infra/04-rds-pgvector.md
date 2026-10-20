@@ -1,88 +1,89 @@
-# Guide 04 — RDS PostgreSQL avec pgvector : la base managée, son accès, l'index
+# Guide 04 — RDS PostgreSQL with pgvector: the managed database, its access, the index
 
-**Durée** : 20 minutes. **Prérequis** : guide 03 (environnement créé). **Coût** :
-~0,02 $/h + ~2 $/mois de stockage, détruit avec l'environnement. **Code** :
+**Duration**: 20 minutes. **Prerequisites**: guide 03 (environment created). **Cost**:
+~$0.02/h + ~$2/month of storage, destroyed with the environment. **Code**:
 `infra/terraform/envs/dev/rds.tf`, `infra/helm/llm-testbench-api/templates/externalsecret.yaml`
-(l'URL de la base, composée dans le cluster), `src/llm_testbench/ingest/sql/001_schema.sql`.
+(the database URL, composed in the cluster), `src/llm_testbench/ingest/sql/001_schema.sql`.
 
 ---
 
-## Le problème
+## The problem
 
-En local, Postgres est un `StatefulSet` qu'on relance sans état d'âme. En cloud, une base
-qu'on opère soi-même coûte des nuits : sauvegardes, correctifs, disque plein, bascule.
-RDS vend exactement ça. La question devient : **quelle instance, quel réseau, quel mot de
-passe, et comment pgvector arrive-t-il dedans** — et, pour ce banc, comment l'API trouve
-la base sans qu'un secret ne traverse un fichier.
+Locally, Postgres is a `StatefulSet` you restart without a second thought. In the cloud, a
+database you operate yourself costs sleepless nights: backups, patches, full disk,
+failover. RDS sells exactly that. The question becomes: **which instance, which network,
+which password, and how does pgvector get in there** — and, for this testbench, how the API
+finds the database without a secret ever passing through a file.
 
-## Les options
+## The options
 
 | Option | Verdict |
 |---|---|
-| **RDS PostgreSQL 16, `db.t4g.micro`, mono-AZ** | **Retenu** : la plus petite instance Graviton (2 vCPU partagés, 1 Go), suffisante pour 5 000 abstracts et une poignée de requêtes par seconde ; pgvector est disponible nativement. |
-| Aurora Serverless v2 | Monte et descend à zéro (0,5 ACU minimum ≈ 0,06 $/h) : plus cher qu'un micro allumé, intéressant pour un environnement qu'on laisse en place sans trafic. Noté pour la phase 5. |
-| Postgres dans le cluster (comme en local) | Zéro coût RDS, mais un volume EBS à gérer et pas de sauvegarde gérée : c'est le choix que le brief refuse pour le cloud. |
-| Un service vectoriel dédié | Refusé par le brief (Postgres + pgvector, ADR 007). |
+| **RDS PostgreSQL 16, `db.t4g.micro`, single-AZ** | **Chosen**: the smallest Graviton instance (2 shared vCPUs, 1 GB), enough for 5,000 abstracts and a handful of queries per second; pgvector is available natively. |
+| Aurora Serverless v2 | Scales up and down to zero (0.5 ACU minimum ≈ $0.06/h): more expensive than a micro that is on, interesting for an environment left in place with no traffic. Noted for phase 5. |
+| Postgres in the cluster (as locally) | Zero RDS cost, but an EBS volume to manage and no managed backup: this is the choice the brief rejects for the cloud. |
+| A dedicated vector service | Rejected by the brief (Postgres + pgvector, ADR 007). |
 
-## Lecture guidée du code réel
+## Guided reading of the real code
 
-**[`rds.tf`](../../infra/terraform/envs/dev/rds.tf)** — le module `terraform-aws-modules/rds` :
+**[`rds.tf`](../../infra/terraform/envs/dev/rds.tf)** — the `terraform-aws-modules/rds`
+module:
 
-- `engine_version = "16"`, `family = "postgres16"` : la **famille** est celle du groupe de
-  paramètres ; oubliée ou décalée, l'apply échoue tard avec un message obscur.
-- `manage_master_user_password = true` : RDS génère le mot de passe et le range dans
-  Secrets Manager, avec rotation possible. Personne ne le voit passer dans une variable.
-- `db_subnet_group_name = module.vpc.database_subnet_group_name` : la base vit dans les
-  sous-réseaux `database`, sans route vers Internet (guide 02).
-- `vpc_security_group_ids = [aws_security_group.rds.id]` avec **une seule règle
-  d'entrée** : le port 5432 depuis le groupe de sécurité des nœuds EKS. Pas d'adresse,
-  pas de CIDR : une identité de groupe de sécurité, qui suit les nœuds quand ils changent.
+- `engine_version = "16"`, `family = "postgres16"`: the **family** is the parameter
+  group's; forgotten or mismatched, the apply fails late with an obscure message.
+- `manage_master_user_password = true`: RDS generates the password and stores it in
+  Secrets Manager, with rotation possible. Nobody sees it go through a variable.
+- `db_subnet_group_name = module.vpc.database_subnet_group_name`: the database lives in the
+  `database` subnets, with no route to the Internet (guide 02).
+- `vpc_security_group_ids = [aws_security_group.rds.id]` with **a single inbound rule**:
+  port 5432 from the EKS nodes' security group. No address, no CIDR: a security group
+  identity, which follows the nodes when they change.
 - `multi_az = false`, `backup_retention_period = 1`, `skip_final_snapshot = true`,
-  `deletion_protection = false` : les quatre réglages qu'on inverse en production, ici
-  assumés pour un environnement jetable. Ils sont explicites pour être relus.
-- `apply_immediately = true` : un changement de paramètre s'applique tout de suite, pas
-  à la prochaine fenêtre de maintenance (qu'on n'atteindra jamais).
-- `parameters` : `log_min_duration_statement = 1000` — chaque requête de plus d'une
-  seconde apparaît dans les logs. Le premier outil de diagnostic d'un index HNSW mal
-  dimensionné.
-- `performance_insights_enabled = false`, `monitoring_interval = 0` : les deux postes
-  de coût optionnels du monitoring RDS, désactivés en dev.
+  `deletion_protection = false`: the four settings you invert in production, deliberately
+  accepted here for a throwaway environment. They are explicit so that they get reread.
+- `apply_immediately = true`: a parameter change applies right away, not at the next
+  maintenance window (which we will never reach).
+- `parameters`: `log_min_duration_statement = 1000` — every query longer than one second
+  shows up in the logs. The first diagnostic tool for a badly sized HNSW index.
+- `performance_insights_enabled = false`, `monitoring_interval = 0`: the two optional cost
+  items of RDS monitoring, disabled in dev.
 
-**L'URL de la base** — Terraform ne la compose pas et ne lit jamais le mot de passe : il
-sort seulement l'adresse de l'instance (`rds_address`) et l'ARN du secret géré par RDS
-(`rds_master_secret_arn`, `outputs.tf`). C'est l'`ExternalSecret` du chart (guide 05) qui,
-dans le cluster, lit `username` et `password` dans ce secret et compose
-`postgresql://user:mot-de-passe@hôte:5432/testbench`. Le mot de passe ne passe ni par l'état
-Terraform, ni par un second secret (ADR 009). Jusqu'au 2026-10-19, Terraform le lisait et
-l'écrivait dans un secret `database-url` : un compromis documenté, retiré. L'autre réponse de
-production, l'authentification IAM à la base (`iam_database_authentication_enabled`), reste
-dans « ce qu'on n'a pas fait ».
+**The database URL** — Terraform does not compose it and never reads the password: it only
+outputs the instance address (`rds_address`) and the ARN of the RDS-managed secret
+(`rds_master_secret_arn`, `outputs.tf`). It is the chart's `ExternalSecret` (guide 05) that,
+inside the cluster, reads `username` and `password` from that secret and composes
+`postgresql://user:password@host:5432/testbench`. The password goes neither through the
+Terraform state nor through a second secret (ADR 009). Until 2026-10-19, Terraform read it
+and wrote it into a `database-url` secret: a documented compromise, now removed. The other
+production answer, IAM authentication to the database (`iam_database_authentication_enabled`),
+stays under "what we did not do".
 
-**[`001_schema.sql`](../../src/llm_testbench/ingest/sql/001_schema.sql)** : c'est
-l'application, pas Terraform, qui crée l'extension et les tables au démarrage
-(`CREATE EXTENSION IF NOT EXISTS vector`). Sur RDS, l'utilisateur maître a le droit de
-créer les extensions de la liste supportée, dont pgvector.
+**[`001_schema.sql`](../../src/llm_testbench/ingest/sql/001_schema.sql)**: it is the
+application, not Terraform, that creates the extension and the tables at startup
+(`CREATE EXTENSION IF NOT EXISTS vector`). On RDS, the master user is allowed to create the
+extensions on the supported list, pgvector among them.
 
-## Exécution
+## Run
 
-**1. Vérifier l'instance** :
+**1. Check the instance**:
 
 ```bash
 aws rds describe-db-instances --db-instance-identifier llm-testbench-dev \
   --query 'DBInstances[0].[DBInstanceStatus,Engine,EngineVersion,DBInstanceClass,PubliclyAccessible,MultiAZ]' --output table
 ```
 
-Attendu : `available`, `postgres`, `16.x`, `db.t4g.micro`, `False`, `False`.
+Expected: `available`, `postgres`, `16.x`, `db.t4g.micro`, `False`, `False`.
 
-**2. Vérifier que la base n'est pas joignable de votre Mac** (c'est le résultat attendu) :
+**2. Check that the database is not reachable from your Mac** (that is the expected
+result):
 
 ```bash
 cd infra/terraform/envs/dev && terraform output -raw rds_address ; cd -
-nc -z -w 3 <adresse> 5432 || echo "injoignable depuis Internet : correct"
+nc -z -w 3 <address> 5432 || echo "unreachable from the Internet: correct"
 ```
 
-**3. Ingérer depuis le cluster.** L'index doit être construit *dans* RDS ; le plus simple
-est un pod éphémère avec l'image de l'API et les secrets du pod :
+**3. Ingest from the cluster.** The index must be built *inside* RDS; the simplest way is an
+ephemeral pod with the API image and the pod's secrets:
 
 ```bash
 kubectl -n llm-testbench run ingest --rm -i --restart=Never \
@@ -91,10 +92,10 @@ kubectl -n llm-testbench run ingest --rm -i --restart=Never \
   --image-pull-policy=IfNotPresent
 ```
 
-(Remplacez `IMAGE` par la même image que `--image`.) Attendu : le rapport JSON de
-l'ingestion — ~5 000 documents, ~5 000 chunks, ~0,05 $ d'embeddings.
+(Replace `IMAGE` with the same image as `--image`.) Expected: the ingestion's JSON report —
+~5,000 documents, ~5,000 chunks, ~$0.05 of embeddings.
 
-**4. Constater la readiness** :
+**4. Observe readiness**:
 
 ```bash
 kubectl -n llm-testbench get pods            # api 1/1 READY
@@ -103,7 +104,7 @@ curl -s localhost:8000/readyz
 curl -s localhost:8000/sources | python3 -m json.tool
 ```
 
-**5. Regarder la base de l'intérieur** (depuis un pod, pas de votre Mac) :
+**5. Look at the database from the inside** (from a pod, not from your Mac):
 
 ```bash
 kubectl -n llm-testbench run psql --rm -it --restart=Never --image=postgres:16 \
@@ -111,69 +112,68 @@ kubectl -n llm-testbench run psql --rm -it --restart=Never --image=postgres:16 \
   -- sh -c 'psql "$PGURL" -c "\dx" -c "select index_key, embedding_model, dimensions from indexes" -c "select count(*) from chunks"'
 ```
 
-Attendu : l'extension `vector` listée, une ligne d'index, ~5 000 chunks.
+Expected: the `vector` extension listed, one index row, ~5,000 chunks.
 
-## Les pièges
+## Pitfalls
 
-- **Le mot de passe dans l'URL doit être encodé** : RDS exclut `/`, `@`, `"` et l'espace
-  de ses mots de passe générés, mais pas `%`, `#`, `?` ni `:`. Le template External Secrets
-  passe par `urlquery` ; sans ça, une URL sur trois est invalide — et l'erreur ne dit pas
-  pourquoi.
-- **`db.t4g.micro` a des crédits CPU** : sous charge soutenue (phase 5), il s'effondre
-  quand les crédits sont épuisés. La montée en gamme est une variable.
-- **La famille de paramètres** doit suivre la version majeure : passer en Postgres 17
-  demande `family = "postgres17"`, pas seulement `engine_version`.
-- **Un `terraform destroy` avec `skip_final_snapshot = false`** demande un nom de
-  snapshot et échoue sinon. En dev, `true` ; en production, l'inverse, toujours.
-- **Le HNSW se construit à l'insertion** : ingérer 5 000 vecteurs de 1 536 dimensions
-  prend une minute sur un micro ; à 500 000, on crée l'index *après* le chargement
-  (phase 3, matrice d'expériences).
-- **Le groupe de sécurité référence celui des nœuds** : si vous recréez le cluster EKS
-  seul, la règle suit le nouveau groupe ; si vous ajoutez des nœuds hors du module (Karpenter),
-  vérifiez qu'ils portent le même groupe.
+- **The password in the URL must be encoded**: RDS excludes `/`, `@`, `"` and the space
+  from its generated passwords, but not `%`, `#`, `?` or `:`. The External Secrets template
+  goes through `urlquery`; without it, one URL in three is invalid — and the error does not
+  say why.
+- **`db.t4g.micro` has CPU credits**: under sustained load (phase 5), it collapses once the
+  credits are exhausted. Moving up a size is a variable.
+- **The parameter family** must follow the major version: moving to Postgres 17 requires
+  `family = "postgres17"`, not just `engine_version`.
+- **A `terraform destroy` with `skip_final_snapshot = false`** asks for a snapshot name and
+  fails otherwise. In dev, `true`; in production, the opposite, always.
+- **HNSW is built on insert**: ingesting 5,000 vectors of 1,536 dimensions takes a minute
+  on a micro; at 500,000, you create the index *after* loading (phase 3, experiment
+  matrix).
+- **The security group references the nodes' group**: if you recreate the EKS cluster
+  alone, the rule follows the new group; if you add nodes outside the module (Karpenter),
+  check that they carry the same group.
 
-## Questions d'entretien
+## Interview questions
 
-<details><summary><b>1. RDS ou Aurora, quand ?</b></summary>
+<details><summary><b>1. RDS or Aurora, when?</b></summary>
 
-RDS est Postgres tel quel sur une instance : prévisible, moins cher à petite taille, une
-seule zone si on veut. Aurora réécrit le stockage (réplication à six copies, lectures
-distribuées, Serverless v2 qui suit la charge) : plus cher au repos, meilleur pour une
-charge variable ou une haute disponibilité exigée. Pour un banc d'essai : RDS ; pour
-l'environnement de dev d'une équipe qui l'oublie allumé : Aurora Serverless.
+RDS is Postgres as is on an instance: predictable, cheaper at small size, a single zone if
+you want. Aurora rewrites the storage layer (six-copy replication, distributed reads,
+Serverless v2 that follows the load): more expensive at rest, better for a variable load or
+a required high availability. For a testbench: RDS; for the dev environment of a team that
+forgets to turn it off: Aurora Serverless.
 </details>
 
-<details><summary><b>2. Comment l'application obtient-elle le mot de passe sans qu'il soit dans le code ?</b></summary>
+<details><summary><b>2. How does the application get the password without it being in the code?</b></summary>
 
-RDS le génère dans Secrets Manager ; External Secrets le lit avec l'identité du pod et
-le pose dans un `Secret` Kubernetes ; le pod le reçoit en variable d'environnement. Rien
-n'est écrit par un humain, tout est tracé par CloudTrail. La rotation change la valeur
-dans Secrets Manager, External Secrets la resynchronise, le pod redémarre.
+RDS generates it in Secrets Manager; External Secrets reads it with the pod's identity and
+puts it in a Kubernetes `Secret`; the pod receives it as an environment variable. Nothing is
+written by a human, everything is traced by CloudTrail. Rotation changes the value in
+Secrets Manager, External Secrets resyncs it, the pod restarts.
 </details>
 
-<details><summary><b>3. Pourquoi une base sans accès public, et comment l'administrer alors ?</b></summary>
+<details><summary><b>3. Why a database with no public access, and how do you administer it then?</b></summary>
 
-Une base publique est une cible permanente de scans. Sans accès public, on administre
-depuis le VPC : un pod éphémère (comme ci-dessus), un bastion, ou SSM Session Manager
-avec transfert de port. Le port-forward Kubernetes vers un pod `psql` est l'outil le plus
-simple au quotidien.
+A public database is a permanent target for scans. Without public access, you administer
+from the VPC: an ephemeral pod (as above), a bastion, or SSM Session Manager with port
+forwarding. Kubernetes port-forward to a `psql` pod is the simplest day-to-day tool.
 </details>
 
-<details><summary><b>4. pgvector sur RDS : quelles limites ?</b></summary>
+<details><summary><b>4. pgvector on RDS: what limits?</b></summary>
 
-La version de l'extension suit celle proposée par RDS (souvent quelques mois de retard) ;
-l'index HNSW tient en mémoire ou la base rame — la mémoire de l'instance devient le
-paramètre de dimensionnement principal, avant le CPU. Et `CREATE EXTENSION` demande un
-rôle avec le privilège, ce que l'utilisateur maître a.
+The extension version follows the one RDS offers (often a few months behind); the HNSW
+index fits in memory or the database crawls — instance memory becomes the main sizing
+parameter, ahead of CPU. And `CREATE EXTENSION` requires a role with the privilege, which
+the master user has.
 </details>
 
-## Ce qu'on n'a pas fait, et pourquoi
+## What we did not do, and why
 
-- **Pas d'authentification IAM à la base** : élégante (plus de mot de passe du tout),
-  mais elle demande un jeton renouvelé toutes les 15 minutes côté application ; à
-  regarder en phase 5 avec le runbook « le provider est indisponible ».
-- **Pas de réplica de lecture ni de Multi-AZ** : rien à protéger en dev.
-- **Pas de RDS Proxy** : utile quand des centaines de connexions courtes saturent la
-  base (fonctions serverless) ; notre pool psycopg suffit.
-- **Pas de Performance Insights** : quelques euros par mois pour des graphiques qu'on ne
-  regardera pas avant la phase 5.
+- **No IAM authentication to the database**: elegant (no password at all anymore), but it
+  requires a token renewed every 15 minutes on the application side; to be looked at in
+  phase 5 with the "the provider is unavailable" runbook.
+- **No read replica and no Multi-AZ**: nothing to protect in dev.
+- **No RDS Proxy**: useful when hundreds of short connections saturate the database
+  (serverless functions); our psycopg pool is enough.
+- **No Performance Insights**: a few euros a month for graphs we will not look at before
+  phase 5.

@@ -1,21 +1,21 @@
-# PHASE 7 — Sécurité résiduelle et conformité (semaine 16, partagée avec la phase 8)
+# PHASE 7 — Residual security and compliance (week 16, shared with phase 8)
 
-L'essentiel a été traité en phase 4 (sécurité des outils, AgentDojo) et en phase 5 (audit,
-journalisation). Reste :
+Most of it was handled in phase 4 (tool security, AgentDojo) and in phase 5 (audit,
+logging). What remains:
 
-- OWASP LLM Top 10 appliqué à l'architecture complète ;
-- injection indirecte par **document** empoisonné dans le corpus (les documents empoisonnés
-  viennent du corpus maison de la phase 2.5) ;
-- exfiltration via les citations ;
-- filtrage de sortie — le nôtre, et en comparaison **Bedrock Guardrails** (PII, sujets
-  interdits, ancrage contextuel) sur le même jeu d'attaques : taux de blocage, faux positifs,
-  latence ajoutée, coût ; optionnel, décidé au plan de phase ;
-- détection et masquage de PII (Presidio) ;
-- red teaming automatisé (garak, promptfoo redteam) dans la CI.
+- OWASP LLM Top 10 applied to the complete architecture;
+- indirect injection through a poisoned **document** in the corpus (the poisoned documents
+  come from the in-house corpus of phase 2.5);
+- exfiltration via the citations;
+- output filtering — ours, and for comparison **Bedrock Guardrails** (PII, denied
+  topics, contextual grounding) on the same attack set: block rate, false positives,
+  added latency, cost; optional, decided at the phase plan;
+- PII detection and masking (Presidio);
+- automated red teaming (garak, promptfoo redteam) in CI.
 
-Puis `docs/ai-act.md` : exercice de conformité **appliqué à un déploiement hypothétique en
-entreprise** — le banc d'essai n'a pas d'utilisateurs, donc poser le cadre explicitement, puis
-la classification de risque au sens de l'EU AI Act, les obligations de documentation et de
-journalisation, et la minimisation RGPD. La grille de défendabilité de la phase 5B s'y
-rattache. L'objectif est que je sache tenir cette conversation en entretien, pas de produire un
-dossier réglementaire.
+Then `docs/ai-act.md`: a compliance exercise **applied to a hypothetical enterprise
+deployment** — the testbench has no users, so set the frame explicitly, then
+the risk classification under the EU AI Act, the documentation and logging obligations,
+and GDPR minimization. The defensibility grid of phase 5B attaches to it. The goal is for me
+to be able to hold this conversation in an interview, not to produce a
+regulatory dossier.

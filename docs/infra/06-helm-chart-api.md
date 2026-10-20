@@ -1,173 +1,173 @@
-# Guide 06 — Le chart Helm de l'API : probes, ressources, HPA, PDB, secrets, sécurité
+# Guide 06 — The API Helm chart: probes, resources, HPA, PDB, secrets, security
 
-**Durée** : 20 minutes de lecture, 5 d'exécution. **Prérequis** : guide 01 (cluster
-local). **Coût** : 0 €. **Code** : `infra/helm/llm-testbench-api/`.
+**Duration**: 20 minutes of reading, 5 of execution. **Prerequisites**: guide 01 (local
+cluster). **Cost**: €0. **Code**: `infra/helm/llm-testbench-api/`.
 
 ---
 
-## Le problème
+## The problem
 
-Déployer un conteneur, tout le monde sait faire. Le déployer pour qu'il **survive** à une
-mise à jour, à la panne d'un nœud, à un pic de trafic et à un fichier de configuration
-modifié — sans intervention humaine — c'est ce qu'un chart de niveau production encode.
-Chaque valeur par défaut de `values.yaml` répond à un incident classique.
+Everyone knows how to deploy a container. Deploying it so that it **survives** an
+update, a node failure, a traffic spike and a modified configuration file
+— with no human intervention — is what a production-grade chart encodes.
+Every default value in `values.yaml` answers a classic incident.
 
-## Les options
+## The options
 
 | Option | Verdict |
 |---|---|
-| Manifests YAML bruts | Lisibles, mais dupliqués entre local et cloud, et sans paramétrage propre. |
-| Kustomize | Bien pour des surcharges simples (on l'utilise pour Postgres local) ; faible pour la logique conditionnelle (ExternalSecret ou pas, HPA ou pas). |
-| **Helm** | **Retenu** : un chart, des fichiers de valeurs par environnement, des conditions. Le standard des équipes que vous rejoindrez. |
-| Un chart générique du marché | Cache les choix qu'on veut expliquer ici. Le nôtre fait 180 lignes de templates. |
+| Raw YAML manifests | Readable, but duplicated between local and cloud, and with no clean parameterization. |
+| Kustomize | Good for simple overlays (we use it for local Postgres); weak for conditional logic (ExternalSecret or not, HPA or not). |
+| **Helm** | **Chosen**: one chart, one values file per environment, conditions. The standard of the teams you will join. |
+| An off-the-shelf generic chart | Hides the choices we want to explain here. Ours is 180 lines of templates. |
 
-## Lecture guidée du code réel
+## Guided reading of the real code
 
-**[`values.yaml`](../../infra/helm/llm-testbench-api/values.yaml)**, du haut vers le bas :
+**[`values.yaml`](../../infra/helm/llm-testbench-api/values.yaml)**, from top to bottom:
 
-- **`replicaCount: 2`** — deux réplicas minimum : un seul pod, c'est zéro tolérance à la
-  panne et zéro mise à jour sans interruption.
-- **`config`** — les variables d'environnement *non secrètes*, rendues en `ConfigMap`.
-- **`secrets.existingSecret`** — le chart ne crée jamais de secret ; il en référence un.
-  En local, `make k8s-secrets` le crée depuis `.env`. En cloud,
-  `secrets.externalSecret.enabled: true` rend un `ExternalSecret` qui demande à External
-  Secrets Operator de le fabriquer depuis Secrets Manager (guide 05).
-- **`resources`** — des `requests` (ce que le scheduler réserve) et une limite mémoire,
-  **mais pas de limite CPU** : la limite CPU déclenche du throttling CFS qui dégrade la
-  latence sans protéger personne ; la limite mémoire, elle, évite qu'un pod qui fuit
-  emporte le nœud.
-- **`autoscaling`** — un HPA sur le CPU (70 %), de 2 à 6 réplicas. Il a besoin de
-  `metrics-server` (add-on managé sur EKS, guide 03 ; livré avec k3s en local).
-- **`podDisruptionBudget: minAvailable 1`** — lors d'un drain de nœud (mise à jour, scale
-  down), Kubernetes n'évincera jamais le dernier pod disponible.
-- **`probes`** — trois sondes, trois questions (guide 01, question 1). Le `startupProbe` à
-  30 × 2 s laisse 60 s au pool Postgres et au schéma ; sans lui, une liveness impatiente
-  tuerait un pod en plein démarrage, en boucle.
-- **`podSecurityContext` / `securityContext`** — non root, pas d'escalade de privilèges,
-  système de fichiers en lecture seule (d'où le volume `/tmp` en `emptyDir`), toutes les
-  capacités Linux retirées, profil seccomp par défaut. C'est le niveau « restricted » des
+- **`replicaCount: 2`** — two replicas minimum: a single pod means zero fault
+  tolerance and zero updates without downtime.
+- **`config`** — the *non-secret* environment variables, rendered into a `ConfigMap`.
+- **`secrets.existingSecret`** — the chart never creates a secret; it references one.
+  Locally, `make k8s-secrets` creates it from `.env`. In the cloud,
+  `secrets.externalSecret.enabled: true` renders an `ExternalSecret` that asks External
+  Secrets Operator to build it from Secrets Manager (guide 05).
+- **`resources`** — `requests` (what the scheduler reserves) and a memory limit,
+  **but no CPU limit**: the CPU limit triggers CFS throttling that degrades
+  latency without protecting anyone; the memory limit, on the other hand, keeps a leaking pod
+  from taking the node down with it.
+- **`autoscaling`** — an HPA on CPU (70%), from 2 to 6 replicas. It needs
+  `metrics-server` (managed add-on on EKS, guide 03; shipped with k3s locally).
+- **`podDisruptionBudget: minAvailable 1`** — during a node drain (update, scale
+  down), Kubernetes will never evict the last available pod.
+- **`probes`** — three probes, three questions (guide 01, question 1). The `startupProbe` at
+  30 × 2 s gives 60 s to the Postgres pool and the schema; without it, an impatient liveness
+  probe would kill a pod mid-startup, in a loop.
+- **`podSecurityContext` / `securityContext`** — non-root, no privilege escalation,
+  read-only filesystem (hence the `/tmp` volume as an `emptyDir`), all
+  Linux capabilities dropped, default seccomp profile. This is the "restricted" level of the
   Pod Security Standards.
 
-**[`templates/deployment.yaml`](../../infra/helm/llm-testbench-api/templates/deployment.yaml)** :
+**[`templates/deployment.yaml`](../../infra/helm/llm-testbench-api/templates/deployment.yaml)**:
 
-- **`strategy.rollingUpdate: maxUnavailable 0, maxSurge 1`** — une mise à jour crée le
-  nouveau pod avant de retirer l'ancien : jamais moins de réplicas que demandé.
-- **`checksum/config`** — l'empreinte du `ConfigMap` dans les annotations du pod : quand
-  la configuration change, le hash change, le Deployment redéploie. Sans ça, un
-  `helm upgrade` qui ne touche que la configuration ne redémarre rien, et le nouveau
-  réglage n'est jamais lu.
-- **`envFrom`** — le `ConfigMap` et le `Secret` (marqué `optional`, pour que l'API
-  démarre et dise elle-même ce qui lui manque via `/readyz`).
-- **`topologySpreadConstraints`** — répartir les réplicas sur des nœuds différents quand
-  c'est possible (`ScheduleAnyway` : en local, un seul nœud, on n'empêche rien).
-- **`automountServiceAccountToken: false`** — l'API n'appelle pas l'API Kubernetes ; un
-  jeton monté par défaut serait une surface d'attaque gratuite.
+- **`strategy.rollingUpdate: maxUnavailable 0, maxSurge 1`** — an update creates the
+  new pod before removing the old one: never fewer replicas than requested.
+- **`checksum/config`** — the hash of the `ConfigMap` in the pod annotations: when
+  the configuration changes, the hash changes, the Deployment rolls out again. Without it, a
+  `helm upgrade` that only touches the configuration restarts nothing, and the new
+  setting is never read.
+- **`envFrom`** — the `ConfigMap` and the `Secret` (marked `optional`, so that the API
+  starts and reports itself what it is missing via `/readyz`).
+- **`topologySpreadConstraints`** — spread the replicas across different nodes when
+  possible (`ScheduleAnyway`: locally, a single node, we block nothing).
+- **`automountServiceAccountToken: false`** — the API does not call the Kubernetes API; a
+  token mounted by default would be a free attack surface.
 
 **[`templates/externalsecret.yaml`](../../infra/helm/llm-testbench-api/templates/externalsecret.yaml)**
-— rendu seulement si activé : pour chaque entrée `data`, une clé du `Secret` cible
-alimentée par une clé Secrets Manager ; et, si `database.masterSecretArn` est renseigné, un
-template qui compose l'URL de la base dans le cluster (guide 05). `creationPolicy: Owner` :
-le `Secret` appartient à l'`ExternalSecret`, il disparaît avec lui.
+— rendered only if enabled: for each `data` entry, a key of the target `Secret`
+fed by a Secrets Manager key; and, if `database.masterSecretArn` is set, a
+template that composes the database URL in the cluster (guide 05). `creationPolicy: Owner`:
+the `Secret` belongs to the `ExternalSecret`, it disappears with it.
 
-**Les deux fichiers de valeurs.** `values-local.yaml` : image du registre local, un
-réplica, pas d'HPA ni de PDB, URL de base vers le service `postgres` du namespace.
-`values-dev.yaml` : image ECR au SHA git, External Secrets, le bloc `database` (adresse et
-ARN du secret RDS, remplis par `make deploy` ou le workflow du guide 09), identité de pod
-pour Bedrock (guide 03).
+**The two values files.** `values-local.yaml`: image from the local registry, one
+replica, no HPA or PDB, database URL pointing at the namespace's `postgres` service.
+`values-dev.yaml`: ECR image at the git SHA, External Secrets, the `database` block (address and
+ARN of the RDS secret, filled in by `make deploy` or the guide 09 workflow), pod identity
+for Bedrock (guide 03).
 
-## Exécution
+## Run
 
-**1. Lint et rendu**, avant tout déploiement :
+**1. Lint and render**, before any deployment:
 
 ```bash
 make helm-lint
 helm template api infra/helm/llm-testbench-api -f infra/helm/llm-testbench-api/values-local.yaml | less
 ```
 
-Lisez le rendu : c'est exactement ce que le cluster recevra. Cherchez `checksum/config`,
+Read the rendered output: it is exactly what the cluster will receive. Look for `checksum/config`,
 `readOnlyRootFilesystem`, `maxUnavailable`.
 
-**2. Déployer en local** (guide 01, étape 4) puis observer les probes :
+**2. Deploy locally** (guide 01, step 4) then observe the probes:
 
 ```bash
 kubectl -n llm-testbench describe pod -l app.kubernetes.io/instance=api | sed -n '/Liveness/,/Environment/p'
 kubectl -n llm-testbench get events --sort-by=.lastTimestamp | tail -5
 ```
 
-**3. Provoquer une mise à jour sans interruption** : changez `LLM_TESTBENCH_RETRIEVAL_K`
-dans `values-local.yaml`, relancez `helm upgrade`, et regardez `kubectl get pods -w` : un
-nouveau pod naît, devient prêt, l'ancien s'arrête. L'annotation de checksum a fait le
-travail.
+**3. Trigger a zero-downtime update**: change `LLM_TESTBENCH_RETRIEVAL_K`
+in `values-local.yaml`, rerun `helm upgrade`, and watch `kubectl get pods -w`: a
+new pod is born, becomes ready, the old one stops. The checksum annotation did the
+work.
 
-**4. Provoquer un redémarrage par liveness** : `kubectl -n llm-testbench exec <pod> --
-kill 1` termine uvicorn ; le conteneur redémarre (`RESTARTS` passe à 1). Aucun
-`kubectl delete` nécessaire.
+**4. Trigger a liveness restart**: `kubectl -n llm-testbench exec <pod> --
+kill 1` terminates uvicorn; the container restarts (`RESTARTS` goes to 1). No
+`kubectl delete` needed.
 
-## Les pièges
+## Pitfalls
 
-- **Un `ConfigMap` modifié ne redémarre rien** sans l'annotation de checksum. Le symptôme
-  classique : « j'ai changé la config, ça n'a rien changé ».
-- **La limite CPU** est le réglage le plus souvent copié-collé et le plus souvent nocif :
-  du throttling apparaît bien avant que le pod n'atteigne sa limite, sur des pics courts.
-- **Un HPA sans `metrics-server`** reste à `<unknown>` et ne fait rien, silencieusement.
-  `kubectl get hpa` doit afficher un pourcentage, pas `<unknown>`.
-- **`readOnlyRootFilesystem` casse les bibliothèques qui écrivent** dans leur dossier
-  (caches de modèles, fichiers temporaires). Le volume `/tmp` couvre le cas courant ; un
-  modèle local (phase 6) aura besoin d'un volume dédié.
-- **Le PDB peut bloquer un drain** si `minAvailable` ne peut pas être satisfait (un seul
-  réplica avec `minAvailable: 1`). Les valeurs locales le désactivent pour cette raison.
-- **`helm upgrade --wait` expire** si la readiness ne passe jamais : ce n'est pas le
-  chart, c'est l'API qui refuse le trafic (guide 01, étape 4).
+- **A modified `ConfigMap` restarts nothing** without the checksum annotation. The classic
+  symptom: "I changed the config, it changed nothing".
+- **The CPU limit** is the most often copy-pasted and most often harmful setting:
+  throttling appears well before the pod reaches its limit, on short spikes.
+- **An HPA without `metrics-server`** stays at `<unknown>` and does nothing, silently.
+  `kubectl get hpa` must display a percentage, not `<unknown>`.
+- **`readOnlyRootFilesystem` breaks libraries that write** into their own folder
+  (model caches, temporary files). The `/tmp` volume covers the common case; a
+  local model (phase 6) will need a dedicated volume.
+- **The PDB can block a drain** if `minAvailable` cannot be satisfied (a single
+  replica with `minAvailable: 1`). The local values disable it for that reason.
+- **`helm upgrade --wait` times out** if readiness never passes: it is not the
+  chart, it is the API refusing traffic (guide 01, step 4).
 
-## Questions d'entretien
+## Interview questions
 
-<details><summary><b>1. Pourquoi des requests sans limite CPU ?</b></summary>
+<details><summary><b>1. Why requests without a CPU limit?</b></summary>
 
-Les requests servent au placement (le scheduler réserve) et à la priorité en cas de
-contention. La limite CPU impose un plafond strict par période d'ordonnancement (CFS) et
-provoque du throttling dès qu'un pic dépasse le quota, même si le nœud a du CPU libre.
-Pour un service de latence, on réserve sans plafonner. La mémoire, elle, ne se partage
-pas : on la limite pour qu'un pod ne tue pas ses voisins.
+Requests serve placement (the scheduler reserves) and priority under
+contention. The CPU limit imposes a hard cap per scheduling period (CFS) and
+causes throttling as soon as a spike exceeds the quota, even if the node has free CPU.
+For a latency-sensitive service, you reserve without capping. Memory, on the other hand,
+cannot be shared: you limit it so that a pod does not kill its neighbors.
 </details>
 
-<details><summary><b>2. Que se passe-t-il pendant un rolling update avec maxUnavailable 0 ?</b></summary>
+<details><summary><b>2. What happens during a rolling update with maxUnavailable 0?</b></summary>
 
-Kubernetes crée un pod de la nouvelle version (surge), attend qu'il soit prêt (readiness),
-puis termine un ancien pod ; et recommence jusqu'au dernier. La capacité ne descend
-jamais sous le nombre demandé. Le prix : temporairement un réplica de plus, donc un peu
-de capacité de nœud en réserve.
+Kubernetes creates a pod of the new version (surge), waits for it to be ready (readiness),
+then terminates an old pod; and starts again until the last one. Capacity never drops
+below the requested count. The price: temporarily one extra replica, hence a bit
+of node capacity held in reserve.
 </details>
 
-<details><summary><b>3. PDB et HPA : lequel protège de quoi ?</b></summary>
+<details><summary><b>3. PDB and HPA: which protects against what?</b></summary>
 
-L'HPA ajuste le nombre de réplicas à la charge (montée et descente). Le PDB limite les
-évictions *volontaires* (drain, mise à jour de nœud) : il ne protège pas d'une panne
-matérielle. Les deux se combinent : l'HPA fixe combien de pods, le PDB combien peuvent
-disparaître en même temps.
+The HPA adjusts the number of replicas to the load (scaling up and down). The PDB limits
+*voluntary* evictions (drain, node update): it does not protect against a hardware
+failure. The two combine: the HPA sets how many pods, the PDB how many can
+disappear at the same time.
 </details>
 
-<details><summary><b>4. Comment le pod obtient-il ses secrets sans qu'ils soient dans git ?</b></summary>
+<details><summary><b>4. How does the pod get its secrets without them being in git?</b></summary>
 
-Le chart référence un `Secret` par son nom. Qui le crée dépend de l'environnement : un
-humain depuis `.env` en local, External Secrets Operator depuis Secrets Manager en cloud,
-authentifié par l'identité de pod (pas de clé AWS dans le cluster). Le chart est le même.
+The chart references a `Secret` by name. Who creates it depends on the environment: a
+human from `.env` locally, External Secrets Operator from Secrets Manager in the cloud,
+authenticated by the pod identity (no AWS key in the cluster). The chart is the same.
 </details>
 
-<details><summary><b>5. Pourquoi un startupProbe alors qu'on a déjà une liveness ?</b></summary>
+<details><summary><b>5. Why a startupProbe when we already have a liveness probe?</b></summary>
 
-Une liveness assez stricte pour détecter un blocage en production (quelques dizaines de
-secondes) est trop stricte pour un démarrage lent (pool de connexions, chargement d'un
-modèle). Le startupProbe donne un délai généreux au démarrage seulement, puis passe la
-main à la liveness stricte. Sans lui : redémarrages en boucle au démarrage.
+A liveness probe strict enough to detect a hang in production (a few tens of
+seconds) is too strict for a slow startup (connection pool, loading a
+model). The startupProbe grants a generous delay at startup only, then hands
+over to the strict liveness probe. Without it: restart loops at startup.
 </details>
 
-## Ce qu'on n'a pas fait, et pourquoi
+## What we did not do, and why
 
-- **Pas d'Ingress ni de TLS** par défaut : l'exposition dépend de l'environnement (guide
-  03 pour EKS) ; le template existe, désactivé.
-- **Pas de NetworkPolicy** : à ajouter avec les sources SQL/API de la phase 4, quand il y
-  aura des flux à restreindre.
-- **Pas de PriorityClass ni de Karpenter** : un seul service, un seul groupe de nœuds ;
-  phase 5, avec le générateur de trafic.
-- **Pas de tests de chart automatisés** (helm-unittest) : `helm lint` + rendu suffisent
-  à ce stade ; à revoir quand le chart aura plus d'une variante.
+- **No Ingress or TLS** by default: exposure depends on the environment (guide
+  03 for EKS); the template exists, disabled.
+- **No NetworkPolicy**: to add with the SQL/API sources of phase 4, when there
+  are flows to restrict.
+- **No PriorityClass or Karpenter**: a single service, a single node group;
+  phase 5, with the traffic generator.
+- **No automated chart tests** (helm-unittest): `helm lint` + rendering are enough
+  at this stage; to revisit when the chart has more than one variant.

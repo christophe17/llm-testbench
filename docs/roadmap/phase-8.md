@@ -1,32 +1,32 @@
-# PHASE 8 — Packaging (semaine 16, commencé dès la semaine 4)
+# PHASE 8 — Packaging (week 16, started from week 4)
 
-**README du banc d'essai** : ce que le projet mesure → l'architecture (un schéma) → **le tableau
-maître des résultats**, technique par technique, avec écart à la littérature, coût et latence
-(dont la ligne « régénération depuis zéro » de la phase 3 et la ligne « coût de la
-gouvernance » de la phase 6), et l'arbre de décision ML classique / LLM de la phase 5B → les
-décisions et arbitrages → ce qui a cassé et ce que j'en ai tiré → ce que je ferais
-différemment à l'échelle 100× → les limites du dispositif (pas d'utilisateurs, trafic
-synthétique). Les phases non faites (10 si NO-GO) y ont leur paragraphe « pas fait, et
-pourquoi ».
+**Testbench README**: what the project measures → the architecture (one diagram) → **the master
+results table**, technique by technique, with the gap to the literature, cost and latency
+(including the "regeneration from scratch" row of phase 3 and the "cost of
+governance" row of phase 6), and the classical ML / LLM decision tree of phase 5B → the
+decisions and trade-offs → what broke and what I learned from it → what I would do
+differently at 100× scale → the limits of the setup (no users, synthetic
+traffic). The phases not done (10 if NO-GO) get their "not done, and
+why" paragraph there.
 
-**Deux posts techniques** tirés du JOURNAL : « le harness d'évaluation que j'ai construit, et
-pourquoi les métriques standard mentent » ; « self-host vs API : le calcul complet, avec mes
-chiffres ».
+**Two technical posts** drawn from the JOURNAL: "the evaluation harness I built, and
+why standard metrics lie"; "self-host vs API: the full calculation, with my
+numbers".
 
-**Une contribution open source** ciblée dans l'écosystème réellement utilisé.
+**One targeted open source contribution** in the ecosystem actually used.
 
-**CV** : tenu par le programme (`~/Roadmaps/program/docs/01-career-strategy.md` §7) et préparé
-par le module R4 de la roadmap Research Engineer ; ce banc fournit les chiffres du bloc
-« production et opérations », pas un CV à part (2026-10-19).
+**CV**: held by the program (`~/Roadmaps/program/docs/01-career-strategy.md` §7) and prepared
+by module R4 of the Research Engineer roadmap; this testbench provides the numbers for the
+"production and operations" block, not a separate CV (2026-10-19).
 
-**Préparation d'entretien** : system design IA chronométré, argumentaire build vs buy sur trois
-briques, et **trois histoires d'incident au format situation-action-résultat chiffré**. Elles
-ne viendront pas d'utilisateurs — il n'y en a pas — mais de la construction elle-même : une
-régression détectée par la porte d'évaluation, une dérive de coût, un juge mal calibré, une
-quantization qui dégrade en silence, un pipeline qui reconstruit tout au lieu de l'incrément.
-Ce sont de vrais incidents ; ils sont tenus à jour dans `JOURNAL.md` au fil de l'eau, jamais
-reconstitués après coup.
+**Interview preparation**: timed AI system design, a build vs buy argument on three
+building blocks, and **three incident stories in quantified situation-action-result
+format**. They will not come from users — there are none — but from the construction itself:
+a regression detected by the evaluation gate, a cost drift, a miscalibrated judge, a
+quantization that silently degrades, a pipeline that rebuilds everything instead of the
+increment. They are real incidents; they are kept up to date in `JOURNAL.md` as they happen,
+never reconstructed after the fact.
 
-**À vérifier à ce moment-là** : le raisonnement sur le mot « pipeline » des offres (2026-10-15)
-repose sur la connaissance générale des offres 2026, pas sur un corpus relu — le confronter à
-de vraies offres.
+**To verify at that point**: the reasoning about the word "pipeline" in job postings
+(2026-10-15) rests on general knowledge of 2026 job postings, not on a reread corpus —
+confront it with real postings.

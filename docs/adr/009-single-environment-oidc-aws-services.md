@@ -1,90 +1,90 @@
-# ADR 009 — Un seul environnement éphémère, déploiement par OIDC, règle d'entrée des services AWS
+# ADR 009 — A single ephemeral environment, deployment via OIDC, entry rule for AWS services
 
-- **Date** : 2026-10-19
-- **Statut** : accepté
+- **Date**: 2026-10-19
+- **Status**: accepted
 
-## Contexte
+## Context
 
-Reprise du projet après un mois d'arrêt, audit du brief et de l'infra à la lumière du
-programme (`~/Roadmaps/program`, PD-18 : ce banc est la preuve pour les missions freelance, et
-Christophe veut monter en compétence sur AWS sans prendre une mauvaise décision d'infra pour
-des raisons pédagogiques). Trois constats :
+Project resumed after a month-long pause, audit of the brief and the infra in light of the
+program (`~/Roadmaps/program`, PD-18: this testbench is the proof for freelance engagements, and
+Christophe wants to build up AWS skills without making a bad infra decision for
+teaching reasons). Three findings:
 
-1. le brief (§4) prévoyait des environnements `dev` et `prod`, héritage de l'époque où le
-   projet était un produit ; un banc sans utilisateurs n'a rien à mettre en production, et un
-   second environnement est un poste dormant et du Terraform sans charge ;
-2. le déploiement était manuel (`make deploy` depuis le poste, décision du 2026-09-03), alors
-   que le mot-clé CI/CD sur AWS est au cœur du positionnement et que la phase 5 (canary,
-   rollback) a besoin d'un mécanisme de déploiement reproductible ;
-3. la demande « utiliser le plus de services AWS possible pour apprendre » n'avait pas de
-   règle : sans règle, on empile (le brief §6 l'interdit), ou on refuse tout.
+1. the brief (§4) planned `dev` and `prod` environments, a legacy of the time when the
+   project was a product; a testbench without users has nothing to put into production, and a
+   second environment is an idle cost item and Terraform without load;
+2. deployment was manual (`make deploy` from the workstation, decision of 2026-09-03), even
+   though the CI/CD-on-AWS keyword is at the heart of the positioning and phase 5 (canary,
+   rollback) needs a reproducible deployment mechanism;
+3. the request "use as many AWS services as possible to learn" had no
+   rule: without a rule, we stack (brief §6 forbids it), or we refuse everything.
 
-S'y ajoute un compromis documenté depuis la phase 1 : le mot de passe RDS traversait l'état
-Terraform pour composer l'URL de la base.
+Added to this is a compromise documented since phase 1: the RDS password went through the
+Terraform state to compose the database URL.
 
-## Options considérées
+## Options considered
 
-**Environnements.** (1) `dev` + `prod` comme écrit — fidèle au brief, mais `prod` n'aurait ni
-trafic ni raison d'être, et doublerait le coût allumé. (2) **Un seul `dev` éphémère** — le
-canary et le shadow de la phase 5 se démontrent dans un cluster (deux releases Helm, un
-routage), pas entre deux environnements ; si un jour une mission exige un vrai `prod`, il se
-crée alors, avec sa raison.
+**Environments.** (1) `dev` + `prod` as written — faithful to the brief, but `prod` would have neither
+traffic nor reason to exist, and would double the running cost. (2) **A single ephemeral `dev`** — the
+canary and the shadow of phase 5 are demonstrated within one cluster (two Helm releases, one
+routing), not between two environments; if some day an engagement requires a real `prod`, it gets
+created then, with its reason.
 
-**Déploiement.** (1) Manuel depuis le poste — simple, non reproductible, pas de trace. (2)
-Clé AWS dans les secrets GitHub — jamais. (3) **GitHub Actions avec rôle OIDC**, déclenché à
-la main (cluster éphémère), runner arm64, build + push ECR + `helm upgrade` — identique à
-`make deploy`, sans secret stocké, tracé dans CloudTrail. (4) GitOps (Argo CD / Flux) — la
-réponse de production quand l'endpoint est privé ; un opérateur de plus sur un cluster détruit
-chaque soir, reporté en phase 5 avec Argo Rollouts.
+**Deployment.** (1) Manual from the workstation — simple, not reproducible, no trace. (2)
+AWS key in GitHub secrets — never. (3) **GitHub Actions with an OIDC role**, triggered
+manually (ephemeral cluster), arm64 runner, build + ECR push + `helm upgrade` — identical to
+`make deploy`, no stored secret, traced in CloudTrail. (4) GitOps (Argo CD / Flux) — the
+production answer when the endpoint is private; one more operator on a cluster destroyed
+every evening, deferred to phase 5 with Argo Rollouts.
 
-**Services AWS.** (1) Minimum (EKS, RDS, ECR, S3, Secrets Manager) et rien d'autre — sûr, mais
-laisse l'apprentissage AWS hors du banc. (2) Maximum « pour apprendre » (Lambda, Step
-Functions, Kendra, OpenSearch Serverless, SageMaker…) — c'est l'empilement que le brief
-interdit, et les services managés de RAG cachent exactement ce que le banc mesure. (3) **Une
-règle d'entrée** : un service AWS entre quand il est la réponse naturelle d'un bloc déjà prévu
-par la roadmap, ou comme bras de comparaison mesuré ; jamais comme chemin unique ; chaque
-service a une implémentation locale équivalente derrière la même abstraction.
+**AWS services.** (1) Minimum (EKS, RDS, ECR, S3, Secrets Manager) and nothing else — safe, but
+leaves AWS learning outside the testbench. (2) Maximum "to learn" (Lambda, Step
+Functions, Kendra, OpenSearch Serverless, SageMaker…) — that is the stacking the brief
+forbids, and managed RAG services hide exactly what the testbench measures. (3) **An
+entry rule**: an AWS service comes in when it is the natural answer to a block already planned
+by the roadmap, or as a measured comparison arm; never as the single path; each
+service has an equivalent local implementation behind the same abstraction.
 
-## Décision
+## Decision
 
 Option 2, option 3, option 3.
 
-- **Un seul environnement `dev`, éphémère.** `CLAUDE.md` §4 corrigé ; `infra/terraform/README.md`
-  ne mentionne plus `envs/prod`.
-- **Déploiement par GitHub Actions et OIDC** : fournisseur OIDC et rôle `llm-testbench-github-deploy`
-  dans le bootstrap (identité de compte, stable, gratuite) ; access entry `AmazonEKSClusterAdminPolicy`
-  dans `envs/dev` ; workflow `deploy.yml` en `workflow_dispatch`, runner `ubuntu-24.04-arm`,
-  qui lit l'adresse de la base et l'ARN de son secret par l'API RDS, jamais par l'état
-  Terraform. La CI de tests reste hors ligne et sans secret (ADR 003). Guide 09.
-- **Conséquence assumée : l'endpoint public du cluster reste ouvert** (`public_access_cidrs`
-  à `0.0.0.0/0`). Les runners GitHub n'ont pas d'IP fixe ; l'accès est authentifié par IAM et
-  journalisé. La restriction à une IP et le pipeline sont exclusifs sans runner dans le VPC ou
-  mode pull ; on choisit le pipeline, et la variable reste pour qui ne déploie que depuis son
-  poste.
-- **L'URL de la base est composée dans le cluster** par un template External Secrets (moteur
-  v2, `urlquery`), à partir du secret géré par RDS ; Terraform ne lit plus le mot de passe.
-  Le secret `database-url` disparaît.
-- **Règle d'entrée des services AWS**, inscrite dans `CLAUDE.md` §4, avec ses premières
-  applications dans les fichiers de phase : Bedrock Knowledge Bases comme bras de comparaison
-  du notebook 4 de la phase 3 ; SQS (abstraction à deux implémentations, Postgres `SKIP
-  LOCKED` en local), ADOT, Karpenter et Cost Anomaly Detection en phase 5 ; un node group GPU
-  sur l'EKS existant comme seconde cible mesurée de la phase 6, si le quota G est accordé
-  (demande à faire dès maintenant) ; Bedrock Guardrails en phase 7 et AgentCore en phase 4,
-  optionnels, décidés au plan de phase. Refusés même pour apprendre : multi-compte et Control
-  Tower, Transit Gateway, Kinesis, Glue, EMR, SageMaker comme plateforme — aucune charge du
-  banc ne les justifie.
+- **A single `dev` environment, ephemeral.** `CLAUDE.md` §4 corrected; `infra/terraform/README.md`
+  no longer mentions `envs/prod`.
+- **Deployment via GitHub Actions and OIDC**: OIDC provider and role `llm-testbench-github-deploy`
+  in the bootstrap (account identity, stable, free); access entry `AmazonEKSClusterAdminPolicy`
+  in `envs/dev`; workflow `deploy.yml` as `workflow_dispatch`, runner `ubuntu-24.04-arm`,
+  which reads the database address and its secret's ARN through the RDS API, never through the
+  Terraform state. The test CI stays offline and without secrets (ADR 003). Guide 09.
+- **Accepted consequence: the cluster's public endpoint stays open** (`public_access_cidrs`
+  at `0.0.0.0/0`). GitHub runners have no fixed IP; access is authenticated by IAM and
+  logged. Restricting to one IP and the pipeline are mutually exclusive without a runner in the VPC or
+  pull mode; we choose the pipeline, and the variable remains for anyone who only deploys from their
+  workstation.
+- **The database URL is composed in the cluster** by an External Secrets template (engine
+  v2, `urlquery`), from the RDS-managed secret; Terraform no longer reads the password.
+  The `database-url` secret disappears.
+- **Entry rule for AWS services**, written into `CLAUDE.md` §4, with its first
+  applications in the phase files: Bedrock Knowledge Bases as comparison arm
+  in notebook 4 of phase 3; SQS (two-implementation abstraction, Postgres `SKIP
+  LOCKED` locally), ADOT, Karpenter and Cost Anomaly Detection in phase 5; a GPU node group
+  on the existing EKS as second measured target of phase 6, if the G quota is granted
+  (request to be made right away); Bedrock Guardrails in phase 7 and AgentCore in phase 4,
+  optional, decided at the phase plan. Refused even for learning: multi-account and Control
+  Tower, Transit Gateway, Kinesis, Glue, EMR, SageMaker as a platform — no load of the
+  testbench justifies them.
 
-## Conséquences
+## Consequences
 
-- Le bootstrap passe de cinq à huit ressources et doit être appliqué avant `envs/dev` (il
-  l'était déjà pour le bucket d'état). Une variable de dépôt GitHub (`AWS_DEPLOY_ROLE_ARN`)
-  à poser une fois.
-- `make deploy` et le workflow font la même chose par deux chemins (`terraform output` /
-  API RDS) ; les deux doivent évoluer ensemble. Un test de rendu du chart avec les valeurs
-  `database.*` est dans `make helm-lint`.
-- La phase 5 hérite de deux obligations : passer `deploy.yml` en `on: push` quand le cluster
-  tournera en continu, et revoir push contre pull (Argo Rollouts pour le canary).
-- La phase 6 hérite d'une colonne de plus dans son tableau (cible AWS contre fournisseur
-  spécialisé) et d'un ADR de choix de cible chiffré à la place de l'ADR de découplage.
-- À revisiter si un contributeur ou un client entre dans le dépôt : environnement GitHub avec
-  approbation, moindre privilège sur le cluster (guide 09, pièges), retour aux PR (ADR 008).
+- The bootstrap goes from five to eight resources and must be applied before `envs/dev` (it
+  already was, for the state bucket). A GitHub repository variable (`AWS_DEPLOY_ROLE_ARN`)
+  to set once.
+- `make deploy` and the workflow do the same thing by two paths (`terraform output` /
+  RDS API); both must evolve together. A chart render test with the
+  `database.*` values is in `make helm-lint`.
+- Phase 5 inherits two obligations: switch `deploy.yml` to `on: push` when the cluster
+  runs continuously, and revisit push versus pull (Argo Rollouts for the canary).
+- Phase 6 inherits one more column in its table (AWS target versus specialized
+  provider) and a quantified target-choice ADR in place of the decoupling ADR.
+- To revisit if a contributor or a client enters the repository: GitHub environment with
+  approval, least privilege on the cluster (guide 09, pitfalls), return to PRs (ADR 008).

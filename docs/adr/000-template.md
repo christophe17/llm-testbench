@@ -1,21 +1,21 @@
-# ADR NNN — Titre
+# ADR NNN — Title
 
-- **Date** : AAAA-MM-JJ
-- **Statut** : proposé | accepté | remplacé par NNN
+- **Date**: YYYY-MM-DD
+- **Status**: proposed | accepted | superseded by NNN
 
-## Contexte
+## Context
 
-Le problème, les contraintes, ce qui force une décision maintenant.
+The problem, the constraints, what forces a decision now.
 
-## Options considérées
+## Options considered
 
-1. **Option A** — pour / contre.
-2. **Option B** — pour / contre.
+1. **Option A** — pros / cons.
+2. **Option B** — pros / cons.
 
-## Décision
+## Decision
 
-Ce qu'on fait, en une phrase, puis le détail utile.
+What we do, in one sentence, then the useful detail.
 
-## Conséquences
+## Consequences
 
-Ce que ça permet, ce que ça coûte, ce qu'il faudra revisiter et quand.
+What it enables, what it costs, what will need revisiting and when.

@@ -1,72 +1,72 @@
-# ADR 007 — Interface `Source`, ingestion et stockage vectoriel
+# ADR 007 — `Source` interface, ingestion and vector storage
 
-- **Date** : 2026-09-03
-- **Statut** : accepté
+- **Date**: 2026-09-03
+- **Status**: accepted
 
-## Contexte
+## Context
 
-Le brief (phase 1) impose une interface `Source` générique dès maintenant — capacités
-déclarées, provenance uniforme, citation homogène quelle que soit l'origine — pour que la
-phase 4 (SQL, API, données structurées, images) soit un branchement et non un refactor. Il
-impose aussi une ingestion « parsing → chunking naïf → embeddings → index pgvector » avec
-métadonnées de traçabilité, et un `/chat` à citations obligatoires et refus explicite. La
-phase 3 produira **plus d'une centaine d'index** (jeu × chunking × embeddings × paramètres)
-sur ce même stockage.
+The brief (phase 1) imposes a generic `Source` interface right now — declared
+capabilities, uniform provenance, homogeneous citation whatever the origin — so that
+phase 4 (SQL, API, structured data, images) is a plug-in and not a refactor. It
+also imposes an ingestion "parsing → naive chunking → embeddings → pgvector index" with
+traceability metadata, and a `/chat` with mandatory citations and explicit refusal. Phase
+3 will produce **more than a hundred indexes** (dataset × chunking × embeddings × parameters)
+on this same storage.
 
-## Options considérées
+## Options considered
 
-**Stockage des vecteurs.**
+**Vector storage.**
 
-1. **Une table d'embeddings unique** avec une colonne `vector` sans dimension fixée.
-   Simple, mais pgvector n'indexe (HNSW) qu'une colonne à dimension fixée : dès qu'on
-   compare deux modèles d'embeddings de dimensions différentes, plus d'index.
-2. **Un index = une table** `emb_<clé>` à dimension fixée, créée par le code, plus une
-   table de registre qui décrit chaque index (jeu, chunker et ses paramètres, modèle
-   d'embeddings, dimension, date). **Retenu** : c'est exactement la matrice d'expériences
-   de la phase 3, et le *lineage* de chaque chiffre commence ici.
-3. Un service vectoriel dédié (Qdrant, Weaviate). Refusé par le brief : Postgres + pgvector.
+1. **A single embeddings table** with a `vector` column of unfixed dimension.
+   Simple, but pgvector only indexes (HNSW) a column of fixed dimension: as soon as we
+   compare two embedding models of different dimensions, no more index.
+2. **One index = one table** `emb_<key>` of fixed dimension, created by the code, plus a
+   registry table that describes each index (dataset, chunker and its parameters, embedding
+   model, dimension, date). **Selected**: it is exactly the experiment matrix
+   of phase 3, and the *lineage* of each number starts here.
+3. A dedicated vector service (Qdrant, Weaviate). Refused by the brief: Postgres + pgvector.
 
-**Forme de la réponse de `/chat`.**
+**Shape of the `/chat` response.**
 
-1. **Sortie structurée** (`{answer, citations, refused}`) : propre, mesurable, mais
-   incompatible avec le streaming de tokens (un JSON ne se lit pas à moitié).
-2. **Texte avec marqueurs `[n]` et phrase-sentinelle de refus**, parsés après coup, pour
-   les deux transports (JSON et SSE). **Retenu** : un seul prompt, un seul parseur, deux
-   transports ; le refus reste explicite et mesurable (taux de refus correct/abusif en
-   phase 2). Les sorties structurées de l'ADR 006 servent l'extraction (phase 4), pas le
+1. **Structured output** (`{answer, citations, refused}`): clean, measurable, but
+   incompatible with token streaming (half a JSON cannot be read).
+2. **Text with `[n]` markers and a refusal sentinel sentence**, parsed afterwards, for
+   both transports (JSON and SSE). **Selected**: one prompt, one parser, two
+   transports; the refusal stays explicit and measurable (correct/unwarranted refusal rate in
+   phase 2). The structured outputs of ADR 006 serve extraction (phase 4), not the
    chat.
 
-**Chunking.** Découpage récursif par séparateurs (paragraphe → ligne → phrase → mot), en
-caractères, avec chevauchement. Volontairement naïf : c'est la baseline que la phase 3
-doit battre. Réimplémenté (~60 lignes) plutôt qu'importé : le notebook doit pouvoir le
-lire en entier.
+**Chunking.** Recursive splitting by separators (paragraph → line → sentence → word), in
+characters, with overlap. Deliberately naive: it is the baseline phase 3
+must beat. Reimplemented (~60 lines) rather than imported: the notebook must be able to
+read it in full.
 
-## Décision
+## Decision
 
-- **Types** (`sources/types.py`) : `Provenance` (clé de source, identifiant de document,
-  identifiant de chunk, localisateur lisible, titre, URI, empreinte du texte, date
-  d'ingestion), `Evidence` (texte, score, rang, provenance), `Citation` (numéro, libellé
-  homogène `[n] source › document › localisateur`, provenance), `SearchQuery` (texte, k,
-  filtres, **classe de données** — l'embedding de la question part dehors aussi).
-- **Protocole `Source`** : `key`, `kind`, `capabilities` (ensemble déclaré : recherche,
-  récupération par identifiant, filtrage… étendu en phase 4 par SQL, API), `search()`,
-  `fetch()`. Une seule implémentation en phase 1 : `DocumentSource` sur pgvector.
-- **Ingestion** (`ingest/`) : `ParsedDocument` en sections (texte, markdown, et le texte
-  intégral QASPER déjà sectionné — pas de PDF en phase 1, ADR de phase 3) ; `Chunk` avec
-  identifiant déterministe, empreinte et position ; `RecursiveChunker` ; pipeline qui
-  embarque par lots via `LLMClient.embed` (gouvernance et coût inclus) et écrit dans
-  Postgres ; idempotence par empreinte de chunk et par index.
-- **Schéma Postgres** (`ingest/sql/`) : `documents`, `chunks`, `indexes` (registre), et une
-  table `emb_<clé>` par index avec `vector(dim)` et index HNSW cosinus. Création
-  idempotente au démarrage.
-- **Recherche** : distance cosinus pgvector (`<=>`), score = 1 − distance, `k` borné.
-- **Réponse** : prompt versionné `chat_answer` (citations `[n]` obligatoires, sentinelle
-  de refus exacte), parseur commun aux deux transports.
+- **Types** (`sources/types.py`): `Provenance` (source key, document identifier,
+  chunk identifier, human-readable locator, title, URI, text hash, ingestion
+  date), `Evidence` (text, score, rank, provenance), `Citation` (number, homogeneous
+  label `[n] source › document › locator`, provenance), `SearchQuery` (text, k,
+  filters, **data class** — the question's embedding goes out too).
+- **`Source` protocol**: `key`, `kind`, `capabilities` (declared set: search,
+  fetch by identifier, filtering… extended in phase 4 by SQL, API), `search()`,
+  `fetch()`. A single implementation in phase 1: `DocumentSource` on pgvector.
+- **Ingestion** (`ingest/`): `ParsedDocument` in sections (text, markdown, and the
+  QASPER full text already sectioned — no PDF in phase 1, phase 3 ADR); `Chunk` with
+  deterministic identifier, hash and position; `RecursiveChunker`; pipeline that
+  embeds in batches via `LLMClient.embed` (governance and cost included) and writes to
+  Postgres; idempotence by chunk hash and by index.
+- **Postgres schema** (`ingest/sql/`): `documents`, `chunks`, `indexes` (registry), and one
+  `emb_<key>` table per index with `vector(dim)` and a cosine HNSW index. Idempotent
+  creation at startup.
+- **Search**: pgvector cosine distance (`<=>`), score = 1 − distance, bounded `k`.
+- **Response**: versioned prompt `chat_answer` (mandatory `[n]` citations, exact refusal
+  sentinel), parser shared by both transports.
 
-## Conséquences
+## Consequences
 
-Chaque ligne du futur tableau maître pourra citer sa clé d'index, donc son chunker, son
-modèle et sa date. Le coût : une table par index (des dizaines, puis des centaines), ce
-qui est le prix d'une matrice d'expériences honnête et que Postgres supporte sans peine.
-Les tests de stockage exigent une base ; ils sont marqués `db` et sautés sans
-`LLM_TESTBENCH_DATABASE_URL` (CI hors ligne inchangée), exécutés localement sur le k3d.
+Each row of the future master table will be able to cite its index key, hence its chunker, its
+model and its date. The cost: one table per index (dozens, then hundreds),
+which is the price of an honest experiment matrix and which Postgres handles with ease.
+Storage tests require a database; they are marked `db` and skipped without
+`LLM_TESTBENCH_DATABASE_URL` (offline CI unchanged), run locally on k3d.

@@ -1,84 +1,84 @@
-# Guide 09 — Déploiement par GitHub Actions et OIDC : build arm64, ECR, Helm, sans clé
+# Guide 09 — Deployment with GitHub Actions and OIDC: arm64 build, ECR, Helm, no key
 
-**Durée** : 20 minutes dont 5 d'attente de workflow. **Prérequis** : guides 00 (bootstrap
-appliqué, avec `github.tf`), 03 (cluster allumé) et 05 (secrets posés). **Coût** : 0 € (les
-minutes GitHub Actions sont gratuites sur un dépôt public ; le cluster, lui, coûte ce qu'il
-coûte — guide 08). **Code** : `infra/terraform/bootstrap/github.tf`,
-`infra/terraform/envs/dev/eks.tf` (`access_entries`), `.github/workflows/deploy.yml`, cibles
-`make deploy` et `make deploy-trigger`.
+**Duration**: 20 minutes, 5 of them waiting for the workflow. **Prerequisites**: guides 00
+(bootstrap applied, with `github.tf`), 03 (cluster up) and 05 (secrets set). **Cost**: €0 (GitHub
+Actions minutes are free on a public repository; the cluster costs what it
+costs — guide 08). **Code**: `infra/terraform/bootstrap/github.tf`,
+`infra/terraform/envs/dev/eks.tf` (`access_entries`), `.github/workflows/deploy.yml`, the
+`make deploy` and `make deploy-trigger` targets.
 
 ---
 
-## Le problème
+## The problem
 
-`make deploy` fonctionne, mais il fonctionne *depuis votre poste* : avec vos identifiants, votre
-Docker, votre `kubectl`. Un pipeline de déploiement doit faire la même chose depuis une machine
-qui n'a rien, et qui ne doit surtout pas recevoir une clé AWS à durée de vie illimitée dans un
-secret GitHub : c'est la fuite la plus classique de l'industrie (un `print(os.environ)` dans
-un log de CI). La question n'est pas « comment déployer depuis la CI », c'est **comment la CI
-prouve qui elle est** sans clé.
+`make deploy` works, but it works *from your workstation*: with your credentials, your
+Docker, your `kubectl`. A deployment pipeline must do the same thing from a machine
+that has nothing, and that above all must not receive an AWS key with an unlimited lifetime
+in a GitHub secret: that is the most classic leak in the industry (a `print(os.environ)` in
+a CI log). The question is not "how to deploy from CI", it is **how CI
+proves who it is** without a key.
 
-## Les options
+## The options
 
 | Option | Verdict |
 |---|---|
-| Clé d'accès AWS dans les secrets GitHub | Jamais : clé longue durée, visible de tout workflow du dépôt, sans trace de *quel* job l'a utilisée. |
-| **OIDC : GitHub émet un jeton signé, AWS l'échange contre un rôle** | **Retenu** : identifiants temporaires (une heure), rôle limité au dépôt et à la branche, chaque assume-role dans CloudTrail avec le `sub` du jeton. Zéro secret stocké. |
-| Déploiement en mode pull (GitOps : Argo CD, Flux) | La réponse de production quand l'endpoint du cluster est privé : rien n'entre, le cluster tire. Un opérateur de plus sur un cluster éphémère ; noté pour la phase 5 (canary, Argo Rollouts). |
-| Runner auto-hébergé dans le VPC | Résout l'endpoint privé, ajoute une machine à opérer. Non. |
+| AWS access key in GitHub secrets | Never: long-lived key, visible to every workflow in the repository, with no trace of *which* job used it. |
+| **OIDC: GitHub issues a signed token, AWS exchanges it for a role** | **Chosen**: temporary credentials (one hour), role restricted to the repository and the branch, every assume-role in CloudTrail with the token's `sub`. Zero stored secrets. |
+| Pull-mode deployment (GitOps: Argo CD, Flux) | The production answer when the cluster endpoint is private: nothing comes in, the cluster pulls. One more operator on an ephemeral cluster; noted for phase 5 (canary, Argo Rollouts). |
+| Self-hosted runner in the VPC | Solves the private endpoint, adds a machine to operate. No. |
 
-## Lecture guidée du code réel
+## Guided reading of the real code
 
-**[`github.tf`](../../infra/terraform/bootstrap/github.tf)** — trois ressources, dans le
-bootstrap parce qu'elles sont des identités de compte, stables, gratuites, et qu'elles doivent
-survivre au `make infra-down` du soir :
+**[`github.tf`](../../infra/terraform/bootstrap/github.tf)** — three resources, in the
+bootstrap because they are account identities, stable, free, and they must
+survive the evening's `make infra-down`:
 
-- `aws_iam_openid_connect_provider.github` : AWS apprend à faire confiance aux jetons signés
-  par `token.actions.githubusercontent.com`, pour l'audience `sts.amazonaws.com`. Un seul par
-  compte (l'URL est la clé) : si un autre projet l'a déjà créé, importez-le au lieu de le
-  recréer.
-- `github_deploy_trust` : la politique de confiance du rôle. Deux conditions, et c'est tout le
-  modèle de sécurité : l'audience, et le `sub` du jeton qui doit valoir
-  `repo:christophe17/llm-testbench:ref:refs/heads/main`. **Ni un fork, ni une pull request, ni
-  une autre branche** ne peut assumer ce rôle — le `sub` d'une PR est
-  `repo:...:pull_request`, celui d'une branche `ref:refs/heads/<nom>`.
-- `github_deploy` : la politique du rôle, au plus juste. `ecr:GetAuthorizationToken` sur `*`
-  (l'API ne connaît pas plus fin), push sur **le** dépôt `llm-testbench-api` et rien d'autre,
-  `eks:DescribeCluster` sur **le** cluster (c'est ce que fait `update-kubeconfig`), et
-  `rds:DescribeDBInstances` sur **l'**instance, pour lire l'adresse de la base et l'ARN de son
-  secret sans toucher à l'état Terraform. Pas de `terraform` dans le pipeline : il déploie une
-  image, il ne gère pas l'infra.
+- `aws_iam_openid_connect_provider.github`: AWS learns to trust tokens signed
+  by `token.actions.githubusercontent.com`, for the audience `sts.amazonaws.com`. Only one per
+  account (the URL is the key): if another project has already created it, import it instead
+  of recreating it.
+- `github_deploy_trust`: the role's trust policy. Two conditions, and that is the whole
+  security model: the audience, and the token's `sub`, which must equal
+  `repo:christophe17/llm-testbench:ref:refs/heads/main`. **Neither a fork, nor a pull request,
+  nor another branch** can assume this role — a PR's `sub` is
+  `repo:...:pull_request`, a branch's is `ref:refs/heads/<name>`.
+- `github_deploy`: the role's policy, kept as tight as possible. `ecr:GetAuthorizationToken`
+  on `*` (the API knows nothing finer), push to **the** `llm-testbench-api` repository and
+  nothing else, `eks:DescribeCluster` on **the** cluster (that is what `update-kubeconfig`
+  does), and `rds:DescribeDBInstances` on **the** instance, to read the database address and
+  its secret's ARN without touching the Terraform state. No `terraform` in the pipeline: it
+  deploys an image, it does not manage the infra.
 
-**[`eks.tf`](../../infra/terraform/envs/dev/eks.tf)**, bloc `access_entries` — IAM dit *qui*
-peut appeler l'API EKS, pas ce qu'on peut faire *dans* Kubernetes. L'access entry associe l'ARN
-du rôle (reconstruit à partir de son nom, puisque le bootstrap et `envs/dev` n'ont pas d'état
-commun) à la politique `AmazonEKSClusterAdminPolicy` sur tout le cluster. C'est trop pour un
-`helm upgrade` dans un namespace, et c'est assumé pour un cluster de dev à un seul locataire ;
-la réponse de moindre privilège est dans les pièges.
+**[`eks.tf`](../../infra/terraform/envs/dev/eks.tf)**, `access_entries` block — IAM says *who*
+can call the EKS API, not what one can do *inside* Kubernetes. The access entry maps the ARN
+of the role (rebuilt from its name, since the bootstrap and `envs/dev` share no
+state) to the `AmazonEKSClusterAdminPolicy` policy on the whole cluster. That is too much for a
+`helm upgrade` in one namespace, and it is a deliberate choice for a single-tenant dev cluster;
+the least-privilege answer is in the pitfalls.
 
-**[`deploy.yml`](../../.github/workflows/deploy.yml)** — ce que fait `make deploy`, étape par
-étape, avec trois différences :
+**[`deploy.yml`](../../.github/workflows/deploy.yml)** — what `make deploy` does, step by
+step, with these differences:
 
-- `on: workflow_dispatch` seulement : le cluster est éphémère, un déploiement automatique à
-  chaque push échouerait le soir. `concurrency: deploy-dev` : jamais deux déploiements
-  entrelacés.
-- `permissions: id-token: write` : c'est ce qui autorise le job à demander un jeton OIDC.
-  Sans cette ligne, `configure-aws-credentials` échoue avec un message qui parle de tout sauf
-  de ça. `vars.AWS_DEPLOY_ROLE_ARN` est une *variable* de dépôt, pas un secret : un ARN n'est
-  pas confidentiel.
-- `runs-on: ubuntu-24.04-arm` : un runner arm64, gratuit pour un dépôt public. L'image est
-  construite nativement pour les nœuds Graviton, sans QEMU (dix fois plus lent, et des
-  surprises sur les roues Python).
-- Les paramètres de la base (`aws rds describe-db-instances`) sont passés au chart comme
-  `make deploy` le fait depuis `terraform output` : deux chemins, les mêmes valeurs, et le
-  mot de passe n'est lu par aucun des deux (guide 05).
-- `rollout status` est en `continue-on-error` : la readiness refuse tant que l'index n'existe
-  pas dans RDS (guide 04). Le workflow constate l'état des pods, il ne décide pas à votre
-  place qu'un déploiement a échoué.
+- `on: workflow_dispatch` only: the cluster is ephemeral, an automatic deployment on
+  every push would fail in the evening. `concurrency: deploy-dev`: never two interleaved
+  deployments.
+- `permissions: id-token: write`: this is what allows the job to request an OIDC token.
+  Without this line, `configure-aws-credentials` fails with a message that talks about
+  everything except that. `vars.AWS_DEPLOY_ROLE_ARN` is a repository *variable*, not a secret:
+  an ARN is not confidential.
+- `runs-on: ubuntu-24.04-arm`: an arm64 runner, free for a public repository. The image is
+  built natively for the Graviton nodes, without QEMU (ten times slower, and
+  surprises with Python wheels).
+- The database parameters (`aws rds describe-db-instances`) are passed to the chart the way
+  `make deploy` does it from `terraform output`: two paths, the same values, and the
+  password is read by neither of them (guide 05).
+- `rollout status` is `continue-on-error`: readiness refuses as long as the index does not
+  exist in RDS (guide 04). The workflow reports the state of the pods, it does not decide on
+  your behalf that a deployment failed.
 
-## Exécution
+## Run
 
-**1. Poser l'ARN du rôle dans le dépôt** (une fois, après le bootstrap) :
+**1. Set the role ARN in the repository** (once, after the bootstrap):
 
 ```bash
 ROLE_ARN=$(cd infra/terraform/bootstrap && terraform output -raw github_deploy_role_arn)
@@ -86,122 +86,122 @@ gh variable set AWS_DEPLOY_ROLE_ARN --body "$ROLE_ARN"
 gh variable list
 ```
 
-**2. Vérifier que le cluster connaît le rôle** (environnement allumé) :
+**2. Check that the cluster knows the role** (environment up):
 
 ```bash
 aws eks list-access-entries --cluster-name llm-testbench-dev --output table
 ```
 
-Attendu : votre identité (créateur du cluster) et le rôle `llm-testbench-github-deploy`.
+Expected: your identity (cluster creator) and the `llm-testbench-github-deploy` role.
 
-**3. Déclencher et suivre** :
+**3. Trigger and follow**:
 
 ```bash
 make deploy-trigger                 # gh workflow run deploy.yml --ref main
-gh run watch                        # ou : gh run list --workflow=deploy.yml
+gh run watch                        # or: gh run list --workflow=deploy.yml
 ```
 
-Attendu, dans le journal du job : `Assumed role: arn:aws:sts::<compte>:assumed-role/
-llm-testbench-github-deploy/GitHubActions`, un push ECR avec le tag = 7 caractères du SHA,
-`Release "api" has been upgraded`, puis les pods. Si l'index n'est pas encore dans RDS, le
-rollout expire et le job reste vert avec l'avertissement : c'est voulu.
+Expected, in the job log: `Assumed role: arn:aws:sts::<account>:assumed-role/
+llm-testbench-github-deploy/GitHubActions`, an ECR push with the tag = the first 7 characters
+of the SHA, `Release "api" has been upgraded`, then the pods. If the index is not yet in RDS,
+the rollout times out and the job stays green with the warning: this is intended.
 
-**4. Lire la trace côté AWS** — c'est l'intérêt de l'OIDC :
+**4. Read the trace on the AWS side** — that is the whole point of OIDC:
 
 ```bash
 aws cloudtrail lookup-events --lookup-attribute AttributeKey=EventName,AttributeValue=AssumeRoleWithWebIdentity \
   --max-results 3 --query 'Events[].{time:EventTime,who:Username}' --output table
 ```
 
-Attendu : une ligne par exécution du workflow, avec `GitHubActions` comme nom de session.
-CloudTrail garde aussi le `sub` du jeton dans le détail de l'événement : on sait quel dépôt
-et quelle branche ont déployé, ce qu'une clé partagée ne dira jamais.
+Expected: one line per workflow run, with `GitHubActions` as the session name.
+CloudTrail also keeps the token's `sub` in the event detail: you know which repository
+and which branch deployed, something a shared key will never tell you.
 
-**5. Déployer un rollback** : relancez le workflow sur un commit antérieur (`gh workflow run
-deploy.yml --ref <sha>`)… et constatez qu'il est refusé : le `sub` d'un SHA n'est pas celui de
-`main`. Le rollback se fait par un `git revert` poussé sur `main`, puis le workflow. C'est une
-contrainte choisie : on ne déploie que ce qui est sur la branche.
+**5. Deploy a rollback**: rerun the workflow on an earlier commit (`gh workflow run
+deploy.yml --ref <sha>`)… and observe that it is refused: the `sub` of a SHA is not that of
+`main`. A rollback is done with a `git revert` pushed to `main`, then the workflow. It is a
+chosen constraint: we only deploy what is on the branch.
 
-## Les pièges
+## Pitfalls
 
-- **L'endpoint public du cluster reste ouvert** (`public_access_cidrs = ["0.0.0.0/0"]`) : les
-  runners GitHub n'ont pas d'IP fixe, et EKS n'accepte qu'une poignée de CIDR. L'accès est
-  authentifié par IAM et journalisé ; ce n'est pas une porte ouverte, c'est une porte avec un
-  badge. La vraie fermeture passe par le mode pull (GitOps) ou un runner dans le VPC — et le
-  jour où elle est faite, `make deploy` depuis votre poste doit passer par la même voie.
-- **Le moindre privilège sur le cluster** : `AmazonEKSEditPolicy` limitée au namespace
-  `llm-testbench` ne suffit pas, parce que le workflow crée le namespace (ressource de
-  cluster) et des `ExternalSecret` (CRD, hors des rôles `edit` standard sauf agrégation).
-  La réponse propre : namespace créé par Terraform ou `cluster-addons`, politique `Edit` sur le
-  namespace, et un `ClusterRole` agrégé pour `external-secrets.io` — trois pièces pour un
-  cluster à un seul utilisateur. Noté, pas fait.
-- **`id-token: write` manquant** : l'erreur dit « Credentials could not be loaded » ou parle
-  d'audience. Vérifiez d'abord le bloc `permissions`.
-- **Le `sub` doit correspondre exactement** : un workflow déclenché sur une autre branche, ou
-  avec un `environment:` GitHub, change le `sub` (`repo:...:environment:dev`). La politique de
-  confiance est le seul endroit qui le dit.
-- **Les empreintes du fournisseur OIDC** : AWS ne s'en sert plus pour GitHub (chaîne de
-  confiance publique), mais la ressource Terraform les exige. Si GitHub change de certificat
-  intermédiaire, rien ne casse ; si la liste est vide, l'apply échoue.
-- **Un fournisseur OIDC par URL et par compte** : un second `terraform apply` depuis un autre
-  projet échoue avec `EntityAlreadyExists`. On importe (`terraform import ... <arn>`), on ne
-  duplique pas.
-- **`rollout status` vert ne veut pas dire « ça marche »** : il dit que les pods sont prêts.
-  `/readyz` et `/sources` (guide 04) disent si l'API répond vraiment.
+- **The cluster's public endpoint stays open** (`public_access_cidrs = ["0.0.0.0/0"]`): GitHub
+  runners have no fixed IP, and EKS accepts only a handful of CIDRs. Access is
+  authenticated by IAM and logged; it is not an open door, it is a door with a
+  badge reader. Truly closing it goes through pull mode (GitOps) or a runner in the VPC — and
+  the day that is done, `make deploy` from your workstation must go through the same path.
+- **Least privilege on the cluster**: `AmazonEKSEditPolicy` scoped to the `llm-testbench`
+  namespace is not enough, because the workflow creates the namespace (a cluster
+  resource) and `ExternalSecret`s (a CRD, outside the standard `edit` roles unless aggregated).
+  The clean answer: namespace created by Terraform or `cluster-addons`, `Edit` policy on the
+  namespace, and an aggregated `ClusterRole` for `external-secrets.io` — three pieces for a
+  single-user cluster. Noted, not done.
+- **Missing `id-token: write`**: the error says "Credentials could not be loaded" or talks
+  about the audience. Check the `permissions` block first.
+- **The `sub` must match exactly**: a workflow triggered on another branch, or
+  with a GitHub `environment:`, changes the `sub` (`repo:...:environment:dev`). The trust
+  policy is the only place that says so.
+- **The OIDC provider's thumbprints**: AWS no longer uses them for GitHub (public chain of
+  trust), but the Terraform resource requires them. If GitHub changes its intermediate
+  certificate, nothing breaks; if the list is empty, the apply fails.
+- **One OIDC provider per URL and per account**: a second `terraform apply` from another
+  project fails with `EntityAlreadyExists`. You import it (`terraform import ... <arn>`), you
+  do not duplicate it.
+- **A green `rollout status` does not mean "it works"**: it says the pods are ready.
+  `/readyz` and `/sources` (guide 04) say whether the API really responds.
 
-## Questions d'entretien
+## Interview questions
 
-<details><summary><b>1. Comment une CI s'authentifie-t-elle auprès d'un cloud sans clé stockée ?</b></summary>
+<details><summary><b>1. How does a CI system authenticate to a cloud without a stored key?</b></summary>
 
-Par fédération d'identité : la CI émet un jeton OIDC signé qui décrit le job (dépôt, branche,
-déclencheur), le cloud a été configuré pour faire confiance à cet émetteur, et échange le jeton
-contre des identifiants temporaires d'un rôle dont la politique de confiance filtre sur les
-claims du jeton. Rien n'est stocké ; chaque échange est journalisé avec l'identité du job.
+Through identity federation: the CI issues a signed OIDC token that describes the job
+(repository, branch, trigger), the cloud has been configured to trust that issuer, and it
+exchanges the token for temporary credentials of a role whose trust policy filters on the
+token's claims. Nothing is stored; every exchange is logged with the job's identity.
 </details>
 
-<details><summary><b>2. Que mettez-vous dans la politique de confiance, et pourquoi le `sub` ?</b></summary>
+<details><summary><b>2. What do you put in the trust policy, and why the `sub`?</b></summary>
 
-L'audience (`sts.amazonaws.com`) et le `sub`, qui encode dépôt + référence. Sans condition sur
-le `sub`, n'importe quel dépôt GitHub au monde pourrait assumer le rôle : le fournisseur OIDC
-est le même pour tous. C'est l'erreur de configuration la plus fréquente de ce mécanisme.
+The audience (`sts.amazonaws.com`) and the `sub`, which encodes repository + ref. Without a
+condition on the `sub`, any GitHub repository in the world could assume the role: the OIDC
+provider is the same for everyone. It is the most frequent misconfiguration of this mechanism.
 </details>
 
-<details><summary><b>3. IAM contre RBAC Kubernetes : qui décide quoi ?</b></summary>
+<details><summary><b>3. IAM versus Kubernetes RBAC: who decides what?</b></summary>
 
-IAM décide qui peut *parler* à l'API EKS (`eks:DescribeCluster` pour obtenir le kubeconfig,
-puis le jeton signé par IAM). Les access entries, ou l'ancien `aws-auth`, font le pont : elles
-associent une identité IAM à des droits Kubernetes (politiques EKS prédéfinies ou groupes RBAC).
-Ensuite, c'est RBAC Kubernetes qui décide de chaque verbe sur chaque ressource.
+IAM decides who can *talk* to the EKS API (`eks:DescribeCluster` to obtain the kubeconfig,
+then the IAM-signed token). Access entries, or the old `aws-auth`, bridge the two: they
+map an IAM identity to Kubernetes rights (predefined EKS policies or RBAC groups).
+After that, Kubernetes RBAC decides on every verb for every resource.
 </details>
 
-<details><summary><b>4. Push ou pull pour déployer sur un cluster ?</b></summary>
+<details><summary><b>4. Push or pull to deploy to a cluster?</b></summary>
 
-Push (ce workflow) : la CI pousse une release dans le cluster ; simple, mais la CI a besoin
-d'un accès réseau et de droits sur le cluster. Pull (GitOps) : un opérateur dans le cluster
-observe un dépôt ou un registre et réconcilie ; le cluster n'expose rien, l'état désiré est
-dans git, et le drift se voit. À un seul service et un cluster éphémère, push ; dès qu'il y a
-plusieurs environnements ou un endpoint privé, pull.
+Push (this workflow): the CI pushes a release into the cluster; simple, but the CI needs
+network access and rights on the cluster. Pull (GitOps): an operator in the cluster
+watches a repository or a registry and reconciles; the cluster exposes nothing, the desired
+state is in git, and drift is visible. With a single service and an ephemeral cluster, push;
+as soon as there are several environments or a private endpoint, pull.
 </details>
 
-<details><summary><b>5. Pourquoi l'image est-elle construite sur un runner arm64 ?</b></summary>
+<details><summary><b>5. Why is the image built on an arm64 runner?</b></summary>
 
-Parce que les nœuds sont Graviton (arm64). Une image amd64 ne démarre pas (`exec format
-error`) ; une construction croisée sous QEMU marche mais prend dix fois plus de temps et
-tombe sur des roues Python sans variante arm64. Le runner natif supprime le problème, et c'est
-aussi ce que vous avez sur un Mac Apple Silicon : une seule architecture de bout en bout.
+Because the nodes are Graviton (arm64). An amd64 image does not start (`exec format
+error`); a cross-build under QEMU works but takes ten times longer and
+runs into Python wheels with no arm64 variant. The native runner removes the problem, and it
+is also what you have on an Apple Silicon Mac: a single architecture end to end.
 </details>
 
-## Ce qu'on n'a pas fait, et pourquoi
+## What we did not do, and why
 
-- **Pas de GitOps (Argo CD, Flux)** : un opérateur de plus sur un cluster qu'on détruit tous
-  les soirs ; revu en phase 5 avec le canary (Argo Rollouts), qui en a vraiment besoin.
-- **Pas d'environnement GitHub avec approbation** : un seul humain ; la protection serait
-  théâtrale. Le jour où un second contributeur arrive, `environment: dev` avec relecteur
-  obligatoire, et le `sub` de la politique de confiance change avec (pièges).
-- **Pas de signature d'image (cosign) ni de SBOM** : rien ne consomme la signature ; à
-  faire quand une politique d'admission (Kyverno) la vérifiera. Le scan ECR à la poussée,
-  lui, est actif (guide 03).
-- **Pas de déploiement automatique sur push** : le cluster n'est pas toujours là. Quand il
-  le sera (phase 5, trafic synthétique continu), ce workflow gagne un `on: push` et un
-  `paths:` sur `src/`, `infra/helm/`, `Dockerfile`.
-- **Pas de restriction de l'endpoint à une IP** : voir les pièges, et ADR 009.
+- **No GitOps (Argo CD, Flux)**: one more operator on a cluster we destroy every
+  evening; revisited in phase 5 with the canary (Argo Rollouts), which really needs it.
+- **No GitHub environment with approval**: a single human; the protection would be
+  theater. The day a second contributor arrives, `environment: dev` with a required
+  reviewer, and the `sub` in the trust policy changes with it (pitfalls).
+- **No image signing (cosign) or SBOM**: nothing consumes the signature; to
+  do when an admission policy (Kyverno) verifies it. ECR scan on push, on the other hand,
+  is active (guide 03).
+- **No automatic deployment on push**: the cluster is not always there. When it
+  is (phase 5, continuous synthetic traffic), this workflow gains an `on: push` and a
+  `paths:` on `src/`, `infra/helm/`, `Dockerfile`.
+- **No restriction of the endpoint to an IP**: see the pitfalls, and ADR 009.
