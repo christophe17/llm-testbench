@@ -44,7 +44,7 @@ course; the testbench proves nothing until phase 1 is studied and run.
 ## Remaining in phase 1 (Christophe's actions)
 
 1. Review phase 1 on `main` (merged on 2026-10-16 without a formal review of PR #3);
-   the reading order, blocks 0 to 5, is in `docs/reading-order.md` (2026-10-20).
+   what to read for phases 0 and 1 is in `docs/reading-order.md`.
 2. `.env` with the keys (`.env.example`) → `make ingest-scifact`, `make api` or `tilt up`,
    `make notebooks-full` ("real provider" section of notebook 1, real embeddings and real
    generation of notebook 2), `make bench-embeddings` (adds text-embedding-3-small).
