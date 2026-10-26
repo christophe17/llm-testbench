@@ -472,3 +472,34 @@ over every tracked file), no broken relative link.
 
 **Next**: update PD-5 in the program (`STATE.md`, decisions awaiting a call); Christophe's
 actions (`STATE.md`); then `GO PHASE 2`.
+
+## 2026-10-26 — `.env` had two half-readers
+
+**Trigger**: `make ingest-scifact` with a filled `.env` stopped on
+`MissingCredentialsError: OPENAI_API_KEY missing`, after finding the database URL in the same
+file.
+
+**Cause**: pydantic-settings read `.env` for the `LLM_TESTBENCH_*` fields only; the provider
+keys are plain environment variables, read by the backend registry at call time and never
+stored (ADR 006), and nothing exported them. Guide 01 compensated with a
+`set -a; source .env; set +a` line before the ingestion, the two phase 1 notebooks with an
+inline loop: three partial answers to one question.
+
+**Done**: `load_env_file()` in `config.py` (comments, `export`, quotes, empty values skipped,
+the environment wins unless `override`, no-op without file or repository root), called by the
+three entry points: `ingest.cli`, `embeddings_bench`, and `create_app()` when the settings come
+from the environment. `Settings` no longer reads `.env` itself: one file, one reader. The
+uvicorn target `main:app` is now built on first access (module `__getattr__`, PEP 562) instead
+of at import; importing the module from the tests used to build an app from the developer's
+`.env`, which configured a trace exporter towards a Langfuse that was not running and, with the
+new loader, would have exported the keys into the test process (the 6 `db` tests silently ran
+against the local database for that reason). Tests in `tests/test_config.py`; `.env.example`
+and guide 01 updated. Verified: `make check` green (159 passed, 6 `db` skipped), then the
+ingestion end to end — 5,183 documents, 10,453 chunks embedded in 164 calls, 1.67 M tokens,
+$0.033, 194 s; the 32 documents and 7 chunks already stored by the failed run and by a
+3-document trial were not redone (ADR 007 idempotence).
+
+**Left out**: the notebooks' inline `.env` loop still duplicates `load_env_file()` (contract
+§2.B.1: the notebook implements nothing); to replace with an import at the next re-execution.
+`make notebooks-ci` not rerun: the notebooks never relied on pydantic's `env_file` (their
+working directory is not the repository root), so the change does not reach them.

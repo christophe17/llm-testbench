@@ -18,7 +18,7 @@ from opentelemetry import trace
 from llm_testbench.app.chat import ChatService
 from llm_testbench.app.schemas import ChatRequest, ChatResponse, ErrorOut, SourceOut
 from llm_testbench.app.sse import SSE_HEADERS, until_disconnected
-from llm_testbench.config import Settings, get_settings
+from llm_testbench.config import Settings, get_settings, load_env_file
 from llm_testbench.generation.answer import AnswerBuilder
 from llm_testbench.ingest.store import PgVectorStore
 from llm_testbench.llm.client import LLMClient
@@ -91,7 +91,9 @@ def create_app(
     source: Source | None = None,
     tracer: trace.Tracer | None = None,
 ) -> FastAPI:
-    settings = settings if settings is not None else get_settings()
+    if settings is None:
+        load_env_file()  # local run: .env at the repository root; a no-op in the image
+        settings = get_settings()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncIterator[None]:
@@ -207,4 +209,17 @@ class ServiceUnavailable(RuntimeError):
     """The API is running but cannot answer (database missing, index not built)."""
 
 
-app = create_app()
+def __getattr__(name: str) -> FastAPI:
+    """``llm_testbench.app.main:app``, the uvicorn target, built on first access (PEP 562).
+
+    A module-level ``app = create_app()`` would run at import, and ``create_app()`` without
+    arguments reads the environment and ``.env``: importing this module from the tests or a
+    notebook would then export the developer's keys into the process and configure a trace
+    exporter. uvicorn's ``--factory`` flag is the other way out; this one keeps the target
+    string unchanged in the Dockerfile, the chart and the Makefile.
+    """
+    if name == "app":
+        application = create_app()
+        globals()["app"] = application
+        return application
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

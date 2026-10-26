@@ -22,6 +22,7 @@ from typing import Any, cast
 import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
+from llm_testbench.config import load_env_file
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.embeddings import EmbeddingRequest
 from llm_testbench.llm.governance import DataClass
@@ -246,6 +247,7 @@ DEFAULT_MODELS = (
 
 
 def main(argv: list[str] | None = None) -> int:
+    load_env_file()  # .env at the repository root; the environment wins
     parser = argparse.ArgumentParser(description="Compare embedding models on SciFact.")
     parser.add_argument("--models", nargs="+", default=list(DEFAULT_MODELS))
     parser.add_argument("--output", type=Path, default=Path("data/results/embeddings_scifact.json"))

@@ -1,14 +1,15 @@
 """Command-line ingestion: ``python -m llm_testbench.ingest.cli scifact``.
 
 Loads a public dataset, converts it into documents, and indexes it in the configured
-database. Requires the embedding provider key (``OPENAI_API_KEY`` for the default model).
+database. Requires the embedding provider key (``OPENAI_API_KEY`` for the default model) and
+``LLM_TESTBENCH_DATABASE_URL``, from the environment or from ``.env`` at the repository root.
 """
 
 import argparse
 import asyncio
 import sys
 
-from llm_testbench.config import Settings, get_settings
+from llm_testbench.config import Settings, get_settings, load_env_file
 from llm_testbench.eval.loaders import BeirLoader, QasperLoader
 from llm_testbench.ingest.chunking import RecursiveChunker
 from llm_testbench.ingest.parsing import ParsedDocument, parse_sections
@@ -51,7 +52,7 @@ async def run(
 ) -> IngestReport:
     settings = get_settings()
     if settings.database_url is None:
-        raise SystemExit("LLM_TESTBENCH_DATABASE_URL is required")
+        raise SystemExit("LLM_TESTBENCH_DATABASE_URL is required (environment or .env)")
     model_name = embedding_model.rpartition("/")[2]
     dims = dimensions or DEFAULT_EMBEDDING_DIMENSIONS.get(model_name)
     if dims is None:
@@ -80,6 +81,7 @@ async def run(
 
 
 def main(argv: list[str] | None = None) -> int:
+    load_env_file()  # .env at the repository root; the environment wins
     parser = argparse.ArgumentParser(description="Index a public dataset in pgvector.")
     parser.add_argument("dataset", choices=["scifact", "qasper"])
     parser.add_argument("--index-key", default=None)

@@ -113,10 +113,9 @@ curl -s localhost:8000/readyz
 
 Expected: `{"error":"not_ready","detail":"index 'scifact-recursive-oai-small' missing from the registry: run the ingestion",...}`.
 
-**5. The ingestion** (OpenAI key required for the embeddings, ~5,000 abstracts, ~$0.05):
+**5. The ingestion** (OpenAI key in `.env` for the embeddings, ~5,000 abstracts, ~$0.05):
 
 ```bash
-set -a; source .env; set +a
 make ingest-scifact
 curl -s localhost:8000/readyz            # {"status":"ready"}
 curl -s localhost:8000/chat -H 'content-type: application/json' \
@@ -156,9 +155,15 @@ stays).
   `llm-testbench-registry:5050/...`; you push to `localhost:5050/...`. The chart's local
   values use the first name.
 - **`.env` loaded twice.** The Kubernetes `Secret` is created from `.env`; the local
-  `make api` also reads `.env` (pydantic-settings). After changing a key, rerun
+  processes (`make api`, `make ingest-scifact`, the notebooks) export `.env` into their own
+  environment at start-up (`load_env_file` in `config.py`). After changing a key, rerun
   `make k8s-secrets` *and* restart the pod: an updated `Secret` is not reread by a running
-  process.
+  process, and neither is `.env` by a running local one.
+- **A key in `.env` is not a pydantic setting.** `Settings` owns the `LLM_TESTBENCH_*`
+  variables only; `OPENAI_API_KEY` and friends are read from the environment by the backend
+  registry at call time, never stored (ADR 006). That is why the entry points export `.env`
+  first. Before that call existed, `make ingest-scifact` found the database URL and then
+  failed on the key: half of the same file was being read.
 
 ## Interview questions
 
