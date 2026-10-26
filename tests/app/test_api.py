@@ -10,10 +10,12 @@ from fastapi.testclient import TestClient
 from llm_testbench.app.main import create_app
 from llm_testbench.config import Settings
 from llm_testbench.generation.answer import REFUSAL_SENTINEL
+from llm_testbench.ingest.store import IndexSpec, PgVectorStore
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.errors import ProviderUnavailableError
 from llm_testbench.llm.governance import DataClass
 from llm_testbench.llm.resilience import RetryPolicy
+from llm_testbench.llm.types import ModelRef
 from llm_testbench.sources.types import (
     Capability,
     Evidence,
@@ -96,6 +98,48 @@ def test_not_ready_without_database() -> None:
         assert ready.status_code == 503
         assert "DATABASE_URL" in ready.json()["detail"]
         assert client.post("/chat", json={"question": "x"}).status_code == 503
+
+
+class RegistryStore:
+    """Stand-in for ``PgVectorStore``: an index registry that starts empty, no database."""
+
+    def __init__(self) -> None:
+        self.specs: dict[str, IndexSpec] = {}
+        self.lookups = 0
+
+    async def open(self) -> None:
+        return None
+
+    async def close(self) -> None:
+        return None
+
+    async def get_index(self, index_key: str) -> IndexSpec | None:
+        self.lookups += 1
+        return self.specs.get(index_key)
+
+
+def test_readiness_recovers_when_the_index_appears(monkeypatch: pytest.MonkeyPatch) -> None:
+    store = RegistryStore()
+    monkeypatch.setattr(PgVectorStore, "from_url", staticmethod(lambda url: store))
+    settings = Settings(database_url="postgresql://unused", index_key="late-index")
+    app = create_app(settings, llm_client=build_client(FakeProvider()))
+    with TestClient(app) as client:
+        not_ready = client.get("/readyz")
+        assert not_ready.status_code == 503
+        assert "late-index" in not_ready.json()["detail"]
+        assert client.post("/chat", json={"question": "x"}).status_code == 503
+        # The ingestion registers the index while the API runs: no restart needed.
+        store.specs["late-index"] = IndexSpec(
+            index_key="late-index",
+            source_key="docs:scifact",
+            embedding_model=ModelRef.parse("openai/text-embedding-3-small"),
+            dimensions=4,
+            chunker={"chunker": "recursive"},
+        )
+        assert client.get("/readyz").json() == {"status": "ready"}
+        lookups = store.lookups
+        assert client.get("/readyz").json() == {"status": "ready"}
+        assert store.lookups == lookups  # once ready, the probe stops querying the registry
 
 
 def test_chat_returns_answer_citations_and_evidence(api: TestClient, source: MemorySource) -> None:

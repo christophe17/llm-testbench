@@ -4,9 +4,12 @@
 notebook; in production, the lifespan opens the Postgres pool, checks the schema, finds
 the configured index in the registry and builds the document source. If the index does
 not exist, the API starts but ``/readyz`` answers 503 with the reason: a pod that cannot
-answer must not receive traffic, and must say why.
+answer must not receive traffic, and must say why. Readiness is a probe, not a snapshot:
+while not ready, each probe re-checks the registry, so a pod started before the ingestion
+becomes ready when the index appears, without a restart.
 """
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any
@@ -110,30 +113,52 @@ def create_app(
             if settings.chat_model
             else client.registry.defaults.generator
         )
-        chosen_source = source
-        if chosen_source is None:
-            if settings.database_url is None:
-                state["reason"] = "LLM_TESTBENCH_DATABASE_URL missing"
-            else:
-                store = PgVectorStore.from_url(settings.database_url)
-                await store.open()  # applies the schema then opens the pool
-                state["store"] = store
+        lock = asyncio.Lock()
+
+        def activate(chosen: Source) -> None:
+            state["service"] = ChatService(
+                client=client,
+                source=chosen,
+                builder=AnswerBuilder(PromptRegistry.from_settings(settings)),
+                default_model=default_model,
+            )
+            state["source"] = chosen
+            state["ready"], state["reason"] = True, "ok"
+
+        async def refresh() -> bool:
+            """Re-check the index registry while not ready: one cheap query per probe.
+
+            The kubelet calls ``/readyz`` every few seconds. A snapshot taken once at start-up
+            would leave a pod started before the ingestion at 0/1 until someone restarts it,
+            which is exactly what a readiness probe exists to avoid.
+            """
+            if state["ready"]:
+                return True
+            store = state["store"]
+            if store is None:
+                return False
+            async with lock:
+                if state["ready"]:
+                    return True
                 spec = await store.get_index(settings.index_key)
                 if spec is None:
                     state["reason"] = (
                         f"index {settings.index_key!r} missing from the registry: run the ingestion"
                     )
-                else:
-                    chosen_source = DocumentSource(client=client, store=store, spec=spec)
-        if chosen_source is not None:
-            state["service"] = ChatService(
-                client=client,
-                source=chosen_source,
-                builder=AnswerBuilder(PromptRegistry.from_settings(settings)),
-                default_model=default_model,
-            )
-            state["source"] = chosen_source
-            state["ready"], state["reason"] = True, "ok"
+                    return False
+                activate(DocumentSource(client=client, store=store, spec=spec))
+                return True
+
+        state["refresh"] = refresh
+        if source is not None:
+            activate(source)
+        elif settings.database_url is None:
+            state["reason"] = "LLM_TESTBENCH_DATABASE_URL missing"
+        else:
+            store = PgVectorStore.from_url(settings.database_url)
+            await store.open()  # applies the schema then opens the pool
+            state["store"] = store
+            await refresh()
         try:
             yield
         finally:
@@ -151,8 +176,10 @@ def create_app(
     async def _llm_error_handler(_: Request, error: LLMError) -> JSONResponse:
         return _map_llm_error(error)
 
-    def _service(request: Request) -> ChatService:
+    async def _service(request: Request) -> ChatService:
         state = request.app.state.bench
+        if not state["ready"] and (refresh := state.get("refresh")) is not None:
+            await refresh()
         if not state["ready"]:
             raise ServiceUnavailable(state["reason"])
         service: ChatService = state["service"]
@@ -169,13 +196,15 @@ def create_app(
     @app.get("/readyz", include_in_schema=False)
     async def readyz(request: Request) -> Response:
         state = request.app.state.bench
+        if not state["ready"] and (refresh := state.get("refresh")) is not None:
+            await refresh()
         if state["ready"]:
             return JSONResponse({"status": "ready"})
         return _error(503, "not_ready", state["reason"])
 
     @app.get("/sources", response_model=list[SourceOut])
     async def sources(request: Request) -> list[SourceOut]:
-        _service(request)  # 503 if the API is not ready
+        await _service(request)  # 503 if the API is not ready
         source_obj: Source = request.app.state.bench["source"]
         info = await source_obj.describe()
         return [
@@ -190,11 +219,12 @@ def create_app(
 
     @app.post("/chat", response_model=ChatResponse)
     async def chat(request: Request, body: ChatRequest) -> ChatResponse:
-        return await _service(request).answer(body)
+        service = await _service(request)
+        return await service.answer(body)
 
     @app.post("/chat/stream")
     async def chat_stream(request: Request, body: ChatRequest) -> StreamingResponse:
-        service = _service(request)
+        service = await _service(request)
         events = until_disconnected(
             service.stream(body),
             is_disconnected=request.is_disconnected,

@@ -503,3 +503,15 @@ $0.033, 194 s; the 32 documents and 7 chunks already stored by the failed run an
 §2.B.1: the notebook implements nothing); to replace with an import at the next re-execution.
 `make notebooks-ci` not rerun: the notebooks never relied on pydantic's `env_file` (their
 working directory is not the repository root), so the change does not reach them.
+
+**Follow-up, same day — readiness was a snapshot.** After the ingestion, the API pods under
+Tilt kept answering `/readyz` 503 "index missing": the lifespan looked the index up once at
+start-up (16:04Z, before the registry had the row) and nothing re-checked it, so both pods
+stayed 0/1 and the rollout stuck with two ReplicaSets, the new pod never becoming ready.
+Guide 01 step 5 promised readiness right after `make ingest-scifact`, without a restart. Now
+the state carries a `refresh()` closure (one `SELECT` on the registry under an `asyncio.Lock`)
+that `/readyz` and the service accessor call while not ready; once ready, no query. Offline
+test with a stand-in registry (`test_readiness_recovers_when_the_index_appears`), `make check`
+green (160 passed), local uvicorn smoke test plain and `--reload` against the k3d database:
+`/readyz` ready at first probe. Observation for the Tilt work in progress: the live update had
+synced the morning's edits into the `--reload` pod, but uvicorn logged no reload.
