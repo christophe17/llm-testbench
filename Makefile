@@ -73,10 +73,14 @@ k3d-down: ## Destroys the k3d cluster
 tilt-up: ## Dev loop with hot reload (requires the k3d cluster)
 	tilt up
 
-k8s-secrets: ## Creates/refreshes the API keys Secret in the cluster from .env
+# Credentials only: the LLM_TESTBENCH_* lines of .env are the laptop's settings (localhost
+# database, localhost Langfuse). In the pod they come from the chart's ConfigMap, and the
+# Secret, listed after it in the deployment, would override them with laptop values.
+k8s-secrets: ## Creates/refreshes the API keys Secret in the cluster from the credential lines of .env
 	@test -f .env || (echo ".env missing: copy .env.example" && exit 1)
-	kubectl -n llm-testbench create secret generic llm-testbench-api-secrets \
-		--from-env-file=.env --dry-run=client -o yaml | kubectl apply -f -
+	grep -v '^LLM_TESTBENCH_' .env | grep -E '^[A-Za-z_][A-Za-z0-9_]*=.+' | \
+		kubectl -n llm-testbench create secret generic llm-testbench-api-secrets \
+		--from-env-file=/dev/stdin --dry-run=client -o yaml | kubectl apply -f -
 
 docker-build: ## Builds the API image (arm64 locally)
 	docker build -t llm-testbench-api:dev .

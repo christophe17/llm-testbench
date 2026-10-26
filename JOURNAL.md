@@ -515,3 +515,16 @@ test with a stand-in registry (`test_readiness_recovers_when_the_index_appears`)
 green (160 passed), local uvicorn smoke test plain and `--reload` against the k3d database:
 `/readyz` ready at first probe. Observation for the Tilt work in progress: the live update had
 synced the morning's edits into the `--reload` pod, but uvicorn logged no reload.
+
+**Follow-up, same day — the cluster Secret carried the laptop's settings.** The next API pod
+under Tilt crashed at start-up: `connection refused` on `localhost:5432`. `make k8s-secrets`
+built the API `Secret` from every line of `.env`, so the laptop's `LLM_TESTBENCH_DATABASE_URL`
+and Langfuse endpoint (both `localhost`) reached the pod, and the deployment lists the `Secret`
+after the `ConfigMap`, so they won over the in-cluster values. The 16:04Z pods had only worked
+because they started before the (optional) `Secret` existed, hence on the `ConfigMap` alone and
+without API keys. The target now keeps the credential lines only (`grep -v '^LLM_TESTBENCH_'`,
+piped into `--from-env-file=/dev/stdin`); guide 01 explains why. Applied to the cluster and the
+pod replaced: it reaches `postgres.llm-testbench:5432`, `/healthz` 200, `/readyz` 503 "index
+missing", correct since the namespace recreation of ~16:30Z took the PVC and the ingestion with
+it; ingestion relaunched. Not touched: guide 06 still says the `Secret` is created "from
+`.env`" (true but imprecise; the file is being edited in the parallel session).

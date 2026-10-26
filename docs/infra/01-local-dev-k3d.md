@@ -88,8 +88,13 @@ make k8s-secrets
 kubectl -n llm-testbench get secret llm-testbench-api-secrets -o jsonpath='{.data}' | head -c 200
 ```
 
-The `Secret` contains every line of `.env` (API keys and database URL). It is neither in
-the chart nor in git.
+The `Secret` contains the credential lines of `.env` only (the provider keys), neither in
+the chart nor in git. The `LLM_TESTBENCH_*` lines stay out on purpose: they are the laptop's
+settings (database and Langfuse on `localhost`), and the pod gets its own from the chart's
+`ConfigMap` (`values-local.yaml`). The deployment lists the `Secret` after the `ConfigMap`,
+so a `Secret` built from the whole file would override the in-cluster database URL with
+`localhost:5432`, which inside a pod is nothing: the API would crash at start-up on
+"connection refused".
 
 **4. The image and its deployment, by hand once** (to see each step):
 
