@@ -38,6 +38,29 @@ class Chunk(BaseModel):
         return f"{section}, characters {self.start_char}–{self.end_char}"
 
 
+class EmbeddingInput(BaseModel):
+    """A chunk as the embedding model sees it: ``title + " " + text``, the BEIR/MTEB
+    convention (``mteb`` builds exactly this for every retrieval corpus), so that our
+    scores compare to the published ones. Most SciFact abstracts are cut in two by the
+    default chunk size; without the title, each half loses the one line that says what
+    the paper is about.
+
+    The checksum is that of the embedded text, not of the chunk: it is the idempotence
+    key of the vector. A new title, or a new convention, recomputes the vector instead of
+    leaving a stale one in place."""
+
+    model_config = ConfigDict(frozen=True)
+
+    chunk: Chunk
+    text: str = Field(min_length=1)
+    checksum: str
+
+    @classmethod
+    def from_chunk(cls, document: ParsedDocument, chunk: Chunk) -> "EmbeddingInput":
+        text = f"{document.title} {chunk.text}".strip()
+        return cls(chunk=chunk, text=text, checksum=sha256_text(text))
+
+
 def _split_keep(text: str, separator: str) -> list[str]:
     """Split while keeping the separator at the end of each piece: concatenating the
     pieces gives back the exact text, which guarantees correct positions."""

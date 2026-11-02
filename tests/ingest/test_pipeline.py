@@ -33,13 +33,20 @@ async def store() -> AsyncIterator[PgVectorStore]:
 
 
 @pytest.fixture
-def client() -> LLMClient:
+def embedder() -> FakeEmbedder:
+    return FakeEmbedder()
+
+
+@pytest.fixture
+def client(embedder: FakeEmbedder) -> LLMClient:
     client = LLMClient.from_settings()
-    client.register_embedder("openai", FakeEmbedder())
+    client.register_embedder("openai", embedder)
     return client
 
 
-async def test_ingest_then_search_then_cite(store: PgVectorStore, client: LLMClient) -> None:
+async def test_ingest_then_search_then_cite(
+    store: PgVectorStore, client: LLMClient, embedder: FakeEmbedder
+) -> None:
     source_key = f"docs:test-{uuid.uuid4().hex[:8]}"
     pipeline = IngestionPipeline(
         client=client,
@@ -71,6 +78,10 @@ async def test_ingest_then_search_then_cite(store: PgVectorStore, client: LLMCli
         assert report.cost_usd is not None
         assert report.cost_usd > 0
         assert await store.embedding_count(spec) == report.chunks_total
+        # What the model saw: the document title in front of every chunk (BEIR convention).
+        embedded = [text for call in embedder.calls for text in call.texts]
+        assert len(embedded) == report.chunks_total
+        assert all(text.startswith(("Geo ", "Cooking ")) for text in embedded)
 
         again = await pipeline.ingest(spec, documents)
         assert again.documents_written == 0
@@ -100,6 +111,13 @@ async def test_ingest_then_search_then_cite(store: PgVectorStore, client: LLMCli
         info = await source.describe()
         assert info.document_count == 2
         assert info.key == source_key
+
+        # A new title changes what the model sees: that document, and only it, is embedded again.
+        retitled = [documents[0].model_copy(update={"title": "Geography"}), documents[1]]
+        third = await pipeline.ingest(spec, retitled)
+        assert third.documents_written == 1
+        assert 0 < third.chunks_embedded < report.chunks_total
+        assert all(text.startswith("Geography ") for text in embedder.calls[-1].texts)
     finally:
         await store.drop_index(spec.index_key)
         await store.delete_source(source_key)

@@ -1,6 +1,6 @@
 """Tests of the pgvector storage — require a database (``db`` marker).
 
-Locally: ``make k3d-up`` + ``make pg-port-forward`` then
+Locally: ``make tilt-db`` (forwards port 5432) then
 ``LLM_TESTBENCH_DATABASE_URL=postgresql://testbench:testbench-local-only@localhost:5432/testbench``.
 """
 
@@ -10,7 +10,7 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from llm_testbench.ingest.chunking import RecursiveChunker
+from llm_testbench.ingest.chunking import EmbeddingInput, RecursiveChunker
 from llm_testbench.ingest.parsing import parse_text
 from llm_testbench.ingest.store import IndexMismatchError, IndexSpec, PgVectorStore
 from llm_testbench.llm.types import ModelRef
@@ -77,11 +77,16 @@ async def test_upsert_is_a_noop_on_identical_content_and_replaces_on_change(
     assert await store.upsert_document(source_key, document, chunks) is False
     assert await store.counts(source_key) == (1, len(chunks))
 
-    await store.add_embeddings(spec, [(chunks[0], [1.0, 0.0, 0.0])])
+    inputs = [EmbeddingInput.from_chunk(document, c) for c in chunks]
+    await store.add_embeddings(spec, [(inputs[0], [1.0, 0.0, 0.0])])
     assert await store.embedding_count(spec) == 1
-    assert [c.chunk_id for c in await store.missing_embeddings(spec, chunks)] == [
+    assert [i.chunk.chunk_id for i in await store.missing_embeddings(spec, inputs)] == [
         c.chunk_id for c in chunks[1:]
     ]
+    # Same chunks, new title: the stored vector no longer matches what would be embedded.
+    retitled = document.model_copy(update={"title": "New title"})
+    renamed = [EmbeddingInput.from_chunk(retitled, c) for c in chunks]
+    assert len(await store.missing_embeddings(spec, renamed)) == len(chunks)
 
     changed = parse_text("d1", "Entirely different content.")
     new_chunks = chunker.chunk(changed)
@@ -106,7 +111,7 @@ async def test_search_returns_nearest_chunks_with_cosine_scores_and_filters(
     for document, vector in docs.values():
         chunks = chunker.chunk(document)
         await store.upsert_document(source_key, document, chunks)
-        await store.add_embeddings(spec, [(chunks[0], vector)])
+        await store.add_embeddings(spec, [(EmbeddingInput.from_chunk(document, chunks[0]), vector)])
 
     hits = await store.search(spec, [1.0, 0.0, 0.0], k=2)
     assert [h.chunk.doc_id for h in hits] == ["a", "c"]
@@ -117,5 +122,6 @@ async def test_search_returns_nearest_chunks_with_cosine_scores_and_filters(
     english = await store.search(spec, [1.0, 0.0, 0.0], k=5, filters={"lang": "en"})
     assert [h.chunk.doc_id for h in english] == ["b"]
 
+    first = EmbeddingInput.from_chunk(docs["a"][0], chunker.chunk(docs["a"][0])[0])
     with pytest.raises(ValueError, match="dimension 2"):
-        await store.add_embeddings(spec, [(chunker.chunk(docs["a"][0])[0], [1.0, 0.0])])
+        await store.add_embeddings(spec, [(first, [1.0, 0.0])])

@@ -2,7 +2,7 @@ from itertools import pairwise
 
 import pytest
 
-from llm_testbench.ingest.chunking import Chunk, RecursiveChunker
+from llm_testbench.ingest.chunking import Chunk, EmbeddingInput, RecursiveChunker
 from llm_testbench.ingest.parsing import parse_sections, parse_text
 
 PARAGRAPHS = [
@@ -90,3 +90,23 @@ def test_describe_is_enough_to_regenerate() -> None:
         "separators": repr(("\n\n", "\n", ". ", " ", "")),
     }
     assert Chunk.model_fields["text"].annotation is str
+
+
+def test_embedding_input_prefixes_the_document_title_like_beir() -> None:
+    titled = parse_text("d", "Body of the abstract.", title="Title of the paper")
+    (chunk,) = RecursiveChunker().chunk(titled)
+    item = EmbeddingInput.from_chunk(titled, chunk)
+    assert item.text == "Title of the paper Body of the abstract."
+    assert item.chunk is chunk
+    assert item.checksum != chunk.checksum  # the vector is keyed on the embedded text
+    # Same chunk under another title: another vector to compute.
+    renamed = parse_text("d", "Body of the abstract.", title="Another title")
+    assert EmbeddingInput.from_chunk(renamed, chunk).checksum != item.checksum
+
+
+def test_embedding_input_without_title_is_the_chunk_itself() -> None:
+    document = parse_text("d", "Body of the abstract.")
+    (chunk,) = RecursiveChunker().chunk(document)
+    item = EmbeddingInput.from_chunk(document, chunk)
+    assert item.text == chunk.text
+    assert item.checksum == chunk.checksum

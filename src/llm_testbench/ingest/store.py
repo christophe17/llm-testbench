@@ -24,7 +24,7 @@ from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
 from pydantic import BaseModel, ConfigDict, Field
 
-from llm_testbench.ingest.chunking import Chunk
+from llm_testbench.ingest.chunking import Chunk, EmbeddingInput
 from llm_testbench.ingest.parsing import ParsedDocument
 from llm_testbench.llm.types import ModelRef
 
@@ -329,28 +329,29 @@ class PgVectorStore:
 
     # ------------------------------------------------------------------ vectors
 
-    async def missing_embeddings(self, spec: IndexSpec, chunks: Sequence[Chunk]) -> list[Chunk]:
-        """The chunks that do not yet have a vector in this index — or whose text has
-        changed since (different fingerprint). This is the idempotence: we never pay twice
-        for an embedding already computed."""
-        if not chunks:
+    async def missing_embeddings(
+        self, spec: IndexSpec, inputs: Sequence[EmbeddingInput]
+    ) -> list[EmbeddingInput]:
+        """The inputs that do not yet have a vector in this index — or whose embedded text
+        has changed since (different fingerprint: the chunk, or the document title). This
+        is the idempotence: we never pay twice for an embedding already computed."""
+        if not inputs:
             return []
         query = sql.SQL(
             "SELECT chunk_id, checksum FROM {} WHERE source_key = %s AND chunk_id = ANY(%s)"
         ).format(sql.Identifier(spec.table))
+        chunk_ids = [item.chunk.chunk_id for item in inputs]
         async with self._pool.connection() as conn:
-            rows = await (
-                await conn.execute(query, (spec.source_key, [c.chunk_id for c in chunks]))
-            ).fetchall()
+            rows = await (await conn.execute(query, (spec.source_key, chunk_ids))).fetchall()
         present = {str(chunk_id): str(checksum) for chunk_id, checksum in rows}
-        return [c for c in chunks if present.get(c.chunk_id) != c.checksum]
+        return [item for item in inputs if present.get(item.chunk.chunk_id) != item.checksum]
 
     async def add_embeddings(
-        self, spec: IndexSpec, rows: Sequence[tuple[Chunk, Sequence[float]]]
+        self, spec: IndexSpec, rows: Sequence[tuple[EmbeddingInput, Sequence[float]]]
     ) -> None:
         if not rows:
             return
-        for _chunk, vector in rows:
+        for _item, vector in rows:
             if len(vector) != spec.dimensions:
                 raise ValueError(
                     f"vector of dimension {len(vector)} for index {spec.index_key!r} "
@@ -367,11 +368,11 @@ class PgVectorStore:
                 [
                     (
                         spec.source_key,
-                        chunk.chunk_id,
-                        chunk.checksum,
+                        item.chunk.chunk_id,
+                        item.checksum,
                         np.asarray(vector, dtype=np.float32),
                     )
-                    for chunk, vector in rows
+                    for item, vector in rows
                 ],
             )
 

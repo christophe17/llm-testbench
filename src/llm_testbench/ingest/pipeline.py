@@ -11,7 +11,7 @@ from collections.abc import Iterable
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from llm_testbench.ingest.chunking import Chunk, RecursiveChunker
+from llm_testbench.ingest.chunking import EmbeddingInput, RecursiveChunker
 from llm_testbench.ingest.parsing import ParsedDocument
 from llm_testbench.ingest.store import IndexSpec, PgVectorStore
 from llm_testbench.llm.client import LLMClient
@@ -82,7 +82,7 @@ class IngestionPipeline:
         await self._store.register_index(spec)
         seen = written = chunks_total = embedded = tokens = calls = 0
         cost: float | None = 0.0
-        pending: list[Chunk] = []
+        pending: list[EmbeddingInput] = []
 
         async def flush() -> None:
             nonlocal embedded, tokens, calls, cost
@@ -91,7 +91,7 @@ class IngestionPipeline:
             result = await self._client.embed(
                 EmbeddingRequest(
                     model=spec.embedding_model,
-                    texts=tuple(c.text for c in pending),
+                    texts=tuple(item.text for item in pending),
                     data_class=self._data_class,
                     dimensions=spec.dimensions,
                 )
@@ -109,7 +109,10 @@ class IngestionPipeline:
             chunks_total += len(chunks)
             if await self._store.upsert_document(spec.source_key, document, chunks):
                 written += 1
-            pending.extend(await self._store.missing_embeddings(spec, chunks))
+            # What the model sees is the title + the chunk (BEIR convention), and that is
+            # what the vector is keyed on: a retitled document is embedded again.
+            inputs = [EmbeddingInput.from_chunk(document, chunk) for chunk in chunks]
+            pending.extend(await self._store.missing_embeddings(spec, inputs))
             while len(pending) >= self._batch_size:
                 batch, rest = pending[: self._batch_size], pending[self._batch_size :]
                 pending[:] = batch

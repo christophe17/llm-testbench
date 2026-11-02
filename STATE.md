@@ -39,7 +39,10 @@ course; the testbench proves nothing until phase 1 is studied and run.
 - **First measurement** (`data/results/embeddings_scifact.json`, mteb, SciFact nDCG@10):
   bge-base-en-v1.5 **0.740** (published 0.7404 — zero gap); all-MiniLM-L6-v2 **0.645**
   (< published BM25 0.665); text-embedding-3-small to be produced with a key.
-- Tests: 155 offline, 6 on a database, 2 network; mypy strict; pre-commit hooks aligned.
+- Tests: 162 offline, 6 on a database, 2 network; mypy strict; pre-commit hooks aligned.
+- **Pending re-ingestion**: since 2026-11-02 the pipeline embeds `title + " " + text`; the
+  SciFact index of 2026-10-26 holds title-less vectors and is recomputed in full at the next
+  `make ingest-scifact` (~$0.04).
 
 ## Remaining in phase 1 (Christophe's actions)
 

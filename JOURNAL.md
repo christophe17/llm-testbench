@@ -528,3 +528,30 @@ pod replaced: it reaches `postgres.llm-testbench:5432`, `/healthz` 200, `/readyz
 missing", correct since the namespace recreation of ~16:30Z took the PVC and the ingestion with
 it; ingestion relaunched. Not touched: guide 06 still says the `Secret` is created "from
 `.env`" (true but imprecise; the file is being edited in the parallel session).
+
+## 2026-11-02 — The title never reached the embedding model
+
+**Trigger**: a reading question on `make ingest-scifact` — one section per document? Yes:
+`scifact_documents` wraps each BEIR abstract as a single untitled section and puts the paper
+title in `ParsedDocument.title`. Checked on the cached corpus: 5,183 documents, 5,183 single
+sections; median abstract 1,330 characters against a 1,000-character chunk, so 4,051
+documents become two chunks or more.
+
+**Found**: the pipeline embedded `chunk.text` and nothing else. The title was stored in
+`documents` and shown in citations, never vectorized. BEIR and MTEB embed
+`title + " " + text` — `mteb` does it itself for every retrieval corpus
+(`_create_dataloaders.py`), so `make bench-embeddings` was already right — and the index was
+not comparable to the published scores, for a reason unrelated to the model. No ADR, no
+decision line: an omission, not a choice.
+
+**Done**: `EmbeddingInput` in `ingest/chunking.py`, the chunk as the model sees it, built by
+the pipeline from the document and the chunk; `Chunk`, the `chunks` table and the offsets are
+untouched. The store's `missing_embeddings` / `add_embeddings` take it and key the vector on
+the hash of the embedded text: the SciFact index of 2026-10-26 (title-less vectors, same chunk
+hashes) is recomputed at the next run instead of being silently kept, and a retitled document
+is embedded again. Tests: two offline on `EmbeddingInput`; the `db` tests assert what the fake
+embedder received and the retitle path. ADR 007 and `docs/decisions.md` amended.
+
+**Left out**: notebook 2 — its `inspect.getsource` cell shows the old pipeline until its next
+execution, and the file is being edited by another session. The SciFact re-ingestion and the
+before/after retrieval number wait for the phase 2 harness (nDCG@10 on our index, not mteb's).

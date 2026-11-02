@@ -55,7 +55,9 @@ read it in full.
   QASPER full text already sectioned — no PDF in phase 1, phase 3 ADR); `Chunk` with
   deterministic identifier, hash and position; `RecursiveChunker`; pipeline that
   embeds in batches via `LLMClient.embed` (governance and cost included) and writes to
-  Postgres; idempotence by chunk hash and by index.
+  Postgres. What the model sees is `title + " " + text` (`EmbeddingInput`, the BEIR/MTEB
+  convention, so that the scores compare to the published ones — 2026-11-02); idempotence
+  by index and by hash of that embedded text, not of the chunk alone.
 - **Postgres schema** (`ingest/sql/`): `documents`, `chunks`, `indexes` (registry), and one
   `emb_<key>` table per index with `vector(dim)` and a cosine HNSW index. Idempotent
   creation at startup.
