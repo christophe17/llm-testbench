@@ -555,3 +555,39 @@ embedder received and the retitle path. ADR 007 and `docs/decisions.md` amended.
 **Left out**: notebook 2 — its `inspect.getsource` cell shows the old pipeline until its next
 execution, and the file is being edited by another session. The SciFact re-ingestion and the
 before/after retrieval number wait for the phase 2 harness (nDCG@10 on our index, not mteb's).
+
+## 2026-11-04 — Side notebook 2b: MTEB crash course
+
+**Trigger**: "a side notebook, a kind of crash course for MTEB, just to understand what's needed
+in this roadmap". MTEB sits in the roadmap three times — the phase 1 model comparison, the number
+the phase 2 harness must reproduce, the title convention of 2026-11-02 — and had never been
+explained.
+
+**Done**: `notebooks/phase-1/02b_mteb_crash_course.ipynb` (29 cells, the contract of the phase
+notebooks, lighter): MTEB as a paper, a leaderboard and a library; BEIR as its retrieval family;
+the six steps of `mteb.evaluate` on a retrieval task read in the library's own source, with
+GitHub permalinks pinned to the installed 2.20.5 (files checked identical to the tag); nDCG@10
+computed by hand on the fixtures, then by `mteb`'s scorer (same 0.473); the real run through
+`run_scifact`; the raw `TaskResult`; what the roadmap takes phase by phase and what it leaves.
+The notebook runs in CI without `mteb` (every dependent cell skips; verified by forcing the flag
+off) and loads no model in sample mode. Listed under notebook 2 in `docs/reading-order.md`.
+
+**Measured** (full run of the notebook, 2026-11-04, Apple Silicon): all-MiniLM-L6-v2 gives the
+archived 0.64508 again, to the fifth decimal; `mteb`'s copy of SciFact (`mteb/scifact`) and
+ours (`BeIR/scifact`) have identical ids and judgments; **BM25 through `mteb/baseline-bm25s`
+scores 0.686 nDCG@10 in 6 s** (the BEIR paper's Anserini: 0.665), four points above MiniLM,
+archived in `data/results/bm25_scifact.json`; bge-base-en-v1.5 **without its query
+instruction** loses 0.003 (0.7376 against 0.7404), raw `mteb` result archived under
+`data/results/mteb_prompt_ablation/`. `PUBLISHED_SCIFACT` gained the `mteb/baseline-bm25s` row
+(reference 0.665, the source saying it is Anserini's number), which moved `ClientEncoder.encode`
+down one line: notebook 2's anchor updated to L156.
+
+**Not done / deferred**: `bm25s` and `PyStemmer` installed ad hoc in `.venv` (`uv pip
+install`), not added to the `bench` group — `uv add` rewrites `pyproject.toml` and `uv.lock`,
+both carrying uncommitted work of another session; whether BM25 enters the project through
+`bm25s` or through Postgres full-text search is for the phase 2 plan. No leaderboard download,
+no API model, no e5 run.
+
+**Incidents**: ruff format turns a config line whose trailing comment passes 100 columns into a
+parenthesized three-line assignment, which breaks the "edit one flag" contract of the config
+cell — keep config comments short. In zsh, `status` is read-only: `rc=$?`.

@@ -35,10 +35,13 @@ course; the testbench proves nothing until phase 1 is studied and run.
   secrets, roles), verified on k3d; Langfuse v4 on k3d (OTLP → ClickHouse proven, cost
   recomputed identical to ours); 10 `docs/infra/` guides (README + 00→09, 09 added on 2026-10-19).
 - **Notebooks**: 1 (robust LLM call, 39 cells) and 2 (document → index, 26 cells),
-  run in sample mode, in CI with Postgres as a service.
+  run in sample mode, in CI with Postgres as a service; side notebook 2b (MTEB crash course,
+  29 cells, 2026-11-04), optional, runs in CI without `mteb`.
 - **First measurement** (`data/results/embeddings_scifact.json`, mteb, SciFact nDCG@10):
   bge-base-en-v1.5 **0.740** (published 0.7404 — zero gap); all-MiniLM-L6-v2 **0.645**
-  (< published BM25 0.665); text-embedding-3-small to be produced with a key.
+  (< published BM25 0.665); text-embedding-3-small to be produced with a key. **2026-11-04**
+  (notebook 2b): BM25 through `mteb/baseline-bm25s` **0.686** (the paper's Anserini: 0.665;
+  `data/results/bm25_scifact.json`); bge-base-en-v1.5 without its query instruction 0.738.
 - Tests: 162 offline, 6 on a database, 2 network; mypy strict; pre-commit hooks aligned.
 - **Pending re-ingestion**: since 2026-11-02 the pipeline embeds `title + " " + text`; the
   SciFact index of 2026-10-26 holds title-less vectors and is recomputed in full at the next
@@ -78,6 +81,7 @@ course; the testbench proves nothing until phase 1 is studied and run.
 
 First number of the testbench (mteb protocol, not our harness yet). Reference points:
 BM25 = 0.665 nDCG@10 on SciFact (BEIR paper); embeddings measured on 2026-09-03: bge-base-en-v1.5 0.740 (= published), all-MiniLM-L6-v2 0.645.
+BM25 measured locally on 2026-11-04 (`mteb/baseline-bm25s`, stemmed): 0.686 — the rerunnable lexical baseline.
 
 ## Decisions awaiting a call
 

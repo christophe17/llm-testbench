@@ -1,0 +1,20 @@
+{
+  "task": "SciFact",
+  "metric": "ndcg_at_10",
+  "generated_at": "2026-11-04T14:22:40.847014Z",
+  "sampled": false,
+  "scores": [
+    {
+      "model": "mteb/baseline-bm25s",
+      "ndcg_at_10": 0.6863,
+      "recall_at_10": 0.81867,
+      "map_at_10": 0.63872,
+      "dimensions": null,
+      "elapsed_s": 6.0518107920652255,
+      "cost_usd": null,
+      "published_ndcg_at_10": 0.665,
+      "published_source": "Thakur et al. 2021, BEIR, table 2 — Anserini BM25, not bm25s",
+      "backend": "local"
+    }
+  ]
+}

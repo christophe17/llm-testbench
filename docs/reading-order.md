@@ -22,6 +22,9 @@ Start with the overview: [roadmap/README.md](roadmap/README.md).
 3. Infra guide — [01 local dev k3d](infra/01-local-dev-k3d.md): `make k3d-up`, the pgvector
    database notebook 2 needs
 4. Notebook — [02 from document to index](../notebooks/phase-1/02_document_to_index.ipynb)
+   - Side notebook — [02b MTEB crash course](../notebooks/phase-1/02b_mteb_crash_course.ipynb):
+     the benchmark and the library behind notebook 2's table, and what the roadmap takes from
+     them; optional, `mteb` installed (`uv sync --group bench`)
 5. Infra guide — [07 observability](infra/07-observability.md): `make langfuse-up`, where the
    traces of notebooks 1 and 2 go
 

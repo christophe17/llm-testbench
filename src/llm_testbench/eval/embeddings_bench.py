@@ -33,6 +33,7 @@ METRIC = "ndcg_at_10"
 
 PUBLISHED_SCIFACT: dict[str, tuple[float | None, str]] = {
     "BM25 (Anserini)": (0.665, "Thakur et al. 2021, BEIR, table 2"),
+    "mteb/baseline-bm25s": (0.665, "Thakur et al. 2021, BEIR, table 2 — Anserini BM25, not bm25s"),
     "BAAI/bge-base-en-v1.5": (0.7404, "HF model card, MTEB results, read on 2026-09-03"),
     "intfloat/e5-base-v2": (0.7194, "HF model card, MTEB results, read on 2026-09-03"),
     "sentence-transformers/all-MiniLM-L6-v2": (None, "no SciFact score on the HF card"),
