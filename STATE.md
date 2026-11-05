@@ -119,6 +119,13 @@ node group on the existing EKS as the second measured target of phase 6; Guardra
 A single `dev` environment. Deployment via GitHub Actions and OIDC (guide 09). Notebooks 1
 and 2 run on `claude-sonnet-5-5`.
 
+## Amendments of 2026-11-05 (phase 3)
+
+Three measured arms added to `docs/roadmap/phase-3.md`: SPLADE next to BM25 in the hybrid
+block, a LambdaMART learning-to-rank step between RRF and the cross-encoder, quantized vectors
+with exact rescoring as a cost arm; ColBERT excluded and documented as not done
+(`docs/decisions.md`, 2026-11-05).
+
 ## Brief organization (2026-10-16)
 
 `CLAUDE.md` keeps only the working contract; roadmap in `docs/roadmap/` (one file per

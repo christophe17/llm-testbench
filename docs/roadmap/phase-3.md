@@ -6,8 +6,15 @@ than ten stacked techniques.
 
 Order of observed payoff:
 
-1. hybrid BM25 + dense search with RRF fusion;
-2. cross-encoder re-ranking;
+1. hybrid BM25 + dense search with RRF fusion, plus **SPLADE** as a learned-sparse arm next to
+   BM25 (a BERT encoder that outputs a sparse vector over the vocabulary, with document
+   expansion; same inverted-index machinery, published BEIR scores to compare against);
+2. re-ranking as a ladder, RRF → **LambdaMART** → cross-encoder: LambdaMART is learning to
+   rank, gradient-boosted trees with a listwise objective that optimizes nDCG directly, on a
+   handful of features (BM25 score, dense score, rank in each list, title match, length),
+   trained on the dataset's train split and therefore reported as in-domain, not zero-shot.
+   It is a retrieval component in `src/retrieval/`, not a prediction task: it does not touch
+   `src/classic/` and leaves the phase 5B lock (`CLAUDE.md` §6) intact;
 3. comparison of 4 chunking strategies (recursive, semantic, parent-document, late
    chunking) on **raw documents** with QASPER — and PDF parsing, postponed from phase 1 and
    measured here;
@@ -17,6 +24,16 @@ Order of observed payoff:
 7. **GraphRAG** (extracting an entity graph from the corpus, graph-based retrieval) — last:
    high indexing cost for uncertain gains in the literature; it is the most serious
    candidate for a quantified removal, and that is just fine.
+
+**One cost arm, outside the payoff order**: **quantized vectors with exact rescoring**
+(pgvector half-precision and binary types; the top candidates re-scored with the full
+vectors). It is not measured on nDCG alone but on recall@k against exact search, index size,
+build time and p95 latency, next to the HNSW parameters of the dense index.
+
+**Documented exclusion**: ColBERT (late interaction, one vector per token, MaxSim scoring)
+stays out of this phase and enters the master table as *not done* with its published BEIR
+numbers. It needs its own index structure, and the phase already carries seven techniques,
+the three arms above and the pipeline (decision of 2026-11-05).
 
 ## The operated ingestion pipeline — named deliverable
 
@@ -54,7 +71,9 @@ everything.
 **Key deliverable**: table "technique → quality gain with confidence interval → p95
 latency cost → € cost", plus the gap to the literature.
 
-**Notebooks**: (1) why hybrid search saves acronyms and jargon; (2) the showdown of the
+**Notebooks**: (1) the retrieval stack: why hybrid search saves acronyms and jargon, SPLADE
+against BM25, the re-ranking ladder, quantized vectors against exact search (to be split at
+the phase plan if it exceeds the 40-cell cap); (2) the showdown of the
 chunking strategies on raw documents; (3) query transformation: when it helps,
 when it costs for nothing; (4) our pipeline against **LlamaIndex** out of the box **and against
 Bedrock Knowledge Bases** (AWS's managed RAG: ingestion from S3, chunking, retrieval and
