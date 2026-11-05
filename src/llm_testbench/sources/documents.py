@@ -6,9 +6,12 @@ Each result carries a complete provenance: the reader can open the cited documen
 section and character range, and check the fingerprint.
 """
 
+from collections.abc import Sequence
+
 from llm_testbench.ingest.store import IndexSpec, PgVectorStore
 from llm_testbench.llm.client import LLMClient
-from llm_testbench.llm.embeddings import EmbeddingRequest
+from llm_testbench.llm.embeddings import EmbeddingRequest, EmbeddingResult
+from llm_testbench.llm.governance import DataClass
 from llm_testbench.sources.types import (
     Capability,
     Evidence,
@@ -30,18 +33,27 @@ class DocumentSource:
         self._store = store
 
     async def search(self, query: SearchQuery) -> list[Evidence]:
-        embedding = await self._client.embed(
+        embedding = await self.embed_query(query.text, query.data_class)
+        return await self.search_vector(embedding.vectors[0], k=query.k, filters=query.filters)
+
+    async def embed_query(self, text: str, data_class: DataClass) -> EmbeddingResult:
+        """The question as a vector, by the model that embedded the chunks. Apart from
+        :meth:`search_vector` so that a caller who accounts for the call (the evaluation
+        harness) gets its cost and its duration, not only its result."""
+        return await self._client.embed(
             EmbeddingRequest(
                 model=self.spec.embedding_model,
-                texts=(query.text,),
-                data_class=query.data_class,
+                texts=(text,),
+                data_class=data_class,
                 dimensions=self.spec.dimensions,
                 input_type="query",
             )
         )
-        hits = await self._store.search(
-            self.spec, embedding.vectors[0], k=query.k, filters=query.filters or None
-        )
+
+    async def search_vector(
+        self, vector: Sequence[float], *, k: int, filters: dict[str, str] | None = None
+    ) -> list[Evidence]:
+        hits = await self._store.search(self.spec, vector, k=k, filters=filters or None)
         return [
             Evidence(
                 text=hit.chunk.text,

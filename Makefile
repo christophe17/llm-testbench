@@ -99,6 +99,10 @@ eval-annotate: ## Labels the calibration items by hand in the terminal (resumabl
 eval-calibrate: ## Judges (JUDGES) against the human labels: agreement and Cohen's kappa — paid, under the spend cap
 	uv run python -m llm_testbench.eval.cli calibrate $(foreach judge,$(JUDGES),--judge $(judge))
 
+JUDGE ?= openai/gpt-5.6-luna
+eval-bias: ## Bias probes of one judge (JUDGE): does its verdict move when only the form of the answer does — paid, under the spend cap
+	uv run python -m llm_testbench.eval.cli bias --judge $(JUDGE)
+
 # ---------------------------------------------------------------- local cluster
 
 k3d-up: ## Creates the k3d cluster and deploys Postgres/pgvector
@@ -203,4 +207,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (run only once, AWS account re
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update eval-calibration-set eval-annotate eval-calibrate k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update eval-calibration-set eval-annotate eval-calibrate eval-bias k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply

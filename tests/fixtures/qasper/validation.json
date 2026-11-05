@@ -13,7 +13,53 @@
     },
     "qas": {
       "question_id": ["q1", "q2"],
-      "question": ["What is the first step of RAG?", "Which similarity is used?"]
+      "question": ["What is the first step of RAG?", "Which similarity is used?"],
+      "answers": [
+        {
+          "answer": [
+            {
+              "unanswerable": false,
+              "extractive_spans": ["Retrieval"],
+              "yes_no": null,
+              "free_form_answer": "",
+              "evidence": ["It is the first step of RAG.", "FLOAT SELECTED: Figure 1: The pipeline."],
+              "highlighted_evidence": ["It is the first step of RAG."]
+            },
+            {
+              "unanswerable": false,
+              "extractive_spans": [],
+              "yes_no": null,
+              "free_form_answer": "Finding documents",
+              "evidence": ["Retrieval finds documents.", "It is the first step of RAG."],
+              "highlighted_evidence": []
+            }
+          ],
+          "annotation_id": ["a1", "a2"],
+          "worker_id": ["w1", "w2"]
+        },
+        {
+          "answer": [
+            {
+              "unanswerable": false,
+              "extractive_spans": ["cosine similarity"],
+              "yes_no": null,
+              "free_form_answer": "",
+              "evidence": ["Then we search with cosine similarity."],
+              "highlighted_evidence": []
+            },
+            {
+              "unanswerable": true,
+              "extractive_spans": [],
+              "yes_no": null,
+              "free_form_answer": "",
+              "evidence": [],
+              "highlighted_evidence": []
+            }
+          ],
+          "annotation_id": ["a3", "a4"],
+          "worker_id": ["w1", "w2"]
+        }
+      ]
     }
   },
   {
@@ -24,7 +70,40 @@
       {"section_name": "Body", "paragraphs": ["Chunking splits documents.", "Overlap helps."]}
     ],
     "qas": [
-      {"question_id": "q3", "question": "What does chunking do?"}
+      {
+        "question_id": "q3",
+        "question": "What does chunking do?",
+        "answers": [
+          {
+            "unanswerable": false,
+            "extractive_spans": [],
+            "yes_no": null,
+            "free_form_answer": "It splits documents",
+            "evidence": ["Chunking splits documents."]
+          }
+        ]
+      },
+      {
+        "question_id": "q4",
+        "question": "Which GPU was used?",
+        "answers": [
+          {"unanswerable": true, "extractive_spans": [], "yes_no": null, "free_form_answer": "", "evidence": []}
+        ]
+      },
+      {
+        "question_id": "q5",
+        "question": "Does overlap help?",
+        "answers": [
+          {"unanswerable": false, "extractive_spans": [], "yes_no": true, "free_form_answer": "", "evidence": ["Overlap helps."]}
+        ]
+      },
+      {
+        "question_id": "q6",
+        "question": "What is the accuracy?",
+        "answers": [
+          {"unanswerable": false, "extractive_spans": ["92%"], "yes_no": null, "free_form_answer": "", "evidence": ["FLOAT SELECTED: Table 1: Results."]}
+        ]
+      }
     ]
   }
 ]

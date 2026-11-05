@@ -92,7 +92,7 @@ class Judge:
         prompts: PromptRegistry,
         model: ModelRef,
         ledger: SpendLedger | None = None,
-        max_output_tokens: int = 400,
+        max_output_tokens: int = 2_000,
     ) -> None:
         self.model = model
         self._prompts = prompts

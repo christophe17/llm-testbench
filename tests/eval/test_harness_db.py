@@ -10,8 +10,15 @@ from llm_testbench.config import Settings
 from llm_testbench.eval.cli import run_suite
 from llm_testbench.eval.run_store import RunStore
 from llm_testbench.eval.suite import ArmConfig, SuiteConfig, run_arm
+from llm_testbench.ingest.chunking import RecursiveChunker
+from llm_testbench.ingest.parsing import parse_sections
+from llm_testbench.ingest.pipeline import IngestionPipeline
 from llm_testbench.ingest.store import PgVectorStore
 from llm_testbench.llm.client import LLMClient
+from llm_testbench.llm.governance import DataClass
+from llm_testbench.llm.testing import HashingEmbedder
+from llm_testbench.sources.documents import DocumentSource
+from llm_testbench.sources.types import SearchQuery
 from tests.conftest import FIXTURES_DIR
 
 DATABASE_URL = os.environ.get("LLM_TESTBENCH_DATABASE_URL")
@@ -124,3 +131,61 @@ async def test_cli_runs_the_versioned_suite_in_sample_mode(
     for run in runs:
         assert await history.get(run.run_id) is not None
         await history.delete(run.run_id)
+
+
+async def test_a_scoped_search_only_returns_chunks_of_the_scoped_document(
+    tmp_path: Path,
+) -> None:
+    """QASPER asks a question about one paper: the search carries the paper as a filter.
+    Sixty documents sit nearer to the question than the one the filter wants; the wanted
+    one still comes back, alone."""
+    assert DATABASE_URL is not None
+    settings = Settings(
+        fixtures_dir=FIXTURES_DIR, data_dir=tmp_path / "cache", database_url=DATABASE_URL
+    )
+    client = LLMClient.from_settings(settings)
+    client.register_embedder("openai", HashingEmbedder(dimensions=64))
+    suffix = uuid.uuid4().hex[:8]
+    crowd = [
+        parse_sections(
+            f"crowd-{number}",
+            [("", f"baseline accuracy results table {number}")],
+            metadata={"paper_id": "crowd"},
+        )
+        for number in range(60)
+    ]
+    wanted = parse_sections(
+        "wanted",
+        [("", "baseline accuracy mentioned once among unrelated words about tokenizers")],
+        metadata={"paper_id": "wanted"},
+    )
+    async with PgVectorStore.from_url(DATABASE_URL, max_size=2) as store:
+        pipeline = IngestionPipeline(
+            client=client, store=store, chunker=RecursiveChunker(), data_class=DataClass.PUBLIC
+        )
+        spec = pipeline.index_spec(
+            index_key=f"sample-filter-{suffix}",
+            source_key=f"sample:filter-{suffix}",
+            embedding_model="openai/text-embedding-3-small",
+            dimensions=64,
+        )
+        try:
+            await pipeline.ingest(spec, [*crowd, wanted])
+            source = DocumentSource(client=client, store=store, spec=spec)
+
+            async def search(filters: dict[str, str]) -> list[str]:
+                query = SearchQuery(
+                    text="baseline accuracy results table",
+                    k=5,
+                    filters=filters,
+                    data_class=DataClass.PUBLIC,
+                )
+                return [item.provenance.document_id for item in await source.search(query)]
+
+            assert await search({"paper_id": "wanted"}) == ["wanted"]
+            unscoped = await search({})
+            assert len(unscoped) == 5
+            assert "wanted" not in unscoped
+        finally:
+            await store.drop_index(spec.index_key)
+            await store.delete_source(spec.source_key)

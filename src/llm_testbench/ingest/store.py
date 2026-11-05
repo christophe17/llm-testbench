@@ -514,3 +514,23 @@ class PgVectorStore:
             DocumentHit(doc_id=str(doc_id), score=float(score), chunks=int(chunks))
             for doc_id, score, chunks in rows
         ]
+
+    async def analyze(self, spec: IndexSpec) -> None:
+        """Refresh the planner's statistics on the tables a load just filled.
+
+        Postgres chooses how to run a query from statistics it samples now and then
+        (autovacuum: once about a tenth of a table has changed). ``documents`` and
+        ``chunks`` are shared by every source, so a new source of 10,000 chunks in a table
+        of 180,000 stays under that threshold: the statistics do not know its key exists,
+        the planner expects **one** row for it and picks a plan that is right for one row
+        and ruinous for ten thousand. Measured on 2026-11-05: 22 seconds for a five-chunk
+        search on a fresh index, 50 million rows compared by a nested loop, and nothing
+        that would ever have corrected it. The embedding column itself is left out: the
+        planner needs to know the keys, not the vectors.
+        """
+        async with self._pool.connection() as conn:
+            await conn.execute("ANALYZE documents")
+            await conn.execute("ANALYZE chunks")
+            await conn.execute(
+                sql.SQL("ANALYZE {} (source_key, chunk_id)").format(sql.Identifier(spec.table))
+            )

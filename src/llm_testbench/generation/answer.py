@@ -27,6 +27,18 @@ from llm_testbench.sources.types import Citation, Evidence
 REFUSAL_SENTINEL = "I cannot answer this question from the provided documents."
 PROMPT_NAME = "chat_answer"
 
+MAX_OUTPUT_TOKENS = 4_096
+"""Output cap of an answer, shared by the API and by the evaluation harness.
+
+It is not the length of the answer. Current models reason before they write, and the tokens
+of that reasoning are **output tokens**: billed as such, counted against the cap, and absent
+from the text. An answer of 60 visible tokens can cost 400. With a cap sized for the visible
+text, the reasoning uses it up and the answer comes back cut, or empty, with a finish reason
+of ``length`` and no error (measured on 2026-11-05: 56 empty answers out of 100 at a cap of
+120, 9 cut out of 100 at 512). The cap is a safety net against a runaway generation, set
+well above what an answer and its reasoning need; what is actually spent is measured.
+"""
+
 _CITATION = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\]")
 
 
@@ -93,6 +105,10 @@ class AnswerBuilder:
         self._prompts = prompts
         self._prompt_name = prompt_name
 
+    @property
+    def prompt_name(self) -> str:
+        return self._prompt_name
+
     def build_request(
         self,
         question: str,
@@ -100,7 +116,7 @@ class AnswerBuilder:
         *,
         model: ModelRef,
         data_class: DataClass,
-        max_output_tokens: int = 1024,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
         reasoning_effort: str | None = None,
     ) -> CompletionRequest:
         rendered = self._prompts.render(

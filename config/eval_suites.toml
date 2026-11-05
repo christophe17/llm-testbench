@@ -141,6 +141,116 @@ retriever = "dense"
 embedding_model = "openai/text-embedding-3-small"
 search = "hnsw"
 
+# The same index, searched two other ways: what the HNSW defaults cost on 78,417 chunks.
+[[suites.retrieval-baseline.arms]]
+name = "fiqa-oai-chunks-exact"
+dataset = "beir/fiqa"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+search = "exact"
+
+[[suites.retrieval-baseline.arms]]
+name = "fiqa-oai-chunks-hnsw-400"
+dataset = "beir/fiqa"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+search = "hnsw"
+ef_search = 400
+
+# --- End to end: the same questions on the gold context, then on the retrieved one --------
+# A generation arm with `context = "retrieved"` searches the corpus of its dataset through
+# the API's own document source and hands the `top_k` chunks to the generator. Next to the
+# same questions answered on the gold passages, the difference is what the search costs.
+#
+#   context          "gold" (default) | "retrieved" | "none" (closed book, below)
+#   top_k            chunks handed to the generator (5: the API's default)
+#   embedding_model, chunk_size, chunk_overlap   the index searched, as for a retrieval arm
+#
+# HotpotQA: questions that need two paragraphs. `hotpotqa/pool-1000` = the paragraphs of
+# 1,000 questions of the distractor setting as one corpus (9,789 paragraphs). No published
+# score applies to such a pool: the arms are compared with each other.
+# QASPER: questions about one paper, searched inside that paper (the scope of a question).
+
+[suites.end-to-end]
+description = "The phase 1 system end to end, next to the same questions on the gold context."
+metrics = ["recall_at_5", "recall_at_10", "ndcg_at_10", "mrr_at_10"]
+
+[[suites.end-to-end.arms]]
+name = "hotpotqa-bm25"
+dataset = "hotpotqa/pool-1000"
+split = "validation"
+retriever = "bm25"
+
+[[suites.end-to-end.arms]]
+name = "hotpotqa-oai-chunks-hnsw"
+dataset = "hotpotqa/pool-1000"
+split = "validation"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+search = "hnsw"
+
+[[suites.end-to-end.generation]]
+name = "hotpotqa-gold"
+dataset = "hotpotqa/pool-1000"
+max_examples = 100
+seed = 0
+
+[[suites.end-to-end.generation]]
+name = "hotpotqa-retrieved"
+dataset = "hotpotqa/pool-1000"
+max_examples = 100
+seed = 0
+context = "retrieved"
+embedding_model = "openai/text-embedding-3-small"
+
+[[suites.end-to-end.generation]]
+name = "qasper-gold"
+dataset = "qasper"
+max_examples = 100
+seed = 0
+
+[[suites.end-to-end.generation]]
+name = "qasper-retrieved"
+dataset = "qasper"
+max_examples = 100
+seed = 0
+context = "retrieved"
+embedding_model = "openai/text-embedding-3-small"
+
+# --- Closed book: the same questions without any document --------------------------------
+# The contamination probe (phase 2.5). A question the generator answers correctly with no
+# document at all was not answered thanks to the documents: on such questions a benchmark
+# measures what the model remembers. Same questions as the arms above (same sizes, same
+# seeds), another prompt (prompts/closed_book.md): answer in one sentence, or say that you
+# do not know.
+
+[suites.contamination]
+description = "Closed-book probes: what the generator answers without any document."
+
+[[suites.contamination.generation]]
+name = "squad-closed-book"
+dataset = "squad_v2"
+max_examples = 100
+seed = 0
+context = "none"
+prompt = "closed_book"
+
+[[suites.contamination.generation]]
+name = "hotpotqa-closed-book"
+dataset = "hotpotqa/pool-1000"
+max_examples = 100
+seed = 0
+context = "none"
+prompt = "closed_book"
+
+[[suites.contamination.generation]]
+name = "qasper-closed-book"
+dataset = "qasper"
+max_examples = 100
+seed = 0
+context = "none"
+prompt = "closed_book"
+
 # --- The regression gate ----------------------------------------------------------------
 # Sample mode only (`make eval-gate` forces it): fixtures and a simulated embedder, a few
 # seconds, no key. It guards the code paths (loaders, chunking, storage, both search modes,
@@ -185,11 +295,47 @@ chunk_size = 60
 chunk_overlap = 0
 search = "exact"
 
+[[suites.gate.arms]]
+name = "hotpotqa-bm25"
+dataset = "hotpotqa/pool-1000"
+split = "validation"
+retriever = "bm25"
+
 [[suites.gate.generation]]
 name = "squad-gold"
 dataset = "squad_v2"
 repeats = 2
 repeat_examples = 2
+
+[[suites.gate.generation]]
+name = "hotpotqa-gold"
+dataset = "hotpotqa/pool-1000"
+
+[[suites.gate.generation]]
+name = "hotpotqa-retrieved"
+dataset = "hotpotqa/pool-1000"
+context = "retrieved"
+embedding_model = "openai/text-embedding-3-small"
+top_k = 2
+
+[[suites.gate.generation]]
+name = "squad-closed-book"
+dataset = "squad_v2"
+context = "none"
+prompt = "closed_book"
+
+[[suites.gate.generation]]
+name = "qasper-gold"
+dataset = "qasper"
+
+[[suites.gate.generation]]
+name = "qasper-retrieved"
+dataset = "qasper"
+context = "retrieved"
+embedding_model = "openai/text-embedding-3-small"
+chunk_size = 60
+chunk_overlap = 0
+top_k = 2
 
 # --- Generation on gold context -----------------------------------------------------------
 # The generator receives the passages a perfect retriever would return: what goes wrong
@@ -199,6 +345,9 @@ repeat_examples = 2
 #   generator        backend/model (default: the registry's generator)
 #   max_examples     size of the seeded subsample (half answerable, half unanswerable)
 #   repeats, repeat_examples   ask the first `repeat_examples` questions `repeats` times
+#   max_output_tokens   output cap of a call, reasoning included (default: the API's, 4096).
+#                    The model reasons before it writes and those tokens count: a cap sized
+#                    for the visible answer cuts it. Every run reports its share of cut answers.
 
 [suites.generation-baseline]
 description = "Phase 2 baseline of the generator on gold context: refusals, citations, reference answers."

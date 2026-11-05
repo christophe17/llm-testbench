@@ -15,15 +15,19 @@ after the run. It checks that every arm runs end to end and nothing else.
 import re
 import time
 import tomllib
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from llm_testbench.config import Settings, get_settings
+from llm_testbench.eval.context import ContextProvider, NoContext, RetrievedContext
 from llm_testbench.eval.generation import GenerationRun, run_generation
 from llm_testbench.eval.loaders import BeirLoader
 from llm_testbench.eval.loaders.beir import BEIR_DATASETS
+from llm_testbench.eval.loaders.hotpotqa import HotpotQALoader
+from llm_testbench.eval.loaders.qasper import QasperLoader
 from llm_testbench.eval.loaders.squad import SquadV2Loader
 from llm_testbench.eval.metrics import DEFAULT_METRICS
 from llm_testbench.eval.qa import QADataset
@@ -31,8 +35,9 @@ from llm_testbench.eval.runner import run_retrieval
 from llm_testbench.eval.runs import IndexBuild, Reference, RetrievalRun
 from llm_testbench.eval.spend import SpendLedger
 from llm_testbench.eval.types import RetrievalDataset
-from llm_testbench.generation.answer import AnswerBuilder
+from llm_testbench.generation.answer import MAX_OUTPUT_TOKENS, AnswerBuilder
 from llm_testbench.ingest.chunking import NO_SPLIT, RecursiveChunker
+from llm_testbench.ingest.parsing import ParsedDocument
 from llm_testbench.ingest.pipeline import IngestionPipeline
 from llm_testbench.ingest.store import IndexSpec, PgVectorStore
 from llm_testbench.llm.client import LLMClient
@@ -46,45 +51,53 @@ from llm_testbench.llm.testing import (
 )
 from llm_testbench.llm.types import ModelRef
 from llm_testbench.retrieval import BM25Retriever, DenseRetriever, SearchMode
+from llm_testbench.sources.documents import DocumentSource
 
 SUITES_FILENAME = "eval_suites.toml"
 SAMPLE_DIMENSIONS = 256
 _SLUG = r"^[a-z0-9][a-z0-9-]{0,39}$"
 
 
-class ArmConfig(BaseModel):
+_POOL = re.compile(r"^hotpotqa/pool-(\d+)$")
+
+
+def hotpotqa_pool(dataset: str) -> int | None:
+    """``hotpotqa/pool-1000`` -> 1000: the number of questions whose paragraphs make the
+    corpus. ``None`` for any other dataset key."""
+    match = _POOL.match(dataset)
+    return int(match.group(1)) if match else None
+
+
+class IndexedArm(BaseModel):
+    """What an arm says about the index it reads: the dataset, how its documents are cut
+    and which model embeds them. Shared by the retrieval arms and by the generation arms
+    that search their context."""
+
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     name: str = Field(pattern=_SLUG)
     dataset: str
-    """Dataset key, e.g. ``beir/scifact``."""
-    split: str = "test"
-    retriever: Literal["bm25", "dense"]
+    """Dataset key: ``beir/scifact``, ``hotpotqa/pool-1000``, ``squad_v2``, ``qasper``."""
 
     embedding_model: str | None = None
     chunk_size: int = Field(default=1_000, ge=0)
     """In characters; ``0`` = do not cut (one chunk per document)."""
     chunk_overlap: int = Field(default=200, ge=0)
-    search: SearchMode = "hnsw"
-    ef_search: int | None = Field(default=None, ge=1, le=1_000)
-    candidates: int | None = Field(default=None, ge=1)
     index_key: str | None = None
     source_key: str | None = None
     """Pin an existing index (the one the API serves); derived from the arm otherwise."""
 
-    references: tuple[Reference, ...] = ()
-
     @model_validator(mode="after")
-    def _dense_needs_a_model(self) -> "ArmConfig":
-        if self.retriever == "dense" and self.embedding_model is None:
-            raise ValueError(f"arm {self.name!r}: a dense retriever needs embedding_model")
+    def _pins_go_together(self) -> "IndexedArm":
         if (self.index_key is None) != (self.source_key is None):
             raise ValueError(f"arm {self.name!r}: pin index_key and source_key together")
         return self
 
     @property
     def dataset_name(self) -> str:
-        return self.dataset.rpartition("/")[2]
+        """The dataset as it appears in index and source keys: ``scifact``,
+        ``hotpotqa-pool-1000`` (the pool size is part of what the index holds)."""
+        return self.dataset.removeprefix("beir/").replace("/", "-")
 
     @property
     def whole_documents(self) -> bool:
@@ -119,14 +132,35 @@ class ArmConfig(BaseModel):
         return index_key[:63], source_key
 
 
-class GenerationArmConfig(BaseModel):
-    """A generator under measurement on a QA dataset, fed the gold passages."""
+class ArmConfig(IndexedArm):
+    """A retriever under measurement on a retrieval dataset."""
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    split: str = "test"
+    retriever: Literal["bm25", "dense"]
+    search: SearchMode = "hnsw"
+    ef_search: int | None = Field(default=None, ge=1, le=1_000)
+    candidates: int | None = Field(default=None, ge=1)
 
-    name: str = Field(pattern=_SLUG)
-    dataset: Literal["squad_v2"]
+    references: tuple[Reference, ...] = ()
+
+    @model_validator(mode="after")
+    def _dense_needs_a_model(self) -> "ArmConfig":
+        if self.retriever == "dense" and self.embedding_model is None:
+            raise ValueError(f"arm {self.name!r}: a dense retriever needs embedding_model")
+        return self
+
+
+class GenerationArmConfig(IndexedArm):
+    """A generator under measurement on a QA dataset: fed the gold passages, or what a
+    search of the dataset's corpus returns (the end-to-end run)."""
+
     split: str = "validation"
+    context: Literal["gold", "retrieved", "none"] = "gold"
+    """``none``: the closed-book probe, the question without any document."""
+    prompt: str = "chat_answer"
+    """Name of the versioned prompt the generator is given."""
+    top_k: int = Field(default=5, ge=1, le=50)
+    """Retrieved context: the number of chunks handed to the generator (the API's default)."""
     max_examples: int | None = Field(default=None, ge=2)
     """Size of the random subsample (half answerable, half not); ``None`` = the whole split."""
     seed: int = 0
@@ -135,7 +169,14 @@ class GenerationArmConfig(BaseModel):
     repeats: int = Field(default=1, ge=1)
     repeat_examples: int = Field(default=0, ge=0)
     """Ask the first ``repeat_examples`` questions ``repeats`` times: non-determinism."""
-    max_output_tokens: int = Field(default=512, ge=1)
+    max_output_tokens: int | None = Field(default=None, ge=1)
+    """Output cap of a call, reasoning included; the API's own cap when left out."""
+
+    @model_validator(mode="after")
+    def _a_search_needs_a_model(self) -> "GenerationArmConfig":
+        if self.context == "retrieved" and self.embedding_model is None:
+            raise ValueError(f"arm {self.name!r}: a retrieved context needs embedding_model")
+        return self
 
 
 class SuiteConfig(BaseModel):
@@ -205,6 +246,9 @@ class Suites(BaseModel):
 
 
 def load_dataset(arm: ArmConfig, settings: Settings) -> RetrievalDataset:
+    pool = hotpotqa_pool(arm.dataset)
+    if pool is not None:
+        return HotpotQALoader(settings).load_retrieval(arm.split, pool=pool)
     family, _, name = arm.dataset.partition("/")
     if family != "beir" or name not in BEIR_DATASETS:
         raise ValueError(f"arm {arm.name!r}: dataset {arm.dataset!r} has no loader")
@@ -213,14 +257,14 @@ def load_dataset(arm: ArmConfig, settings: Settings) -> RetrievalDataset:
 
 
 async def ensure_index(
-    arm: ArmConfig,
-    dataset: RetrievalDataset,
+    arm: IndexedArm,
+    documents: Sequence[ParsedDocument],
     *,
     settings: Settings,
     client: LLMClient,
     store: PgVectorStore,
 ) -> tuple[IndexSpec, IndexBuild]:
-    """The index of a dense arm, built if it is missing or incomplete."""
+    """The index an arm reads, built from ``documents`` if it is missing or incomplete."""
     assert arm.embedding_model is not None
     model = ModelRef.parse(arm.embedding_model)
     if settings.sample:
@@ -249,7 +293,7 @@ async def ensure_index(
     if settings.sample:
         await drop_sample_index(spec, store)
     started = time.perf_counter()
-    report = await pipeline.ingest(spec, dataset.parsed_documents())
+    report = await pipeline.ingest(spec, documents)
     build = IndexBuild(
         index_key=index_key,
         documents=report.documents_seen,
@@ -301,7 +345,9 @@ async def run_arm(
         )
     if store is None:
         raise ValueError(f"arm {arm.name!r} reads a pgvector index: a database is required")
-    spec, build = await ensure_index(arm, dataset, settings=settings, client=client, store=store)
+    spec, build = await ensure_index(
+        arm, dataset.parsed_documents(), settings=settings, client=client, store=store
+    )
     try:
         return await run_retrieval(
             dataset,
@@ -326,7 +372,18 @@ async def run_arm(
 
 
 def load_qa_dataset(arm: GenerationArmConfig, settings: Settings) -> QADataset:
-    return SquadV2Loader(settings).load(arm.split, max_examples=arm.max_examples, seed=arm.seed)
+    pool = hotpotqa_pool(arm.dataset)
+    if pool is not None:
+        return HotpotQALoader(settings).load(
+            arm.split, pool=pool, max_examples=arm.max_examples, seed=arm.seed
+        )
+    if arm.dataset == "qasper":
+        return QasperLoader(settings).load_qa(
+            arm.split, max_examples=arm.max_examples, seed=arm.seed
+        )
+    if arm.dataset == "squad_v2":
+        return SquadV2Loader(settings).load(arm.split, max_examples=arm.max_examples, seed=arm.seed)
+    raise ValueError(f"arm {arm.name!r}: dataset {arm.dataset!r} has no question-answering loader")
 
 
 SIMULATED_ANSWER = "The answer is in the excerpt [1]."
@@ -339,6 +396,7 @@ async def run_generation_arm(
     settings: Settings,
     client: LLMClient,
     ledger: SpendLedger | None,
+    store: PgVectorStore | None = None,
 ) -> GenerationRun:
     dataset = load_qa_dataset(arm, settings)
     model = ModelRef.parse(arm.generator) if arm.generator else client.registry.defaults.generator
@@ -356,16 +414,43 @@ async def run_generation_arm(
             backend=model.backend,
         )
         client.register_provider(model.backend, provider)
-    return await run_generation(
-        dataset,
-        client=client,
-        builder=AnswerBuilder(PromptRegistry.from_settings(settings)),
-        model=model,
-        suite=suite_name,
-        arm=arm.name,
-        repeats=arm.repeats,
-        repeat_examples=arm.repeat_examples,
-        max_output_tokens=arm.max_output_tokens,
-        ledger=None if sample_mode else ledger,
-        sample_mode=sample_mode,
-    )
+    ledger = None if sample_mode else ledger
+    context: ContextProvider | None = None
+    spec: IndexSpec | None = None
+    build: IndexBuild | None = None
+    if arm.context == "retrieved":
+        if store is None:
+            raise ValueError(f"arm {arm.name!r} searches a pgvector index: a database is required")
+        if not dataset.corpus:
+            raise ValueError(f"arm {arm.name!r}: dataset {arm.dataset!r} has no corpus to search")
+        if ledger is not None:
+            ledger.check()
+        spec, build = await ensure_index(
+            arm, dataset.corpus, settings=settings, client=client, store=store
+        )
+        if ledger is not None:
+            ledger.charge(build.cost_usd, f"{arm.name} / index")
+        context = RetrievedContext(
+            DocumentSource(client=client, store=store, spec=spec), k=arm.top_k
+        )
+    elif arm.context == "none":
+        context = NoContext()
+    try:
+        return await run_generation(
+            dataset,
+            client=client,
+            builder=AnswerBuilder(PromptRegistry.from_settings(settings), prompt_name=arm.prompt),
+            model=model,
+            suite=suite_name,
+            arm=arm.name,
+            context=context,
+            index=build,
+            repeats=arm.repeats,
+            repeat_examples=arm.repeat_examples,
+            max_output_tokens=arm.max_output_tokens or MAX_OUTPUT_TOKENS,
+            ledger=ledger,
+            sample_mode=sample_mode,
+        )
+    finally:
+        if settings.sample and spec is not None and store is not None:
+            await drop_sample_index(spec, store)

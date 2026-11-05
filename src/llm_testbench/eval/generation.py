@@ -1,9 +1,14 @@
-"""The generation runner: answers produced from the gold context, and scored.
+"""The generation runner: answers produced from a context, and scored.
 
-For each question of a QA dataset the generator receives the passages a perfect retriever
-would return, through the very prompt and parser the API uses
-(:class:`~llm_testbench.generation.answer.AnswerBuilder`). Retrieval is out of the picture
-by construction: whatever goes wrong here is the generator's doing (phase 2.1).
+For each question of a QA dataset the generator receives a context, through the very prompt
+and parser the API uses (:class:`~llm_testbench.generation.answer.AnswerBuilder`). Which
+context is the whole point (``eval/context.py``):
+
+- the **gold** passages, the ones a perfect retriever would return: retrieval is out of the
+  picture by construction, whatever goes wrong is the generator's doing (phase 2.1);
+- the **retrieved** chunks, what the system's own search returns: the end-to-end run. Each
+  answer then also records whether the gold passages were found, so that a wrong answer
+  can be charged to the search or to the generator (:func:`attribution`).
 
 A run can ask some questions several times (``repeats``): a model does not give the same
 answer twice, and the share of questions whose refusal flips from one run to the next is
@@ -19,15 +24,17 @@ from pathlib import Path
 import numpy as np
 from pydantic import BaseModel, ConfigDict
 
+from llm_testbench.eval.context import ContextProvider, GoldContext, score_context
 from llm_testbench.eval.metrics.generation import normalize_answer, score_answer
 from llm_testbench.eval.qa import QADataset
-from llm_testbench.eval.runs import git_state
+from llm_testbench.eval.runs import IndexBuild, git_state
 from llm_testbench.eval.spend import SpendLedger
 from llm_testbench.eval.stats import DEFAULT_RESAMPLES, bootstrap_mean
-from llm_testbench.generation.answer import PROMPT_NAME, AnswerBuilder, parse_answer
+from llm_testbench.generation.answer import MAX_OUTPUT_TOKENS, AnswerBuilder, parse_answer
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.governance import DataClass
-from llm_testbench.llm.types import ModelRef
+from llm_testbench.llm.types import FinishReason, ModelRef
+from llm_testbench.retrieval.types import Description
 
 
 class AnswerResult(BaseModel):
@@ -43,9 +50,15 @@ class AnswerResult(BaseModel):
     unknown_citations: tuple[int, ...] = ()
     metrics: dict[str, float]
     latency_ms: float
+    """Search and generation together: what a user of the API would wait."""
+    retrieval_ms: float = 0.0
     cost_usd: float | None
     input_tokens: int
     output_tokens: int
+    retrieved: tuple[str, ...] = ()
+    """End-to-end runs: the chunks handed to the generator, in the order of the prompt."""
+    truncated: bool = False
+    """The generation stopped on the output cap: the answer is cut, possibly empty."""
 
 
 class RateSummary(BaseModel):
@@ -81,6 +94,14 @@ class GenerationRun(BaseModel):
     arm: str
     dataset: dict[str, int | str | bool]
     context: str = "gold passages"
+    retrieval: Description | None = None
+    """End-to-end runs: how the context was searched (index, mode, ``k``)."""
+    index: IndexBuild | None = None
+    examples_skipped: int = 0
+    """Questions not asked: on the gold context, those the dataset gives no passage for."""
+    max_output_tokens: int | None = None
+    """Output cap of each call, reasoning included (``None``: a run archived before the
+    cap was recorded, made at 512)."""
     generator: str
     """``backend/model`` as requested."""
     served_models: tuple[str, ...]
@@ -131,9 +152,11 @@ async def run_generation(
     model: ModelRef,
     suite: str,
     arm: str,
+    context: ContextProvider | None = None,
+    index: IndexBuild | None = None,
     repeats: int = 1,
     repeat_examples: int = 0,
-    max_output_tokens: int = 512,
+    max_output_tokens: int = MAX_OUTPUT_TOKENS,
     ledger: SpendLedger | None = None,
     sample_mode: bool = False,
     resamples: int = DEFAULT_RESAMPLES,
@@ -141,18 +164,24 @@ async def run_generation(
 ) -> GenerationRun:
     created_at = dt.datetime.now(dt.UTC)
     started = time.perf_counter()
-    source_key = dataset.info.key
+    provider: ContextProvider = context if context is not None else GoldContext(dataset.info.key)
+    asked = [example for example in dataset.examples if provider.applies_to(example)]
+    if not asked:
+        raise ValueError("no question with a context: nothing to measure")
     answers: list[AnswerResult] = []
     served: list[str] = []
     prompt: dict[str, str] = {}
     cost: float | None = 0.0
     try:
         for repeat in range(max(repeats, 1)):
-            examples = dataset.examples if repeat == 0 else dataset.examples[:repeat_examples]
+            examples = asked if repeat == 0 else asked[:repeat_examples]
             for example in examples:
                 if ledger is not None:
                     ledger.check()
-                evidence = example.evidence(source_key)
+                given = await provider.context(example)
+                evidence = list(given.evidence)
+                if ledger is not None and provider.retrieved:
+                    ledger.charge(given.cost_usd, f"{arm} / query embedding")
                 request = builder.build_request(
                     example.question,
                     evidence,
@@ -168,11 +197,21 @@ async def run_generation(
                 parsed = parse_answer(completion.text, evidence)
                 if completion.model not in served:
                     served.append(completion.model)
-                cost = (
+                spent = (
                     None
-                    if cost is None or completion.cost_usd is None
-                    else cost + completion.cost_usd
+                    if completion.cost_usd is None or given.cost_usd is None
+                    else completion.cost_usd + given.cost_usd
                 )
+                cost = None if cost is None or spent is None else cost + spent
+                scores = score_answer(
+                    parsed, answerable=example.answerable, references=example.answers
+                )
+                if provider.retrieved:
+                    scores.update(score_context(example, given.evidence))
+                # A cut answer is still what the system returned: it stays in every rate,
+                # and this one says how many there are.
+                truncated = completion.finish_reason is FinishReason.LENGTH
+                scores["truncated"] = float(truncated)
                 answers.append(
                     AnswerResult(
                         example_id=example.example_id,
@@ -182,13 +221,19 @@ async def run_generation(
                         refused=parsed.refused,
                         cited=parsed.cited_indexes,
                         unknown_citations=parsed.unknown_indexes,
-                        metrics=score_answer(
-                            parsed, answerable=example.answerable, references=example.answers
-                        ),
-                        latency_ms=completion.latency_ms,
-                        cost_usd=completion.cost_usd,
+                        metrics=scores,
+                        latency_ms=completion.latency_ms + given.latency_ms,
+                        retrieval_ms=given.latency_ms,
+                        cost_usd=spent,
                         input_tokens=completion.usage.total_input_tokens,
                         output_tokens=completion.usage.output_tokens,
+                        retrieved=tuple(
+                            item.provenance.chunk_id or item.provenance.document_id
+                            for item in given.evidence
+                        )
+                        if provider.retrieved
+                        else (),
+                        truncated=truncated,
                     )
                 )
     finally:
@@ -213,9 +258,14 @@ async def run_generation(
         suite=suite,
         arm=arm,
         dataset=dataset.describe(),
+        context=str(provider.describe()["context"]),
+        retrieval=provider.describe() if provider.retrieved else None,
+        index=index,
+        examples_skipped=len(dataset.examples) - len(asked),
+        max_output_tokens=max_output_tokens,
         generator=str(model),
         served_models=tuple(served),
-        prompt={"name": PROMPT_NAME, **prompt},
+        prompt={"name": builder.prompt_name, **prompt},
         sample_mode=sample_mode,
         metrics=summary,
         stability=_stability(answers),
@@ -223,6 +273,7 @@ async def run_generation(
             "mean": float(latencies.mean()),
             "p50": float(np.percentile(latencies, 50)),
             "p95": float(np.percentile(latencies, 95)),
+            "retrieval_mean": float(np.mean([answer.retrieval_ms for answer in scored])),
         },
         cost_usd=cost,
         input_tokens=sum(answer.input_tokens for answer in answers),
@@ -241,15 +292,71 @@ LABELS = {
     "answer_f1": "answer F1 (SQuAD)",
     "cited": "cites an excerpt (answered)",
     "invented_citation": "invents a citation (answered)",
+    "context_recall": "gold passages found (share)",
+    "context_complete": "all gold passages found",
+    "context_empty": "search returned nothing",
+    "truncated": "cut by the output cap",
 }
+
+
+class Attribution(BaseModel):
+    """The answerable questions of an end-to-end run, split by what the search found and
+    what the answer contains. The two "missed" cells are the search's share of the
+    failures; ``found_wrong`` is the generator's (or the reference wording's)."""
+
+    model_config = ConfigDict(frozen=True)
+
+    found_right: int
+    """Every gold passage found, reference answer in the answer."""
+    found_wrong: int
+    """Every gold passage found, and still no reference answer: not the search's fault."""
+    missed_right: int
+    """A gold passage missing, reference answer given anyway: found elsewhere, or known."""
+    missed_wrong: int
+    """A gold passage missing and no reference answer: the search failed the question."""
+    missed_refused: int
+    """Among ``missed_wrong``: the generator refused, which is the right thing to do."""
+
+    @property
+    def total(self) -> int:
+        return self.found_right + self.found_wrong + self.missed_right + self.missed_wrong
+
+
+def attribution(run: GenerationRun) -> Attribution | None:
+    """``None`` on a gold-context run: there is no search to charge anything to."""
+    rows = [answer for answer in run.scored() if "context_complete" in answer.metrics]
+    if not rows:
+        return None
+
+    def count(found: bool, right: bool) -> int:
+        return sum(
+            1
+            for answer in rows
+            if bool(answer.metrics["context_complete"]) == found
+            and bool(answer.metrics["contains_answer"]) == right
+        )
+
+    return Attribution(
+        found_right=count(True, True),
+        found_wrong=count(True, False),
+        missed_right=count(False, True),
+        missed_wrong=count(False, False),
+        missed_refused=sum(
+            1 for answer in rows if not answer.metrics["context_complete"] and answer.refused
+        ),
+    )
 
 
 def format_generation(run: GenerationRun) -> str:
     cost = "unknown" if run.cost_usd is None else f"${run.cost_usd:.4f}"
     flag = "" if run.publishable else "  [NOT PUBLISHABLE: sample mode]"
+    asked = len(run.scored())
+    context = run.context
+    if run.retrieval is not None:
+        context += f" (top {run.retrieval['k']} chunks of {run.retrieval['index_key']})"
     lines = [
-        f"{run.arm} — {run.dataset['dataset']}, {run.dataset['examples']} questions, "
-        f"generator {run.generator}, context: {run.context}{flag}",
+        f"{run.arm} — {run.dataset['dataset']}, {asked} questions, "
+        f"generator {run.generator}, context: {context}{flag}",
         f"{'metric':<34} {'rate':>6} {'95% interval':>16} {'n':>5}",
     ]
     for name, summary in run.metrics.items():
@@ -262,6 +369,14 @@ def format_generation(run: GenerationRun) -> str:
             f"asked {run.stability.runs} times ({run.stability.examples} questions): refusal "
             f"flips on {run.stability.refusal_flips:.0%}, wording changes on "
             f"{run.stability.answer_changes:.0%}"
+        )
+    split = attribution(run)
+    if split is not None:
+        lines.append(
+            f"answerable questions ({split.total}): passages found and answer right "
+            f"{split.found_right}, found but wrong {split.found_wrong}, missed but right "
+            f"{split.missed_right}, missed and wrong {split.missed_wrong} "
+            f"(of which refused {split.missed_refused})"
         )
     lines.append(
         f"latency p50 {run.latency_ms['p50']:.0f} ms, p95 {run.latency_ms['p95']:.0f} ms — "

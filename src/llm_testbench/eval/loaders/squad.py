@@ -11,11 +11,10 @@ questions on every machine.
 """
 
 import json
-import random
 from typing import Any
 
 from llm_testbench.config import Settings, get_settings
-from llm_testbench.eval.qa import Passage, QADataset, QAExample
+from llm_testbench.eval.qa import Passage, QADataset, QAExample, balanced_subsample
 from llm_testbench.eval.types import DatasetInfo
 
 SQUAD_V2_INFO = DatasetInfo(
@@ -44,7 +43,7 @@ class SquadV2Loader:
         examples = [_example(row) for row in rows]
         subsample_seed: int | None = None
         if max_examples is not None and len(examples) > max_examples:
-            examples = _balanced_subsample(examples, max_examples, seed)
+            examples = balanced_subsample(examples, max_examples, seed)
             subsample_seed = seed
         return QADataset(
             info=self.info, split=split, examples=tuple(examples), subsample_seed=subsample_seed
@@ -76,16 +75,3 @@ def _example(row: Row) -> QAExample:
         answers=answers,
         answerable=bool(answers),
     )
-
-
-def _balanced_subsample(examples: list[QAExample], size: int, seed: int) -> list[QAExample]:
-    """``size`` examples, half answerable and half not (the odd one goes to answerable),
-    drawn with a seeded generator and returned in the order of the file."""
-    rng = random.Random(seed)
-    answerable = [example for example in examples if example.answerable]
-    unanswerable = [example for example in examples if not example.answerable]
-    half = size // 2
-    chosen = rng.sample(answerable, min(size - half, len(answerable)))
-    chosen += rng.sample(unanswerable, min(half, len(unanswerable)))
-    kept = {example.example_id for example in chosen}
-    return [example for example in examples if example.example_id in kept]

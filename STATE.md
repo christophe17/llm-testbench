@@ -6,11 +6,12 @@
 ## Current phase
 
 **Phase 2 — Evaluation: in progress** since `GO PHASE 2` (2026-11-05). Steps 1 (retrieval
-harness) and 2 (gate, comparison, HTML report) are built and measured. Step 3 is half
-built: generation on gold context is measured on SQuAD 2.0, the judge and the annotation
-tool exist, and **the calibration waits for Christophe's 50 labels** (`make eval-annotate`).
-Step 4 (in-house corpus, contamination, golden set) and the four notebooks remain. Budget:
-lean option, hard cap $10 (`data/results/spend.jsonl`). Decisions in ADR 011 and ADR 012.
+harness) and 2 (gate, comparison, HTML report) are built and measured. Step 3 is built
+except for what needs a calibrated judge: generation is measured on the gold context and
+end to end on HotpotQA and QASPER, closed book on three datasets, and **the calibration
+waits for Christophe's 50 labels** (`make eval-annotate`). Step 4 (in-house corpus, golden
+set) and notebooks 2 to 4 remain. Budget: hard cap $10 (`data/results/spend.jsonl`).
+Decisions in ADR 011, ADR 012 and ADR 013.
 
 **Phase 1 — Production skeleton: built** (2026-09-03), merged into `main` on
 2026-10-16 with PR #2 (PR #3). Since then, everything happens on `main`, with no branch or PR
@@ -75,17 +76,29 @@ course; the testbench proves nothing until phase 1 is studied and run.
   what changes between runs; the judge (two rubrics, yes or no, reasons first); the
   calibration set, the terminal annotation tool, Cohen's kappa; a spend ledger with a cap.
 
+- **End to end** (ADR 013): one generation runner for three contexts, the gold passages,
+  the chunks the API's document source retrieves, or nothing (closed book); each
+  end-to-end answer records whether its gold passages were retrieved, and failures are
+  split between the search and the generator. HotpotQA as a pool of 1,000 questions and
+  9,789 paragraphs; QASPER answers and evidence, searched inside the question's paper.
+  Bias probes of the judge (`make eval-bias`), to run after the calibration. Notebook 1
+  (`notebooks/phase-2/01_measuring_a_rag.ipynb`).
+- **Two defects of phase 1 found by the end-to-end runs and fixed**: ingestion did not
+  refresh the planner's statistics after a load (a search of 22 seconds on a fresh index,
+  5 ms after `ANALYZE`); the output cap of an answer was sized for its visible text while
+  the generator reasons first (answers cut or empty, silently). One cap now, shared by the
+  API and the harness, and every run reports its share of cut answers.
+
 ## Remaining in phase 2
 
-1. **Step 3, rest**. **Christophe: label the 50 calibration items**, `make eval-annotate`,
-   about one hour, resumable. Then `make eval-calibrate` (about $0.40) gives the kappa of
-   both judges, and the judged baseline follows. Still to build: QASPER and HotpotQA
-   generation arms, end-to-end runs (retrieval then generation), the bias experiments.
+1. **Christophe: label the 50 calibration items**, `make eval-annotate`, about one hour,
+   resumable. Then `make eval-calibrate` (about $0.40) gives the kappa of both judges; the
+   judged baseline, the bias probes (`make eval-bias`) and a rubric for correctness
+   against the reference answer (QASPER needs it) follow.
 2. **Step 4**: in-house corpus (download script and manifest), naive text extractor,
-   contamination probes, golden set of 50 to 80 questions. **Christophe**: full review of
-   the generated questions, two to three hours.
-3. Notebooks 1 to 4, the diagram of the harness, the phase closing.
-4. Finish the FiQA arms (57,638 documents; running on 2026-11-05).
+   golden set of 50 to 80 questions. **Christophe**: full review of the drafted questions,
+   two to three hours.
+3. Notebooks 2 to 4, the diagram of the harness, the phase closing.
 
 **Local database recreated on 2026-11-05** (`JOURNAL.md`: a commit made Tilt delete the
 namespace). The suite rebuilt its indexes; the QASPER index of notebook 2
@@ -144,12 +157,33 @@ bootstrap interval; `data/results/runs/retrieval-baseline/`, table in `JOURNAL.m
 
 Earlier, through `mteb` (phase 1): all-MiniLM-L6-v2 0.645.
 
+FiQA (648 queries, a corpus of 57,638 documents): BM25 0.251 (paper: 0.236),
+bge-base-en-v1.5 on whole documents 0.406 (model card: 0.407); the system as built **0.417**
+[0.389, 0.445] with recall@100 0.642, against 0.428 and 0.764 for the same index searched
+exactly: the HNSW default costs 12 points of recall@100 there.
+
 Generation on gold context (SQuAD 2.0, 100 questions, half unanswerable,
 `claude-sonnet-5-5`; `data/results/runs/generation-baseline/`): correct refusal **0.74**
 [0.62, 0.86], over-refusal **0.04** [0.00, 0.10], reference answer present 0.92, an excerpt
 cited in 100% of the answers given and none invented, including on the 26% of unanswerable
 questions that were answered. Asked three times, the refusal flips on 8% of 50 questions.
-Spent: $0.61 of the $10 cap.
+
+End to end (`data/results/runs/end-to-end/`, 100 questions per arm, five chunks to the
+generator):
+
+- **HotpotQA** (two paragraphs needed per question): reference answer given **0.57**
+  [0.47, 0.67] end to end against 0.85 on the gold context. Both gold paragraphs are
+  retrieved for 60% of the questions; of the 43 failures, 33 have a paragraph missing and
+  29 of those are refusals. Retrieval alone on the pool: recall@5 0.806, nDCG@10 0.816
+  (BM25: 0.737 and 0.756).
+- **QASPER** (one paper per question): correct refusal on unanswerable questions **0.74**
+  [0.62, 0.86]; all gold paragraphs retrieved for 54% of the answerable ones. "Reference
+  answer given" is 0.28 even on the gold evidence: not a usable metric on free-form
+  answers, a judge is needed.
+- **Closed book** (`data/results/runs/contamination/`): with no document, the generator
+  gives the reference answer on **53%** of the HotpotQA questions, 38% of SQuAD's, 0% of
+  QASPER's. Of the 57 HotpotQA questions the system gets right end to end, 38 are ones
+  the model answers alone.
 
 ## Decisions awaiting a call
 

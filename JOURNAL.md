@@ -773,3 +773,93 @@ shown usable); the notebooks and the diagram.
 
 **Next**: Christophe runs `make eval-annotate` (50 items, two keys each, resumable), then
 `make eval-calibrate`.
+
+## 2026-11-05 — Phase 2, step 3, second half: end to end, and what the first clock found
+
+**Trigger**: the rest of step 3 does not wait for the 50 labels: the HotpotQA and QASPER
+arms, the end-to-end runs, the closed-book probe, the bias probes of the judge.
+
+**Done** (ADR 013): one generation runner for three contexts, gold passages, chunks
+retrieved by the API's own document source, or nothing (`eval/context.py`); each
+end-to-end answer records whether the gold passages were among the chunks it was handed,
+and the answerable questions are split four ways, passages found or not, reference answer
+given or not (`attribution`). HotpotQA loader: the paragraphs of 1,000 questions of the
+distractor setting pooled into one corpus of 9,789, as a retrieval dataset and as a
+question-answering one. QASPER answers and evidence: 887 of the 1,005 validation questions
+can be scored from the text, the search scoped to the paper. Closed-book probe as a third
+context with its own prompt (`prompts/closed_book.md`). Bias probes of the judge
+(`eval/bias.py`, `make eval-bias`): padding, citation markers removed, excerpts reversed,
+against a repeat control; to run once the judge is calibrated. The gate covers 12 arms.
+Notebook 1 of phase 2 (`notebooks/phase-2/01_measuring_a_rag.ipynb`, 30 cells).
+
+**Measured** (full runs archived under `data/results/runs/`, 95% bootstrap intervals):
+
+| | Reference answer given | Correct refusal | Over-refusal | All gold passages found |
+|---|---|---|---|---|
+| HotpotQA, gold context (100) | 0.85 [0.78, 0.92] | — | 0.04 | — |
+| HotpotQA, **end to end** (100) | **0.57** [0.47, 0.67] | — | 0.31 | 0.60 |
+| HotpotQA, closed book (100) | 0.53 [0.43, 0.63] | — | 0.20 says it does not know | — |
+| QASPER, gold context (50 answerable) | 0.28 | — | 0.12 | — |
+| QASPER, **end to end** (50 + 50) | 0.20 | **0.74** [0.62, 0.86] | 0.16 | 0.54 |
+| QASPER, closed book | 0.00 | — | 0.98 says it does not know | — |
+| SQuAD 2.0, closed book (50 answerable) | 0.38 [0.26, 0.52] | — | 0.34 says it does not know | — |
+
+Retrieval alone on the HotpotQA pool (1,000 questions): BM25 recall@5 0.737, nDCG@10 0.756;
+the system as built 0.806 and 0.816. FiQA (648 queries): bge-base-en-v1.5 on whole
+documents 0.406 (model card: 0.407); the system as built 0.417 [0.389, 0.445], recall@100
+0.642; the same index searched exactly 0.428 and 0.764.
+
+**Incidents / surprises**:
+- **The end-to-end score hides who failed.** HotpotQA: 43 wrong in 100. In 33 of them a gold
+  paragraph was missing from the five chunks, and in 29 of those the generator refused, as
+  it should. Ten failures are the generator's. A reader of "57%" alone rewrites the prompt.
+- **The HNSW default costs 12 points of recall@100 on FiQA** (0.642 against 0.764 exact,
+  [-0.141, -0.103]), twice what it costs on SciFact. Forty candidates is the same forty
+  whatever the corpus.
+- **A search took 22 seconds on a fresh index, and no retrieval metric would have shown
+  it.** The chunks of the HotpotQA pool went into tables shared with other sources;
+  Postgres had sampled its statistics before the load, expected one row for the new source
+  and joined 10,635 chunks against 4,896 documents each. Autovacuum would not have fixed it
+  (the load was under a tenth of the tables). The pipeline now ends a load with `ANALYZE`
+  (`PgVectorStore.analyze`); the same search takes 5 ms. Found because an end-to-end run
+  has a clock.
+- **Half of the first closed-book answers were empty, and the run called them answers.**
+  The generator reasons before it writes; those tokens are output tokens, counted against
+  the cap and absent from the text. The probe was capped at 120 tokens: 56 empty answers in
+  100, a finish reason of `length`, no error, and a table saying the model "answers 99% of
+  the questions". At the harness's 512, 9 QASPER answers in 100 were cut. The API had a
+  third cap, 1,024. One constant now (`MAX_OUTPUT_TOKENS = 4096`, shared), every answer
+  records whether it was cut, every run reports the share. It also explains both cost
+  estimates that were off by two: an answer of 60 visible tokens is billed 120 to 400.
+- **Without any document, the generator gives the reference answer on 53% of the HotpotQA
+  questions**; the whole system scores 57%. Of its 57 right answers, 38 are on questions
+  the model answers alone. On the 47 it does not know, the system gets 19 right (40%) and
+  the gold context 36 (77%): that is the system's own contribution, and it is not 57%.
+  On 15 questions the model knew and the system refused or erred: told to rely only on the
+  excerpts, it did.
+- **`contains the reference answer` does not work on QASPER**: 0.28 on the gold evidence.
+  The references are spans and free-form sentences; a right answer in other words does not
+  contain them. Half of what the table calls "found but wrong" cannot be graded by code.
+- **The scoped QASPER search was checked against an exact search before being trusted**:
+  identical on the 887 questions (Postgres filters the documents first and compares their
+  chunks one by one; the index is not used). An `iterative` and an `exact` mode were
+  written for the chunk search, measured identical, and removed.
+- A background run was started twice by mistake (`&` in a shell line): two processes
+  harvested arXiv at once for seven minutes, until the stale one was killed. Nothing was
+  written by it.
+
+**Cost**: $4.11 spent on the baseline so far, of the $10 cap (`data/results/spend.jsonl`;
+the drafting of the golden set, next entry, is not counted here), against "about $5"
+announced for the whole baseline. $1.15 of it bought nothing: a run made before the
+`ANALYZE` fix and interrupted ($0.09), closed-book runs made at a cap of 120 tokens and
+void ($0.26), QASPER runs made at 512 and run again ($0.80). The rest of the overrun is
+reasoning tokens, which no estimate of mine had counted.
+
+**Not done**: the calibration and the judged baseline (they wait for the 50 labels); the
+self-preference probe (a second generator and a second judge, about a dollar, not before
+the calibration); a judge rubric for correctness against the reference answer, which
+QASPER needs; SQuAD 2.0 and HotpotQA on the gold context were not run again at the new cap
+(2 calls in 200 and 0 in 100 had reached the old one; the SQuAD answers are in the
+calibration set being labelled).
+
+**Next**: step 4, the in-house corpus and the golden set.

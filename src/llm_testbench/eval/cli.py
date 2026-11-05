@@ -23,11 +23,13 @@ from psycopg import AsyncConnection, OperationalError
 
 from llm_testbench.config import Settings, find_repo_root, get_settings, load_env_file
 from llm_testbench.eval.annotate import annotate
+from llm_testbench.eval.bias import format_bias, probe, save_bias
 from llm_testbench.eval.calibration import (
     CALIBRATION_DIR,
     build_items,
     calibrate,
     format_calibration,
+    materialize,
     read_items,
     read_labels,
     save_calibration,
@@ -148,16 +150,28 @@ async def run_generation_suite(
         return []
     client = LLMClient.from_settings(settings)
     ledger = spend_ledger(settings)
+    searches = any(arm.context == "retrieved" for arm in arms)
+    store = (
+        PgVectorStore.from_url(settings.database_url)
+        if settings.database_url and searches
+        else None
+    )
     runs: list[GenerationRun] = []
-    for arm in arms:
-        if echo:
-            sys.stderr.write(f"→ {arm.name} ({arm.dataset})\n")
-        run = await run_generation_arm(
-            suite_name, arm, settings=settings, client=client, ledger=ledger
-        )
-        runs.append(run)
-        if results_dir is not None and run.publishable:
-            save_generation(run, results_dir)
+    if store is not None:
+        await store.open()
+    try:
+        for arm in arms:
+            if echo:
+                sys.stderr.write(f"→ {arm.name} ({arm.dataset})\n")
+            run = await run_generation_arm(
+                suite_name, arm, settings=settings, client=client, ledger=ledger, store=store
+            )
+            runs.append(run)
+            if results_dir is not None and run.publishable:
+                save_generation(run, results_dir)
+    finally:
+        if store is not None:
+            await store.close()
     return runs
 
 
@@ -195,6 +209,7 @@ async def run_gate(settings: Settings, *, require_db: bool) -> tuple[list[GatedR
         # A laptop with its cluster down still gets the arms that need no database; a
         # hook that fails whenever the cluster is off is a hook that gets bypassed.
         skipped = [arm.name for arm in suite.arms if arm.retriever == "dense"]
+        skipped += [arm.name for arm in suite.generation if arm.context == "retrieved"]
         sample = sample.model_copy(update={"database_url": None})
     names = [name for name in suite.arm_names() if name not in skipped]
     runs: list[GatedRun] = []
@@ -207,18 +222,26 @@ async def run_gate(settings: Settings, *, require_db: bool) -> tuple[list[GatedR
     return runs, skipped
 
 
+async def run_everything(
+    suite: str, arms: list[str] | None, *, settings: Settings, results_dir: Path | None
+) -> tuple[list[RetrievalRun], list[GenerationRun]]:
+    """Retrieval arms then generation arms, on ONE event loop: an HTTP client belongs to
+    the loop that opened it, and a second ``asyncio.run`` would leave the first one's
+    connections to be closed on a loop that no longer exists."""
+    retrieval = await run_suite(suite, arms, settings=settings, results_dir=results_dir)
+    generation = await run_generation_suite(suite, arms, settings=settings, results_dir=results_dir)
+    return retrieval, generation
+
+
 def _run_command(args: argparse.Namespace, settings: Settings) -> int:
     results_dir = None if args.no_archive else find_repo_root() / "data" / "results"
-    retrieval = asyncio.run(
-        run_suite(args.suite, args.arm, settings=settings, results_dir=results_dir)
+    retrieval, generation = asyncio.run(
+        run_everything(args.suite, args.arm, settings=settings, results_dir=results_dir)
     )
     if retrieval:
         sys.stdout.write(format_runs(retrieval) + "\n")
         if not settings.database_url:
             sys.stderr.write("no LLM_TESTBENCH_DATABASE_URL: runs not saved to the history\n")
-    generation = asyncio.run(
-        run_generation_suite(args.suite, args.arm, settings=settings, results_dir=results_dir)
-    )
     for run in generation:
         sys.stdout.write(format_generation(run) + "\n\n")
     ledger = spend_ledger(settings)
@@ -339,6 +362,31 @@ def _calibrate_command(args: argparse.Namespace, settings: Settings) -> int:
     return 0
 
 
+def _bias_command(args: argparse.Namespace, settings: Settings) -> int:
+    root = find_repo_root()
+    directory = root / CALIBRATION_DIR
+    run = _calibration_source(args, settings)
+    dataset = _calibration_dataset(run, settings)
+    materials = [materialize(item, dataset) for item in read_items(directory)]
+    client = LLMClient.from_settings(settings)
+    ledger = spend_ledger(settings)
+    judge = Judge(
+        client=client,
+        prompts=PromptRegistry.from_settings(settings),
+        model=ModelRef.parse(args.judge[0]),
+        ledger=ledger,
+    )
+    try:
+        results = asyncio.run(probe(materials, judge))
+    finally:
+        if ledger is not None:
+            ledger.commit(f"judge bias probes ({args.judge[0]})")
+    sys.stdout.write(format_bias(results) + "\n")
+    path = save_bias(results, root / "data" / "results")
+    sys.stdout.write(f"→ {path}\n")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     load_env_file()  # .env at the repository root; the environment wins
     parser = argparse.ArgumentParser(description="Evaluation harness.")
@@ -368,6 +416,7 @@ def main(argv: list[str] | None = None) -> int:
         ("calibration-set", "draw the calibration items from an archived generation run"),
         ("annotate", "label the calibration items by hand"),
         ("calibrate", "judges against the human labels (Cohen's kappa)"),
+        ("bias", "does a judge's verdict move when only the form of the answer does"),
     ):
         sub = commands.add_parser(name, help=text)
         sub.add_argument("--suite", default=GENERATION_SUITE)
@@ -376,12 +425,12 @@ def main(argv: list[str] | None = None) -> int:
             sub.add_argument("--size", type=int, default=50)
             sub.add_argument("--seed", type=int, default=0)
             sub.add_argument("--force", action="store_true")
-        if name == "calibrate":
+        if name in ("calibrate", "bias"):
             sub.add_argument(
                 "--judge",
                 action="append",
                 required=True,
-                help="backend/model of a judge (repeatable)",
+                help="backend/model of a judge (repeatable; bias probes the first one)",
             )
 
     args = parser.parse_args(argv)
@@ -398,6 +447,8 @@ def main(argv: list[str] | None = None) -> int:
         return _calibration_set_command(args, settings)
     if args.command == "annotate":
         return _annotate_command(args, settings)
+    if args.command == "bias":
+        return _bias_command(args, settings)
     return _calibrate_command(args, settings)
 
 

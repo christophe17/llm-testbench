@@ -7,7 +7,15 @@ import pytest
 
 from llm_testbench.config import Settings
 from llm_testbench.eval.annotate import annotate
+from llm_testbench.eval.bias import (
+    format_bias,
+    padded,
+    probe,
+    reversed_excerpts,
+    without_citations,
+)
 from llm_testbench.eval.calibration import (
+    Material,
     build_items,
     calibrate,
     format_calibration,
@@ -16,22 +24,26 @@ from llm_testbench.eval.calibration import (
     read_labels,
     write_items,
 )
+from llm_testbench.eval.context import Context, NoContext
 from llm_testbench.eval.generation import (
     GenerationRun,
+    attribution,
     format_generation,
     load_generation,
     run_generation,
     save_generation,
 )
 from llm_testbench.eval.judge import Judge, Rubric, render_material
+from llm_testbench.eval.loaders.hotpotqa import HotpotQALoader
+from llm_testbench.eval.loaders.qasper import QasperLoader
 from llm_testbench.eval.loaders.squad import SquadV2Loader
-from llm_testbench.eval.qa import QADataset
+from llm_testbench.eval.qa import QADataset, QAExample
 from llm_testbench.eval.spend import SpendCapExceededError, SpendLedger
 from llm_testbench.eval.suite import GenerationArmConfig, Suites, run_generation_arm
 from llm_testbench.generation.answer import REFUSAL_SENTINEL, AnswerBuilder
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.prompts import PromptRegistry
-from llm_testbench.llm.types import ModelRef
+from llm_testbench.llm.types import FinishReason, ModelRef
 from tests.llm.fakes import FakeProvider, make_completion
 
 GENERATOR = ModelRef.parse("anthropic/claude-sonnet-5-5")
@@ -117,6 +129,136 @@ async def test_repeats_measure_what_changes_between_runs(
     assert run.stability.answer_changes == 0.5
     # The repeats do not enter the rates.
     assert run.metrics["over_refusal"].mean == 0.5
+
+
+class ScriptedSearch:
+    """A search that finds what the script says: the gold passages of the listed
+    questions, one unrelated chunk for the others, at a known price."""
+
+    retrieved = True
+
+    def __init__(self, finds: set[str]) -> None:
+        self._finds = finds
+
+    def describe(self) -> dict[str, str | int | float | bool | None]:
+        return {"context": "retrieved", "k": 5, "index_key": "unit"}
+
+    def applies_to(self, example: QAExample) -> bool:
+        return True
+
+    async def context(self, example: QAExample) -> Context:
+        evidence = example.evidence("unit")
+        if example.example_id not in self._finds:
+            evidence = evidence[:1] if len(evidence) > 1 else []
+        return Context(evidence=tuple(evidence), cost_usd=0.001, latency_ms=12.0)
+
+
+async def test_end_to_end_charges_a_failure_to_the_search_or_to_the_generator(
+    offline_settings: Settings,
+) -> None:
+    dataset = HotpotQALoader(offline_settings).load()
+    # h-nationality: both paragraphs found, right answer. h-river: found, wrong answer.
+    # h-prize: one paragraph missing, and the generator refuses.
+    texts = ["Yes, both were English [1][2].", "The Atlantic Ocean [2].", REFUSAL_SENTINEL]
+    run = await generate(
+        offline_settings,
+        dataset,
+        texts,
+        context=ScriptedSearch({"h-nationality", "h-river"}),
+    )
+    split = attribution(run)
+    assert split is not None
+    assert (split.found_right, split.found_wrong) == (1, 1)
+    assert (split.missed_right, split.missed_wrong, split.missed_refused) == (0, 1, 1)
+    assert run.metrics["context_complete"].mean == pytest.approx(2 / 3)
+    assert run.metrics["context_recall"].mean == pytest.approx((1 + 1 + 0.5) / 3)
+    assert run.context == "retrieved"
+    assert run.retrieval is not None
+    assert run.retrieval["k"] == 5
+    # The search is paid and waited for like the rest.
+    assert run.cost_usd == pytest.approx(3 * ((400 * 2 + 20 * 10) / 1e6 + 0.001))
+    assert run.answers[0].retrieval_ms == 12.0
+    assert run.answers[0].retrieved == ("Ada Lovelace", "Charles Babbage")
+    assert "found but wrong 1" in format_generation(run)
+
+
+async def test_gold_context_leaves_out_the_questions_without_a_gold_passage(
+    offline_settings: Settings,
+) -> None:
+    dataset = QasperLoader(offline_settings).load_qa()
+    run = await generate(
+        offline_settings, dataset, ["Retrieval [1].", "It splits [1].", "Yes [1]."]
+    )
+    # q4 is unanswerable and QASPER names no passage for it: nothing to ask it on.
+    assert (len(run.scored()), run.examples_skipped) == (3, 1)
+    assert "correct_refusal" not in run.metrics
+    assert attribution(run) is None
+
+
+async def test_an_answer_cut_by_the_output_cap_is_counted_not_hidden(
+    offline_settings: Settings, dataset: QADataset
+) -> None:
+    """A model that reasons before it writes spends output tokens that are not in the text.
+    When the cap is reached the answer comes back cut or empty, with no error: the run says
+    how often."""
+    client = LLMClient.from_settings(offline_settings)
+    script = [
+        make_completion(text, model="claude-sonnet-5-5", input_tokens=400, output_tokens=20)
+        for text in ANSWERS
+    ]
+    # The second call spent its whole budget reasoning: nothing was written.
+    script[1] = make_completion(
+        "", model="claude-sonnet-5-5", input_tokens=400, output_tokens=64
+    ).model_copy(update={"finish_reason": FinishReason.LENGTH})
+    client.register_provider("anthropic", FakeProvider("anthropic", script=script))
+    run = await run_generation(
+        dataset,
+        client=client,
+        builder=AnswerBuilder(PromptRegistry.from_settings(offline_settings)),
+        model=GENERATOR,
+        suite="unit",
+        arm="gold",
+        max_output_tokens=64,
+        resamples=200,
+    )
+    assert (run.metrics["truncated"].mean, run.metrics["truncated"].examples) == (0.25, 4)
+    assert [answer.truncated for answer in run.answers] == [False, True, False, False]
+    assert run.max_output_tokens == 64
+    # An empty answer is not a refusal: the unanswerable question counts as answered.
+    assert run.metrics["correct_refusal"].mean == 0.0
+    assert "cut by the output cap" in format_generation(run)
+    sent = client.provider_for("anthropic", client.registry.get("anthropic"))
+    assert sent.calls[0].max_output_tokens == 64  # type: ignore[attr-defined]
+
+
+async def test_closed_book_asks_without_any_document_through_its_own_prompt(
+    offline_settings: Settings, dataset: QADataset
+) -> None:
+    client = client_with(
+        offline_settings,
+        "anthropic",
+        ["The Massif Central.", REFUSAL_SENTINEL, REFUSAL_SENTINEL, "In Warsaw."],
+        "claude-sonnet-5-5",
+    )
+    prompts = PromptRegistry.from_settings(offline_settings)
+    run = await run_generation(
+        dataset,
+        client=client,
+        builder=AnswerBuilder(prompts, prompt_name="closed_book"),
+        model=GENERATOR,
+        suite="unit",
+        arm="closed-book",
+        context=NoContext(),
+        resamples=200,
+    )
+    assert run.context == "none (closed book)"
+    assert run.prompt["name"] == "closed_book"
+    # One of the two answerable questions is answered from memory.
+    assert run.metrics["contains_answer"].mean == 0.5
+    assert run.metrics["over_refusal"].mean == 0.5
+    assert attribution(run) is None
+    sent = client.provider_for("anthropic", client.registry.get("anthropic"))
+    assert "No document is provided" in sent.calls[0].system  # type: ignore[attr-defined]
 
 
 async def test_archive_round_trip_and_sample_mode(
@@ -305,3 +447,45 @@ def test_swapped_items_take_another_passage_or_another_question(
         if item.kind == "other_question":
             assert item.question_from != item.answer_from
             assert item.passages_from == item.answer_from
+
+
+async def test_bias_probes_compare_each_change_with_doing_nothing(
+    offline_settings: Settings, dataset: QADataset
+) -> None:
+    example = dataset.examples[0]
+    material = Material(
+        question=example.question,
+        evidence=tuple(example.evidence(dataset.info.key)),
+        answer="The Loire rises in the Massif Central [1].",
+    )
+    plain = material.model_copy(update={"answer": "The Loire rises in the Massif Central."})
+    assert padded(material).answer.startswith(material.answer)
+    assert without_citations(material).answer == plain.answer
+    assert reversed_excerpts(material) == material  # one excerpt: nothing to reverse
+
+    yes = '{"justification": "Stated in the excerpt.", "verdict": "yes"}'
+    no = '{"justification": "No marker, no support.", "verdict": "no"}'
+    # Order of the calls: both rubrics on the two items as they are (4), then per change and
+    # rubric: repeat (2 + 2), padded (2 + 2), without_citations (1 + 1: the plain answer has
+    # no citation to lose). The judge flips once, on groundedness, when the marker goes.
+    replies = [yes] * 4 + [yes] * 4 + [yes] * 4 + [no, yes]
+    judge = Judge(
+        client=client_with(offline_settings, "openai", replies, "gpt-5.6-luna"),
+        prompts=PromptRegistry.from_settings(offline_settings),
+        model=JUDGE,
+    )
+    results = await probe([material, plain], judge)
+    by_key = {(row.perturbation, row.rubric): row for row in results}
+    # A single excerpt cannot be reordered: the position probe has no item and no row.
+    assert ("reversed_excerpts", Rubric.GROUNDEDNESS) not in by_key
+    control = by_key[("repeat", Rubric.GROUNDEDNESS)]
+    assert (control.items, control.flips, control.bias) == (2, 0, "control")
+    lost = by_key[("without_citations", Rubric.GROUNDEDNESS)]
+    assert (lost.items, lost.flips, lost.to_no, lost.to_yes) == (1, 1, 1, 0)
+    assert by_key[("without_citations", Rubric.RELEVANCE)].flips == 0
+    assert by_key[("padded", Rubric.GROUNDEDNESS)].flip_rate == 0.0
+    table = format_bias(results)
+    assert "without_citations" in table
+    assert "1 to no" in table
+    with pytest.raises(KeyError, match="unknown perturbation"):
+        await probe([material], judge, ["shouting"])

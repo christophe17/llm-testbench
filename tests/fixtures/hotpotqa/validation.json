@@ -1,0 +1,149 @@
+[
+ {
+  "id": "h-nationality",
+  "question": "Were Ada Lovelace and Charles Babbage of the same nationality?",
+  "answer": "yes",
+  "type": "comparison",
+  "level": "hard",
+  "supporting_facts": {
+   "title": [
+    "Ada Lovelace",
+    "Charles Babbage"
+   ],
+   "sent_id": [
+    0,
+    0
+   ]
+  },
+  "context": {
+   "title": [
+    "Ada Lovelace",
+    "Analytical Engine",
+    "Charles Babbage"
+   ],
+   "sentences": [
+    [
+     "Ada Lovelace was an English mathematician and writer.",
+     " She wrote the first published program for a machine."
+    ],
+    [
+     "The Analytical Engine was a proposed mechanical computer.",
+     " It was never completed."
+    ],
+    [
+     "Charles Babbage was an English mathematician and inventor.",
+     " He designed the Analytical Engine."
+    ]
+   ]
+  }
+ },
+ {
+  "id": "h-river",
+  "question": "Which sea does the river that flows through Avignon empty into?",
+  "answer": "Mediterranean Sea",
+  "type": "bridge",
+  "level": "hard",
+  "supporting_facts": {
+   "title": [
+    "Avignon",
+    "Rhone",
+    "Rhone"
+   ],
+   "sent_id": [
+    0,
+    0,
+    1
+   ]
+  },
+  "context": {
+   "title": [
+    "Avignon",
+    "Loire",
+    "Rhone",
+    "Analytical Engine"
+   ],
+   "sentences": [
+    [
+     "Avignon is a city in southeastern France on the left bank of the Rhone river."
+    ],
+    [
+     "The Loire is the longest river in France.",
+     " It empties into the Atlantic Ocean."
+    ],
+    [
+     "The Rhone is a major river in France and Switzerland.",
+     " It empties into the Mediterranean Sea."
+    ],
+    [
+     "The Analytical Engine was a proposed mechanical computer.",
+     " It was never completed."
+    ]
+   ]
+  }
+ },
+ {
+  "id": "h-prize",
+  "question": "In which city was the scientist who discovered polonium born?",
+  "answer": "Warsaw",
+  "type": "bridge",
+  "level": "hard",
+  "supporting_facts": {
+   "title": [
+    "Polonium",
+    "Marie Curie"
+   ],
+   "sent_id": [
+    0,
+    1
+   ]
+  },
+  "context": {
+   "title": [
+    "Polonium",
+    "Marie Curie",
+    "Radium",
+    "Empty stub"
+   ],
+   "sentences": [
+    [
+     "Polonium is a chemical element discovered in 1898 by Marie Curie."
+    ],
+    [
+     "Marie Curie was a physicist and chemist.",
+     " She was born in Warsaw."
+    ],
+    [
+     "Radium is a chemical element.",
+     " It glows faintly in the dark."
+    ],
+    []
+   ]
+  }
+ },
+ {
+  "id": "h-broken",
+  "question": "A question whose gold paragraph is missing from its context?",
+  "answer": "dropped",
+  "type": "bridge",
+  "level": "hard",
+  "supporting_facts": {
+   "title": [
+    "Nowhere"
+   ],
+   "sent_id": [
+    0
+   ]
+  },
+  "context": {
+   "title": [
+    "Radium"
+   ],
+   "sentences": [
+    [
+     "Radium is a chemical element.",
+     " It glows faintly in the dark."
+    ]
+   ]
+  }
+ }
+]

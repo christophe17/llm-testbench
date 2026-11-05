@@ -14,12 +14,18 @@ What each dataset is for (plan of 2026-11-05). BEIR (SciFact, NFCorpus, FiQA): r
 alone, against published nDCG@10. SQuAD 2.0: generation on the gold paragraph, for the
 refusal and over-refusal rates; its published scores are those of fine-tuned extractive
 readers, shown for reference, not as a target. HotpotQA: the full-wiki corpus (5.2 million
-passages) does not fit a local pgvector, so a 1,000-question subset with its own corpus of a
-few thousand passages, chosen for having published recall@k (to be verified when its loader
-is written). QASPER: a question is about one paper, so retrieval is scoped to that paper, as
-the dataset defines the task; unscoped, the question "which approaches do they compare
-with?" retrieves another paper's chunks and the answer is a refusal (notebook 2, full run of
-2026-11-05).
+passages) does not fit a local pgvector, so the paragraphs of 1,000 questions of the
+distractor setting are pooled into one corpus (9,789 paragraphs). Verified when the loader
+was written (2026-11-05): no published score applies to such a pool (BEIR measures the
+full corpus, the distractor leaderboard ranks readers that are handed the ten paragraphs),
+so its arms are compared with each other, gold context against retrieved context, not with
+the literature. QASPER: a question is about one paper, so retrieval is scoped to that
+paper, as the dataset defines the task; unscoped, the question "which approaches do they
+compare with?" retrieves another paper's chunks and the answer is a refusal (notebook 2,
+full run of 2026-11-05). A QASPER question is kept when its annotators agree on whether it
+can be answered and, if it can, when at least one paragraph of text supports it (evidence
+that is only a table or a figure is out of reach of a text pipeline): 887 of the 1,005
+validation questions.
 
 **2.2 Comparison with the literature.** For each dataset, our score next to the published
 scores. A large gap is a bug, not a result: treat it as such. First benchmark obtained in

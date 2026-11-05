@@ -107,11 +107,22 @@ async def test_the_gate_runs_without_a_database_and_says_what_it_skipped(
         update={"database_url": "postgresql://nobody:x@127.0.0.1:1/none"}
     )
     runs, skipped = await run_gate(unreachable, require_db=False)
-    assert [run.arm for run in runs] == ["scifact-bm25", "nfcorpus-bm25", "squad-gold"]
+    assert [run.arm for run in runs] == [
+        "scifact-bm25",
+        "nfcorpus-bm25",
+        "hotpotqa-bm25",
+        "squad-gold",
+        "hotpotqa-gold",
+        "squad-closed-book",
+        "qasper-gold",
+    ]
+    # Everything that reads a pgvector index: dense retrieval and searched contexts.
     assert skipped == [
         "scifact-dense-whole-exact",
         "scifact-dense-chunks-hnsw",
         "nfcorpus-dense-chunks-exact",
+        "hotpotqa-retrieved",
+        "qasper-retrieved",
     ]
     assert not any(run.publishable for run in runs)
     with pytest.raises(SystemExit, match="database is required"):

@@ -5,6 +5,7 @@ import uuid
 from collections.abc import AsyncIterator
 
 import pytest
+from psycopg import AsyncConnection
 
 from llm_testbench.ingest.chunking import RecursiveChunker
 from llm_testbench.ingest.parsing import parse_text
@@ -121,6 +122,47 @@ async def test_ingest_then_search_then_cite(
     finally:
         await store.drop_index(spec.index_key)
         await store.delete_source(source_key)
+
+
+async def _analyzed_at(table: str) -> object:
+    assert DATABASE_URL is not None
+    async with await AsyncConnection.connect(DATABASE_URL) as conn:
+        cursor = await conn.execute(
+            "SELECT last_analyze FROM pg_stat_user_tables WHERE relname = %s", (table,)
+        )
+        row = await cursor.fetchone()
+    return row[0] if row else None
+
+
+async def test_a_load_refreshes_the_planner_statistics_and_a_no_op_does_not(
+    store: PgVectorStore, client: LLMClient
+) -> None:
+    """A bulk load the planner has no statistics for is run with a plan made for one row
+    (22 seconds for one search, measured on 2026-11-05): the pipeline analyzes what it
+    filled. An ingestion that writes nothing leaves the statistics alone."""
+    suffix = uuid.uuid4().hex[:8]
+    pipeline = IngestionPipeline(
+        client=client, store=store, chunker=RecursiveChunker(), data_class=DataClass.PUBLIC
+    )
+    spec = pipeline.index_spec(
+        index_key=f"t-{suffix}",
+        source_key=f"docs:test-{suffix}",
+        embedding_model="openai/text-embedding-3-small",
+        dimensions=2,
+    )
+    documents = [parse_text(f"doc-{number}", f"Text number {number}.") for number in range(5)]
+    try:
+        await store.register_index(spec)
+        assert await _analyzed_at(spec.table) is None
+        await pipeline.ingest(spec, documents)
+        first = await _analyzed_at(spec.table)
+        assert first is not None
+        again = await pipeline.ingest(spec, documents)
+        assert again.documents_written == again.chunks_embedded == 0
+        assert await _analyzed_at(spec.table) == first
+    finally:
+        await store.drop_index(spec.index_key)
+        await store.delete_source(spec.source_key)
 
 
 async def test_pipeline_refuses_an_index_built_with_another_chunker(

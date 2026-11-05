@@ -133,6 +133,10 @@ class IngestionPipeline:
                 await flush()
                 pending.extend(rest)
         await flush()
+        if written or embedded:
+            # A bulk load the planner does not know about is a slow query waiting to
+            # happen: see PgVectorStore.analyze.
+            await self._store.analyze(spec)
 
         return IngestReport(
             index_key=spec.index_key,

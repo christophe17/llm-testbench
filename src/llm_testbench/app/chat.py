@@ -16,7 +16,12 @@ from llm_testbench.app.schemas import (
     CitationOut,
     EvidenceOut,
 )
-from llm_testbench.generation.answer import AnswerBuilder, ParsedAnswer, parse_answer
+from llm_testbench.generation.answer import (
+    MAX_OUTPUT_TOKENS,
+    AnswerBuilder,
+    ParsedAnswer,
+    parse_answer,
+)
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.types import Completion, ModelRef, Usage
 from llm_testbench.sources.types import Evidence, SearchQuery, Source
@@ -35,7 +40,7 @@ class ChatService:
         source: Source,
         builder: AnswerBuilder,
         default_model: ModelRef,
-        max_output_tokens: int = 1024,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
     ) -> None:
         self._client = client
         self._source = source
