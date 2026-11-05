@@ -2,6 +2,7 @@ import pytest
 
 from llm_testbench.config import Settings
 from llm_testbench.eval.loaders import BeirLoader
+from llm_testbench.retrieval import BM25Retriever
 
 
 @pytest.fixture
@@ -60,3 +61,14 @@ def test_real_scifact_test_split(tmp_path_factory: pytest.TempPathFactory) -> No
     assert len(ds.documents) == 5183
     assert len(ds.queries) == 300
     assert ds.sampled is False
+
+
+@pytest.mark.parametrize("name", ["scifact", "nfcorpus"])
+async def test_the_fixtures_have_no_lexical_tie(name: str, offline_settings: Settings) -> None:
+    """Same guard as for the HotpotQA fixture: two documents with the same BM25 score and
+    different judgments make a sample-mode score depend on how ties are ordered."""
+    dataset = BeirLoader(name, settings=offline_settings).load("test")
+    lexical = BM25Retriever(dataset.documents)
+    for query in dataset.queries:
+        scores = [hit.score for hit in (await lexical.retrieve(query.text, k=10)).documents]
+        assert len(set(scores)) == len(scores), f"{name} query {query.query_id}: tie in {scores}"

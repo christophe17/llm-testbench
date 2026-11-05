@@ -863,3 +863,29 @@ QASPER needs; SQuAD 2.0 and HotpotQA on the gold context were not run again at t
 calibration set being labelled).
 
 **Next**: step 4, the in-house corpus and the golden set.
+
+## 2026-11-05 — The gate went red in CI on its first new arms: ties in the fixtures
+
+**Trigger**: the CI of the previous commit failed on the evaluation gate, and the next
+push was refused by the same gate, with other numbers: `hotpotqa-bm25` nDCG@10 0.973
+instead of 1.000 in CI, `hotpotqa-retrieved` complete context 0.667 instead of 1.000
+locally. The gate had passed a minute earlier on the same code.
+
+**Found**: one fixture question had two paragraphs with exactly the same score, for BM25
+(0.7672 and 0.7672) and for the simulated embedder (0.2828 and 0.2828), one of them gold,
+at the rank where the metric is decided. Equal scores have no order: `bm25s` returns them
+in an order that depends on the platform, and Postgres in the order it finds the rows,
+which changed after an `ANALYZE`. The baseline had been recorded on one of the orders.
+
+**Done**: BM25 ties are broken by document id, largest first, as `trec_eval` does
+(`retrieval/bm25.py`); the four BM25 arms were run again on the real datasets and do not
+move (SciFact 0.6863, FiQA 0.2514, HotpotQA pool 0.7558; NFCorpus 0.3210 against 0.3214,
+[-0.0013, +0.0000]). The HotpotQA and NFCorpus fixtures were reworded so that no two
+documents tie, and three tests fail first if a fixture gets a tie where a metric is
+decided. The gate gives the same 75 values on five runs, under different hash seeds.
+
+**What it says about the gate**: a regression gate on tiny fixtures is only as stable as
+its fixtures are unambiguous. Mine was green by luck for a day. The dense arms keep one
+weakness I did not remove: the chunk search orders equal distances as the database finds
+them; the fixtures now have none, and a test says so for HotpotQA, but nothing in the SQL
+enforces an order.

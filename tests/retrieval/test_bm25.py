@@ -65,3 +65,15 @@ def test_describe_and_protocol(retriever: BM25Retriever) -> None:
 def test_an_empty_corpus_is_refused() -> None:
     with pytest.raises(ValueError, match="at least one document"):
         BM25Retriever([])
+
+
+async def test_equal_scores_are_ordered_by_document_id_not_by_the_platform() -> None:
+    """Two documents with the same words get the same score. Which one comes first then
+    depends on the library and the machine, and a gate that compares scores between a
+    laptop and the CI fails for no reason (2026-11-05). Ties go by id, largest first."""
+    text = "Dense retrieval beats lexical retrieval."
+    documents = [Document(doc_id=doc_id, title="", text=text) for doc_id in ("b", "d", "a", "c")]
+    documents.append(Document(doc_id="e", title="", text="Dense retrieval retrieval retrieval."))
+    retrieval = await BM25Retriever(documents).retrieve("retrieval", k=5)
+    assert retrieval.doc_ids == ["e", "d", "c", "b", "a"]
+    assert len({document.score for document in retrieval.documents[1:]}) == 1

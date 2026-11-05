@@ -73,10 +73,19 @@ class BM25Retriever:
         )
         # A document that shares no word with the query scores 0: it was not retrieved, it
         # only fills the list. Keeping it would let chance into the recall.
-        documents = tuple(
-            RetrievedDocument(doc_id=self._doc_ids[int(index)], score=float(score), rank=rank)
-            for rank, (index, score) in enumerate(zip(indexes[0], scores[0], strict=True), start=1)
+        found = [
+            (float(score), self._doc_ids[int(index)])
+            for index, score in zip(indexes[0], scores[0], strict=True)
             if score > 0.0
+        ]
+        # Two documents with the same score have no order of their own: the library returns
+        # them in an order that depends on the platform, and a metric then differs between a
+        # laptop and the CI. Ties go by document id, largest first, as trec_eval breaks them.
+        found.sort(key=lambda item: item[1], reverse=True)
+        found.sort(key=lambda item: item[0], reverse=True)
+        documents = tuple(
+            RetrievedDocument(doc_id=doc_id, score=score, rank=rank)
+            for rank, (score, doc_id) in enumerate(found, start=1)
         )
         elapsed_ms = (time.perf_counter() - started) * 1000.0
         return Retrieval(documents=documents, timings_ms={"search": elapsed_ms})
