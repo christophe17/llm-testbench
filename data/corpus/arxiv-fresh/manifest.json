@@ -1,0 +1,4584 @@
+{
+ "name": "arxiv-fresh",
+ "built_at": "2026-11-05T19:49:25.645163Z",
+ "freshness_floor": "2026-10-20",
+ "models": {
+  "claude-sonnet-5-5": {
+   "available_by": "2026-10-19",
+   "evidence": "docs/decisions.md, 2026-10-19: default generator, notebooks 1 and 2 re-executed with it"
+  },
+  "gpt-5.6-luna": {
+   "available_by": "2026-09-03",
+   "evidence": "config/llm_pricing.toml: OpenAI pricing page recorded on 2026-09-03"
+  },
+  "gpt-5.6-terra": {
+   "available_by": "2026-09-03",
+   "evidence": "config/llm_pricing.toml: OpenAI pricing page recorded on 2026-09-03"
+  }
+ },
+ "selection": {
+  "set_spec": "cs",
+  "harvest_until": "2026-11-04",
+  "categories": [
+   "cs.CL",
+   "cs.IR",
+   "cs.LG",
+   "cs.AI",
+   "cs.CV",
+   "cs.SE",
+   "cs.CR",
+   "cs.DB"
+  ],
+  "license": "http://creativecommons.org/licenses/by/4.0/",
+  "size": 200,
+  "min_difficulty": 12,
+  "min_tables": 3,
+  "min_footnotes": 0,
+  "min_characters": 20000,
+  "max_characters": 120000,
+  "order": "ascending arXiv identifier, first that pass"
+ },
+ "candidates_seen": 355,
+ "documents": [
+  {
+   "arxiv_id": "2610.27417",
+   "version": 1,
+   "title": "KPHarness: Co-Evolving Knowledge and Probing for Long-Horizon Gaming Harnesses",
+   "authors": "Zhikang Chen, Yueqing Sun, Sen Cui, Ziang Ye, Yu Wang, Yan Feng2, Xierui Song, Yu Zhang, Tingting Zhu",
+   "categories": [
+    "cs.AI",
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T00:12:14Z",
+   "reference_sha256": "ce0e0a6b0976c58eab4b8cd36593880e986d33846a40d9011b82a06b42d21145",
+   "pdf_sha256": "9fdf9cd2fe7578a9e5abbec3eed7c0c9e1a86d727913d063909ea7d8f2afe955",
+   "pdf_bytes": 4522819,
+   "features": {
+    "sections": 37,
+    "characters": 93898,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 66,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.27438",
+   "version": 1,
+   "title": "MLIPS: Multi-Layer Indexer Pool Sharing",
+   "authors": "Samkit Jain, Sai Kishan Pampana, Shlok Agarwal, Yashwant Marathe, Bhargava Gopireddy, Aradhana Mohan Parvathy, Sachin Idgunji",
+   "categories": [
+    "cs.LG",
+    "cs.AI",
+    "cs.PF"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T00:37:29Z",
+   "reference_sha256": "94584bb5d89c923d3e5049857fb8221f6be4276761432cef88ed6b96bcb1c5a9",
+   "pdf_sha256": "060b4010e3157e72ed1451c3c3d779682c18541e7be7f00302e8a5adad918b2d",
+   "pdf_bytes": 1962319,
+   "features": {
+    "sections": 29,
+    "characters": 73555,
+    "tables": 12,
+    "footnotes": 0,
+    "formulas": 15,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.27439",
+   "version": 1,
+   "title": "Scaling Graph Reasoning in Language Models with Learnable Graph Positional Encodings",
+   "authors": "Javier Porras-Valenzuela, Arush Arora, Alejandro Ribeiro",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T00:39:49Z",
+   "reference_sha256": "d4df5f7fe3f1ee008e7403a25c2d99f4623dd800dbfae0b8ad5a321f3a93c071",
+   "pdf_sha256": "3977d29fed814067ce8c2e664413d754a9fc2cb5999fd7aee4b1059a9bd9d841",
+   "pdf_bytes": 691809,
+   "features": {
+    "sections": 23,
+    "characters": 32911,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 23,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.27443",
+   "version": 1,
+   "title": "Using Set Learning to Improve Set-Valued Classifiers on Long-tailed Data",
+   "authors": "Kevin Kasa, Scott C. Lowe, Graham W. Taylor",
+   "categories": [
+    "cs.LG",
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T00:46:14Z",
+   "reference_sha256": "833916162ca97ef576d2a6a13e013072f4d90d2cfe8de905a46d357771e17b44",
+   "pdf_sha256": "227b43352bc4175ba0e38dbea279e256c0fc035a5b672dc4b11ecff1e76eb411",
+   "pdf_bytes": 1719606,
+   "features": {
+    "sections": 19,
+    "characters": 52357,
+    "tables": 9,
+    "footnotes": 2,
+    "formulas": 8,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.27444",
+   "version": 1,
+   "title": "LoRASpace: A Pool-Wide Shared Substrate for Static and Dynamic Multi-LoRA Composition",
+   "authors": "Thamirawaran Sathiyalogeswaran, Navindu De Silva, Chamikara Siriwardane, W. K. Alwis, Jason Mars, Udaya Sampath K. Perera Miriya Thanthrige, Ranga Rodrigo",
+   "categories": [
+    "cs.CV",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T00:46:19Z",
+   "reference_sha256": "53103317f19ad7ddbe00418696f378434c103c563305a89a09f20e09c05e7d6a",
+   "pdf_sha256": "53db3152d92b59b5d5d4e918d0dd62d13df07677bf9ebd660526d60b46c84aad",
+   "pdf_bytes": 2531035,
+   "features": {
+    "sections": 48,
+    "characters": 85563,
+    "tables": 26,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.27488",
+   "version": 1,
+   "title": "The More the Better? A Comparison of Single- and Multi-Agent LLM Setups on a Financial Review Task",
+   "authors": "Pei Liu",
+   "categories": [
+    "cs.AI",
+    "cs.CE"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T01:55:24Z",
+   "reference_sha256": "23b49b4c323d54b1523edd73cd0515f69ae63e089daae7b099f9d559946ec586",
+   "pdf_sha256": "1d2190c59eb87e4532aeadddf837cfd7d741623a2e0e899b53eeb5a252bdd77e",
+   "pdf_bytes": 381886,
+   "features": {
+    "sections": 22,
+    "characters": 55438,
+    "tables": 14,
+    "footnotes": 0,
+    "formulas": 4,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.27495",
+   "version": 1,
+   "title": "Self-Evolving Agents through Privileged Retrospective Distillation",
+   "authors": "Yuhang Zhou, Yifan Wu, Bo Peng, Mingyi Wang, Jiayi Liu, Xiangjun Fan, Lizhu Zhang, Zhuokai Zhao",
+   "categories": [
+    "cs.LG",
+    "cs.AI",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T02:13:21Z",
+   "reference_sha256": "e720ffe1e11de0140e10d2bf68c96b4b6120fd42aab808146daa7cf97cd92c42",
+   "pdf_sha256": "e7e8d5e95a2b5b87ff878a8d71c96b42f8712e031863a1630f2a225ddae3c45c",
+   "pdf_bytes": 746824,
+   "features": {
+    "sections": 30,
+    "characters": 81215,
+    "tables": 17,
+    "footnotes": 0,
+    "formulas": 18,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.27505",
+   "version": 1,
+   "title": "Cross-Visibility-Gap Identity Persistence for 4D Scene Graphs",
+   "authors": "Jiahui Hu, Li Gao, Yu Liu, Pengzhan Zhou",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T02:20:34Z",
+   "reference_sha256": "0ad57816769114508c30c2376cdc4cbf75e76817823d84ead146b3daa8d6bd08",
+   "pdf_sha256": "81cccbedf6be17f50a721bbf4cabc9a6b62b2e2fef670867b05adb84ebd5abc2",
+   "pdf_bytes": 1667620,
+   "features": {
+    "sections": 18,
+    "characters": 35266,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.27512",
+   "version": 1,
+   "title": "Structured-Token Attention for Fine-Grained mmWave Liquid Identification",
+   "authors": "Junseo Min, Joongheon Kim",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T02:27:39Z",
+   "reference_sha256": "71a7fd176b1cbf8e78d6c812effa3f0caa3931308a7d11f8c6a7b6ab2d308d5f",
+   "pdf_sha256": "a7ed2372d3ca9cdbf1c9960f27b499ad0003d4866dfcfaf7fa924ce44ae58473",
+   "pdf_bytes": 296217,
+   "features": {
+    "sections": 18,
+    "characters": 24868,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 8,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.27515",
+   "version": 1,
+   "title": "Progressive Subset Selection and Cascaded Consistency for Unsupervised Vision-Language Model Adaptation",
+   "authors": "Hao Yan, Guanghui Wang",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T02:30:11Z",
+   "reference_sha256": "afed916accccfe55b7f4658e4d910d231a7dacdb6f42481e073a4b1073c02ed6",
+   "pdf_sha256": "369b5ec17c4f3f7b1cf86f6c9f38bf4e8a8e9942629cdfc0b67e05afd4dfcf5e",
+   "pdf_bytes": 367988,
+   "features": {
+    "sections": 20,
+    "characters": 62883,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 18,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.27516",
+   "version": 1,
+   "title": "HealBench: A Fine-Grained Benchmark for Evaluating Psychological Comfort in Text-to-Image Generation",
+   "authors": "Junjie Xu, Yuzhe Yang, Rui Yang, Luwei Xiao, Wenxin Wu, Xingjiao Wu, Liang He",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T02:31:31Z",
+   "reference_sha256": "4b5df293e71b731e56dd281dd1fba92ae784d6531ac9803feb0c32377516ef24",
+   "pdf_sha256": "1375a477196977e4b2fbb6f802b9e84fcb9ed2613061c5a652043415f8141496",
+   "pdf_bytes": 21011570,
+   "features": {
+    "sections": 16,
+    "characters": 37661,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 8,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.27528",
+   "version": 1,
+   "title": "Judging the Justification: Decision Certificate Supervision for Generative Reward Models",
+   "authors": "Guiquan Sun, Bing Bai, Martin Renqiang Min, Dongjin Song",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T02:44:46Z",
+   "reference_sha256": "13cd6c7c3b96084a64d2ae0955ea60c36dd38a8a513785f5cf27b6fa6b708497",
+   "pdf_sha256": "f62e1b8257d55758d35224ec0b34803e27e47fcceb00cbcc6fc588455f048b09",
+   "pdf_bytes": 1119242,
+   "features": {
+    "sections": 28,
+    "characters": 52479,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 30,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.27541",
+   "version": 1,
+   "title": "EviDial: When Correct Depression Predictions Lack Evidence",
+   "authors": "Junjie Xu, Jin Zhu, Yuzhe Yang, Luhan Wang, Xingjiao Wu, Daoguo Dong, Jing Yang, Wenxin Wu, Liang He",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T02:56:09Z",
+   "reference_sha256": "507512c6b556a6a03d9ca38c66dc44646187247d7cdc391b226c3ff03859fe4a",
+   "pdf_sha256": "4bb768d4face6befa0d630ef425effaa87fa87bdd6a391a8351e864ec608f91f",
+   "pdf_bytes": 2590405,
+   "features": {
+    "sections": 24,
+    "characters": 58547,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 6,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.27548",
+   "version": 1,
+   "title": "Act on Your Behalf, Beyond Your Authorization: Benchmarking LLM Agent Authorization Alignment",
+   "authors": "Zhiping Zhang, Franklin Mingzhe Li, Zihao Huang, Tianshi Li",
+   "categories": [
+    "cs.AI",
+    "cs.CR",
+    "cs.HC"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T03:01:39Z",
+   "reference_sha256": "87f6bcf20ebb617ff80d4fc961a0062066c2c99df055fc43bf5ae99f84235503",
+   "pdf_sha256": "40fa486d529a34847adf8cf7b26ed6a5c326d2375e4d29663678ef321f0397c6",
+   "pdf_bytes": 1073194,
+   "features": {
+    "sections": 36,
+    "characters": 79069,
+    "tables": 17,
+    "footnotes": 0,
+    "formulas": 1,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27549",
+   "version": 1,
+   "title": "Timing-Aware and Interpretable Self-Attention for Event-Based Wearable Task Transition Detection",
+   "authors": "Anda Ouyang, Siyuan Chen, Julien Epps",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T03:02:35Z",
+   "reference_sha256": "2b92ac3b8ef4729ed61c384c7754561c0940a731c8190a818ddd9307b819677f",
+   "pdf_sha256": "387053ab230f32411dfc42acaf11897e18a4c9906ac8a263ddbf8715d73d19bc",
+   "pdf_bytes": 4277952,
+   "features": {
+    "sections": 20,
+    "characters": 64277,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.27568",
+   "version": 1,
+   "title": "TRCM: Topology-Aware Route-Consistency Modeling for Robust Neural Vehicle Routing",
+   "authors": "Peiheng Jian, Zhenwei Wang, Tiehua Zhang, Lei Zhang, Zhishu Shen, Ruibin Bai, Zhijun Ding",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T03:32:20Z",
+   "reference_sha256": "3aad3e027064eabad4e0f52f77ba4a2fc00b86f241e10844012197ae2fe635b5",
+   "pdf_sha256": "1d29be0e0ffb485fbe7c44279780be9d2c8d4abd8dbf283b254508d8cb537309",
+   "pdf_bytes": 2037817,
+   "features": {
+    "sections": 30,
+    "characters": 39859,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 17,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27574",
+   "version": 1,
+   "title": "The Show-Up Attack: When Subagents Win Over Their Supervisor",
+   "authors": "Maosen Zhang, Jianshuo Dong, Yutong Zhang, Jie Zhang, Tianwei Zhang, and Han Qiu",
+   "categories": [
+    "cs.AI",
+    "cs.CR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T03:41:13Z",
+   "reference_sha256": "d94d77ebc3cb38720548a489a5349844dac679640ef0f6744ef94fae0ad4b247",
+   "pdf_sha256": "c5952984e21507863a368ba6e888e925ec596dc61f8c1e91557bed579161ea4f",
+   "pdf_bytes": 1968040,
+   "features": {
+    "sections": 44,
+    "characters": 87453,
+    "tables": 11,
+    "footnotes": 1,
+    "formulas": 7,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27583",
+   "version": 1,
+   "title": "TeCoP: Accelerating Diffusion Large Language Model Decoding via Tentative Context Pipelining",
+   "authors": "Jui-Chien Tsou, Hsuan-Chi Liu, Wei-Chin Wang, Yu-Syuan Xu, Chun-Yi Lee",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T03:48:01Z",
+   "reference_sha256": "cda3d83dd4d01b0c2f04a7cc16b0bef5c0411aee129958666586d89a2fdb8bf7",
+   "pdf_sha256": "568b40c3db4453f12a4a8c31d062f011860630020e0be4ad09d219579d267995",
+   "pdf_bytes": 2217059,
+   "features": {
+    "sections": 21,
+    "characters": 36075,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 5,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.27584",
+   "version": 1,
+   "title": "Beyond Model Weights: Sampling-Dependent Fairness in Diffusion Language Models",
+   "authors": "Koshiro Saito and Daisuke Oba and Danushka Bollegala and Naoaki Okazaki",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T03:49:20Z",
+   "reference_sha256": "756907691a0242fc21a5cb9fe4682b6e275a0a57ffb00509807a20f255dc1f41",
+   "pdf_sha256": "8aa8c216c172bf582fde991cdb1fcbd8f766ef58d35137cf7b36b2744acfc523",
+   "pdf_bytes": 932194,
+   "features": {
+    "sections": 29,
+    "characters": 85412,
+    "tables": 17,
+    "footnotes": 1,
+    "formulas": 8,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.27594",
+   "version": 1,
+   "title": "Causal Spatiotemporal State Evolution for Monocular 4D Reconstruction",
+   "authors": "Qiaowei Miao, Yijing Guo, Lipei Zhang, Qifeng Cheng, Yuru Xiao, Ziqian Ni, Sheng Yang",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T04:00:48Z",
+   "reference_sha256": "0da88e2ecbabcf3c431dc0ba6e2ee9cfea66b642bad492e8b0c6abd833fa8a91",
+   "pdf_sha256": "9b0add5c1ad166e64716b04c2b09fdbb649e9ba756f7f9b7688a71b0287f7dfc",
+   "pdf_bytes": 3361529,
+   "features": {
+    "sections": 11,
+    "characters": 35161,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.27598",
+   "version": 1,
+   "title": "Meta Expert: Cross-Layer Expert Sharing for Storage- and Retrieval-Efficient MoE",
+   "authors": "Ermo Hua, Xiangyu Hong, Baiting Wu, Che Jiang, Haozheng Hou, Yicheng Gu, Hanjing Wang, Qirui Zeng, Ming Zhang, Ning Ding, Qipeng Guo, Youbang Sun, Biqing Qi, Bowen Zhou",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T04:05:56Z",
+   "reference_sha256": "b4b02ddc568f1616d5151a9c6fec8690ca7f6efc079bce05989137e3cf1b2fdb",
+   "pdf_sha256": "b32319ea59acc412261a32bb4f6aadffb5a5e86354fe1a18aa5c213222da8e36",
+   "pdf_bytes": 517007,
+   "features": {
+    "sections": 18,
+    "characters": 50017,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 12,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27600",
+   "version": 1,
+   "title": "Self-Decomposing Diffusion for Code Generation",
+   "authors": "Lize Shao, Zichen Xie, Zhizhen Chen, Zhe Zeng, Wenxi Wang",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T04:07:10Z",
+   "reference_sha256": "60d23e2a4ac4e0f2c53066c41addaf8c34024d5c5ab78274edecb2dc92f4fdd9",
+   "pdf_sha256": "b8835b33ad2133cd7a70b6ab86f21d5d0b0424ed9ab61fbfbaa6df289bb56cff",
+   "pdf_bytes": 567808,
+   "features": {
+    "sections": 23,
+    "characters": 49061,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.27604",
+   "version": 1,
+   "title": "HiQGS: Hierarchical Spatiotemporal Querying for Feed-Forward Gaussian Reconstruction",
+   "authors": "Qiaowei Miao, Qifeng Cheng, Yijing Guo, Yuru Xiao, Ziqian Ni",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T04:10:57Z",
+   "reference_sha256": "773b15594406fd1dced7af1fedb9964b00da7a7d7e6ca95f7649d3a58e8f47df",
+   "pdf_sha256": "809bb3765fcf9a986046c2e89b18195e8ebf0c632858873b7395f6f55b80724d",
+   "pdf_bytes": 1595523,
+   "features": {
+    "sections": 14,
+    "characters": 33779,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.27641",
+   "version": 1,
+   "title": "BCT: Bayes-Consistent Tempering for Flow Language Models",
+   "authors": "Daisuke Oba and Hiroki Furuta and Naoaki Okazaki",
+   "categories": [
+    "cs.LG",
+    "cs.AI",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T05:03:03Z",
+   "reference_sha256": "9b03986ea62b653cb67a0b0d5c8bf9e216343addcaf74122bc87ea3ced642256",
+   "pdf_sha256": "76d2a8be902551932f0396373447560277c261c5580bad51b3d626cf305fa3c5",
+   "pdf_bytes": 554749,
+   "features": {
+    "sections": 28,
+    "characters": 53996,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 27,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.27645",
+   "version": 1,
+   "title": "CUA-Recovery: Benchmarking Error Recovery in Long-Horizon Computer-Use Agents",
+   "authors": "Xu Hu, Haoming Li, Yuxiang Wang, Jinxin Yang, Kangshuo Li, Licheng Wang, Dingyi Kang, Jiayu Song, Tianhao Wang, Zhanhua Hu, Xu Yang, Qiannan Li, Bingzhe Li, Feng Chen",
+   "categories": [
+    "cs.AI",
+    "cs.CL",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T05:06:00Z",
+   "reference_sha256": "5f8b26b6c76756e37b107c959069d501ba02e2949454c1f738e34fd979b8a45f",
+   "pdf_sha256": "e04bb37c54e076d5dbbd8f63197e35c2e4ed82f10e1cc313dd1a2b6a00a0bf93",
+   "pdf_bytes": 9138944,
+   "features": {
+    "sections": 40,
+    "characters": 83134,
+    "tables": 18,
+    "footnotes": 1,
+    "formulas": 6,
+    "figures": 13
+   }
+  },
+  {
+   "arxiv_id": "2610.27648",
+   "version": 1,
+   "title": "Speak vs. Know: Balancing Behavior and Knowledge Distributions of Large Language Models",
+   "authors": "Yang Liu, Masahiro Kaneko, Chenhui Chu",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T05:07:35Z",
+   "reference_sha256": "60fab455b6ecf5df7660c58d646a119bf214e01f80a532748eb3787e79dee10e",
+   "pdf_sha256": "c2fc36e95818c0c24b4683180d5aa89de0787fcd3dcc89e08a68ee3219a44c53",
+   "pdf_bytes": 1517753,
+   "features": {
+    "sections": 27,
+    "characters": 71773,
+    "tables": 17,
+    "footnotes": 9,
+    "formulas": 7,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.27655",
+   "version": 1,
+   "title": "Does Multi-Agent Collaboration Pay When Agents Serve Users? Testing Agent Scaling in Dual-Control Settings",
+   "authors": "Ethan Yang, Xiangcheng Shi",
+   "categories": [
+    "cs.AI",
+    "cs.MA"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T05:13:13Z",
+   "reference_sha256": "0d51f8ab6f27432abf2952eaeac9be71a0d6c06999293d356f0a97352edcedec",
+   "pdf_sha256": "6f07720d487500bc68e6447cbda33ee8e80519974f6069d40689af62f3e27c3d",
+   "pdf_bytes": 409198,
+   "features": {
+    "sections": 20,
+    "characters": 93222,
+    "tables": 16,
+    "footnotes": 1,
+    "formulas": 4,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.27689",
+   "version": 1,
+   "title": "Influence Is the Target-Response Jacobian Times Residuals",
+   "authors": "Paul Geertsema and Simon Geertsema",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T06:04:57Z",
+   "reference_sha256": "d923b29b773074d36b61a4e41131aad357a905695b2ed821df9af0172a90bcc1",
+   "pdf_sha256": "d874887e8d544af1ce25773ae637418295c66625a2bbab288bcfd62cff77e7bd",
+   "pdf_bytes": 991132,
+   "features": {
+    "sections": 18,
+    "characters": 67712,
+    "tables": 8,
+    "footnotes": 6,
+    "formulas": 27,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.27692",
+   "version": 1,
+   "title": "A Principled Optimal Transport Framework for Frame Selection in Long Video Understanding",
+   "authors": "Ziwei Zhao and Yuhang Liu",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T06:12:30Z",
+   "reference_sha256": "9c1f7670a50059f9a453ea7a06461ad28b590410025f4c55febb17b9d2743bec",
+   "pdf_sha256": "5637aeece8a8f0f896c73f93d3c24ddfb35fe26858d06d4b1f13a58c6665abe4",
+   "pdf_bytes": 1152670,
+   "features": {
+    "sections": 29,
+    "characters": 75740,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 61,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.27699",
+   "version": 1,
+   "title": "E8-QAT: Efficient 2-Bit Quantization-Aware Training with Implicit Lattice Codebooks",
+   "authors": "Xinyu Lei, Hong Huang, Jiebin Zhang, Hongyu Li, Jinlong Song, Decheng Wu, Guanghua Yu, Jianchen Zhu, Sujian Li",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T06:17:09Z",
+   "reference_sha256": "4c31f91d545c7ca7b7ec687032a85630dcb65bf4822c293d6d3c38c7c81052af",
+   "pdf_sha256": "e7a511ed65f37c1ae1fc1d85b5fabe69fe2faeb6bc74522327f158d249ca3cae",
+   "pdf_bytes": 560119,
+   "features": {
+    "sections": 23,
+    "characters": 41474,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 20,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.27704",
+   "version": 1,
+   "title": "VEOcc++: Learning Persistent Voxel Feature Maps for Embodied Online Semantic Occupancy Mapping and Offline Refinement",
+   "authors": "Ruoyu Wang, Jiahan Li, Yong Liu, Kexin Zhang",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T06:21:40Z",
+   "reference_sha256": "970005287a77a9a51c03798d08bfc9cbdd2d868e26e15d3723b04057f9ac28f0",
+   "pdf_sha256": "adf926517f8f003e8f7b69c2142f5ae0cc17722ecdda9112c6b66401e2b66282",
+   "pdf_bytes": 22419412,
+   "features": {
+    "sections": 25,
+    "characters": 44562,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27710",
+   "version": 1,
+   "title": "Privacy Accounting for Empirical Denoisers",
+   "authors": "William Cheng, Dongjun Kim, Mijung Park",
+   "categories": [
+    "cs.LG",
+    "cs.CR",
+    "stat.ML"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T06:30:08Z",
+   "reference_sha256": "6be484567c69b547292e336bf3a88be5d08197bd01cf39a561bac4d684bec99c",
+   "pdf_sha256": "9f3dbcd518e794fe9da2ed76c74ff936cf5e0c1c96c2b4e0dcd955463b6c4e7a",
+   "pdf_bytes": 1197002,
+   "features": {
+    "sections": 38,
+    "characters": 99160,
+    "tables": 13,
+    "footnotes": 1,
+    "formulas": 42,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.27719",
+   "version": 1,
+   "title": "Push-Pull Attentional Anchoring for Diffusion Concept Erasure",
+   "authors": "Nattanat Chatthee, Tagon Sompong, Ekapol Chuangsuwanich, Supasorn Suwajanakorn",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T06:38:51Z",
+   "reference_sha256": "db88fb2320f5085400e49bc17ec5772b306642f8421cd61c805e9eff2165f895",
+   "pdf_sha256": "f732aebeb1f8c1b184f72256b3d1644e681ac5c54ab7dfd469f917b6be487346",
+   "pdf_bytes": 27068796,
+   "features": {
+    "sections": 25,
+    "characters": 52263,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 17
+   }
+  },
+  {
+   "arxiv_id": "2610.27756",
+   "version": 1,
+   "title": "Give the Model a Finger: Developmentally Aligned Evaluation of Counting in Vision-Language Models",
+   "authors": "Yingxin Jia, Hui Geng, Wenxin Yang, Mohan Zhang",
+   "categories": [
+    "cs.AI",
+    "cs.CL",
+    "cs.CV",
+    "cs.LG",
+    "cs.RO"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:19:03Z",
+   "reference_sha256": "61802f0f0b3c38715651d6a235f12495f284ecf0b37e65afda83757c65ea83f7",
+   "pdf_sha256": "e656ce22004d8c48cb49396025ce16369b8a0add5cf4e1663a27c2037d9a4c0d",
+   "pdf_bytes": 2153771,
+   "features": {
+    "sections": 21,
+    "characters": 96641,
+    "tables": 25,
+    "footnotes": 0,
+    "formulas": 0,
+    "figures": 12
+   }
+  },
+  {
+   "arxiv_id": "2610.27758",
+   "version": 1,
+   "title": "AC/DC on a Budget - Alternating Sparse Phases",
+   "authors": "Rahul Nittala, Advait Gadhikar, Tom Jacobs, Rebekka Burkholz",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:21:23Z",
+   "reference_sha256": "f860b607cc2b5be41d5eba2abd98fbe15ad9648bdbc8ba3c7cc73e02634645f2",
+   "pdf_sha256": "27f947b365080d85728244b174ce6519a4fa5702de9d4f3cf44dd95a14b791dd",
+   "pdf_bytes": 5886811,
+   "features": {
+    "sections": 29,
+    "characters": 88780,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 138,
+    "figures": 14
+   }
+  },
+  {
+   "arxiv_id": "2610.27759",
+   "version": 1,
+   "title": "PixelSR: Pixel-Space Orthogonal Flow Decoupling for Real-World Image Super-Resolution",
+   "authors": "Xiang Lv, Kai Zhao, Qiang Wang, Qiao Mo, Chao Zhou, Mingwen Shao",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:21:29Z",
+   "reference_sha256": "b56d2d8bb0045ae0f67aefc68a864b74bca10251011696acca3688a403d88ece",
+   "pdf_sha256": "88113763bd3bc97c6e2e8cee5cf639a250fc310143566fb6d981bb25af3ec0d3",
+   "pdf_bytes": 11815207,
+   "features": {
+    "sections": 19,
+    "characters": 52465,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 36,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.27762",
+   "version": 1,
+   "title": "CrystalAR: Autoregressive Modeling for Symmetric Crystal Generation",
+   "authors": "Ziqiao Meng, Rongsheng Chen, Zhi Zheng, Nikita Kazeev, Zhenkun Wang, Andrey Ustyuzhanin, Wee Sun Lee",
+   "categories": [
+    "cs.AI",
+    "cond-mat.mtrl-sci"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:26:19Z",
+   "reference_sha256": "27fad07c1479259db90e83f7c86038c028bf63ff5d8b2929d714792871633d58",
+   "pdf_sha256": "71e1a1bf0fe7745d984ee964ecd1ba5a79d9f1e9c0b92c48d0f675237af00104",
+   "pdf_bytes": 4456858,
+   "features": {
+    "sections": 28,
+    "characters": 80295,
+    "tables": 10,
+    "footnotes": 1,
+    "formulas": 11,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27773",
+   "version": 1,
+   "title": "How Much Do $\\ell_1$ Attacks Need Concentrated Perturbations?",
+   "authors": "Melika Shirian, Kianoosh Vadaei, Arshia Hemmat",
+   "categories": [
+    "cs.LG",
+    "cs.AI",
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:37:48Z",
+   "reference_sha256": "da24fd6d1aab96b4f504b2cc9cc577e8bc151a576697011a24de008d146de195",
+   "pdf_sha256": "9b1bb5c31c3bef5a2d2ec039462770696f098f17f18524e6501e47604099d91d",
+   "pdf_bytes": 3465376,
+   "features": {
+    "sections": 50,
+    "characters": 93387,
+    "tables": 15,
+    "footnotes": 0,
+    "formulas": 18,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.27781",
+   "version": 1,
+   "title": "GRADUS: Discovering and Recovering Agent Lessons from the Environment's Latent Syllabus",
+   "authors": "Qing Ping, Wei Yang, Panpan Xu, Johannes Kirmayr, Lukas Stappen, Junjie Tang, Jun Huan",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:47:20Z",
+   "reference_sha256": "dbadaf78eb5e216721521139d10b8ecc1f1119053758bb2cc0aa011ee8e2a7c1",
+   "pdf_sha256": "09309ab58b699357db422cb1162eddf72b4b3249cbfa72ba5e53ef56cb506a45",
+   "pdf_bytes": 4225942,
+   "features": {
+    "sections": 25,
+    "characters": 72081,
+    "tables": 14,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.27782",
+   "version": 1,
+   "title": "RoboJudge: Multimodal Language Models as Judges for Embodied Video Generation",
+   "authors": "Siyuan Ma, Yu Qi, Cheng Ye, Ruotian Peng, Xinyi Xu, Zitiantao Lin, Zedong Cai, Yijian Huang, Weiyang Liu, Siyuan Wang, Yandong Wen",
+   "categories": [
+    "cs.CV",
+    "cs.RO"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:48:41Z",
+   "reference_sha256": "7f94435dde68b1d6ad5eb0908f6d4e02266b20a75953831382020c6b2ca201bd",
+   "pdf_sha256": "c40c22115065dd520c52143572f88c49269ebf3fbe7d6443d33c201b9b89d923",
+   "pdf_bytes": 3784565,
+   "features": {
+    "sections": 41,
+    "characters": 61137,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 29,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.27790",
+   "version": 1,
+   "title": "Are Linguistic and Arithmetic Circuits Dissociated in LLMs?",
+   "authors": "Riku Kisako, Tatsuki Kuribayashi, Ryohei Sasano",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:52:47Z",
+   "reference_sha256": "c4640c20f89a52ed4e0c818ca7a39e605ab4af250a12c536e3ce91e62d07cfe5",
+   "pdf_sha256": "34f518924de4d43ef522acb3f31a6c1036893a600d559b195ffb434cfaa9849a",
+   "pdf_bytes": 685965,
+   "features": {
+    "sections": 24,
+    "characters": 52598,
+    "tables": 10,
+    "footnotes": 2,
+    "formulas": 6,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.27800",
+   "version": 1,
+   "title": "Decoupled Representation Learning for Face Presentation Attack Detection under Smart Glass Capture",
+   "authors": "Raghavendra Ramachandra, Narayan Vetrekar, Neha Naik, Rajendra Gad",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T07:59:40Z",
+   "reference_sha256": "31d8c260e1ae18cea01ded0b4c36928459bcf8cc077302d9a79e05ab058d2fdd",
+   "pdf_sha256": "ebff47f3e7a214b0c14f8b2a04f1a725edced4376e285165bbac59dc624d49c6",
+   "pdf_bytes": 687133,
+   "features": {
+    "sections": 17,
+    "characters": 39674,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 7,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.27812",
+   "version": 1,
+   "title": "SliMOO: Interpretable Multi-Objective Evolutionary Search for LLM Depth Pruning",
+   "authors": "Guanchen Li, Yixing Xu, Xuanwu Yin, Dong Li, Emad Barsoum",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T08:05:50Z",
+   "reference_sha256": "f8beac016685d011876ff7652bb46e9a47aa51cc83cfb17911ad2d7a07f66356",
+   "pdf_sha256": "b4a8bbd9d304e9a9aff4a01086ae04584d3e58961815ae18109f51fa4c62cc61",
+   "pdf_bytes": 979650,
+   "features": {
+    "sections": 25,
+    "characters": 64875,
+    "tables": 13,
+    "footnotes": 1,
+    "formulas": 12,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.27829",
+   "version": 1,
+   "title": "GARRET: Generative Feedback for Region Retrieval in Visual Documents",
+   "authors": "Weijian Jian, Siyang Chen, Yuguang Yang, Yajun Zhang, Chunyu Xie, Dawei Leng, Yuhui Yin",
+   "categories": [
+    "cs.CV",
+    "cs.IR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T08:19:14Z",
+   "reference_sha256": "2ec7745303ac7494e182e3c5df1a25e51bcdfec73edfcecca49ee0a08124d089",
+   "pdf_sha256": "8dacdebe55b0271a74c583a3f375ae6b96cb1485e78cc7d8fca95b0d4c998eb0",
+   "pdf_bytes": 8869866,
+   "features": {
+    "sections": 51,
+    "characters": 77772,
+    "tables": 17,
+    "footnotes": 0,
+    "formulas": 31,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.27847",
+   "version": 1,
+   "title": "SAPD: Learning from Agent Experience without Environment Interaction",
+   "authors": "Juncheng Diao, Haibin Wang, Wei Shi, Yifan Ding, Qingbin Li, Rongxiang Weng, Xunliang Cai",
+   "categories": [
+    "cs.AI",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T08:30:30Z",
+   "reference_sha256": "5d8ce9adab9ed3bed27957caa51898aecc486087ed025486d356c8b3b13f1e01",
+   "pdf_sha256": "9f66762f242b968aca3cb3d03918be25013b47646455d64a1193c864497d4ea0",
+   "pdf_bytes": 620838,
+   "features": {
+    "sections": 28,
+    "characters": 57852,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 25,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.27851",
+   "version": 1,
+   "title": "LaLa-World: Scaling Latent World Models with Natural Language Actions",
+   "authors": "Junha Song, Geonmo Gu, Jeongeun Park, Heejeong Nam, Lucas Maes, Byeongho Heo, Dongyoon Han, Sangdoo Yun",
+   "categories": [
+    "cs.CV",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T08:32:14Z",
+   "reference_sha256": "a09ccf7277dfdac3c565f275819dbf54de0d1904748bddddf70ee7ca351de0fe",
+   "pdf_sha256": "bb72274f067642343f636593fe29ee0c0167e2f043cc640ca93c332cbd96025c",
+   "pdf_bytes": 15733464,
+   "features": {
+    "sections": 42,
+    "characters": 93673,
+    "tables": 11,
+    "footnotes": 7,
+    "formulas": 6,
+    "figures": 47
+   }
+  },
+  {
+   "arxiv_id": "2610.27860",
+   "version": 1,
+   "title": "Physical Operating-Condition-Guided Vision-Language Matching for Cavitation Diagnosis in Industrial Pipeline Systems",
+   "authors": "Yu Sha, Junqi Tao, Deyu Wang, Horst Stoecker, Domagoj Vnucec, Andreas Widlf, Kai Zhou",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T08:42:13Z",
+   "reference_sha256": "58fb53ff0478714558aae10750edcc9aa0dc2116e2dcd30549053e03139a87cc",
+   "pdf_sha256": "31ba6ca5b8c931eb6fa04a3d04f982064657202bb43fd4ed6eb15b0f7879b95d",
+   "pdf_bytes": 1782473,
+   "features": {
+    "sections": 23,
+    "characters": 64047,
+    "tables": 8,
+    "footnotes": 1,
+    "formulas": 13,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.27895",
+   "version": 1,
+   "title": "The Shape of the DPO Hyperparameter Landscape: What to Measure, How It Moves with Scale, and When Not to Transfer It",
+   "authors": "Hannan Mahadik, David Salinas, Jacek Golebiowski, Aaron Klein",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:14:22Z",
+   "reference_sha256": "04bdc3560f993a0bfd10a09cef7dc77dabe3ff450a945e1a1663e30c2be12d59",
+   "pdf_sha256": "8ddfc64c332101b84619fbed300035ca37a895b5a120cb4e5795ef36667101a0",
+   "pdf_bytes": 3946725,
+   "features": {
+    "sections": 45,
+    "characters": 105200,
+    "tables": 22,
+    "footnotes": 0,
+    "formulas": 2,
+    "figures": 28
+   }
+  },
+  {
+   "arxiv_id": "2610.27901",
+   "version": 1,
+   "title": "CollabSciReM: Aligning Language Models for Scientific Conversations via Science-Aware Reward Decomposition",
+   "authors": "Sasi Kiran Gaddipati, Gollam Rabby, S\\\"oren Auer",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:18:29Z",
+   "reference_sha256": "d87f341513f3eb4549ac215206607a69027c604b872c9bd24c0ffbf2015e4a62",
+   "pdf_sha256": "1d5843593b8ae03ef095dea7cb2827ea5b3ef3705f169e47772b5623441494ca",
+   "pdf_bytes": 2599871,
+   "features": {
+    "sections": 26,
+    "characters": 79482,
+    "tables": 7,
+    "footnotes": 2,
+    "formulas": 10,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.27928",
+   "version": 1,
+   "title": "Why Do LLMs Accept Generics? Explaining Acceptability using Psycholinguistic and Model-Derived Factors",
+   "authors": "Mervat Abassy, Zhaoxin Feng, Tatsuki Kuribayashi, Kentaro Inui, Emmanuele Chersoni",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:40:13Z",
+   "reference_sha256": "b120ea9ab444e116a324ce687908dff534374a915d029816219aae84efd72d61",
+   "pdf_sha256": "37545a2fa1cd5ed2fa409bd15035819831013fb984890041a2e858f31879b71d",
+   "pdf_bytes": 549385,
+   "features": {
+    "sections": 34,
+    "characters": 81198,
+    "tables": 15,
+    "footnotes": 1,
+    "formulas": 1,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27936",
+   "version": 1,
+   "title": "From Comparison to Selection: Enhancing Cross-Scale Generalization of Pointer Networks Trained with Reinforcement Learning for Capacitated Vehicle Routing Problem",
+   "authors": "Sofiene Lassoued, Devara Tertia, Stefan Lier, Andreas Schwung",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:44:49Z",
+   "reference_sha256": "e734b571c71fd9bb600622afe71b2e971ad46e75ccf492016a52b8bcb229cc92",
+   "pdf_sha256": "27935f7b966f7cff6b1b364123e2284dd3e6a16bbee5f8e46360159cba14d66d",
+   "pdf_bytes": 839089,
+   "features": {
+    "sections": 33,
+    "characters": 51493,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 14,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.27937",
+   "version": 1,
+   "title": "From DQI to C-DQI: Automatic Codebook Generation and Evaluation for Measuring Computational Discourse Quality Index",
+   "authors": "Esther Shizgal, Ron Keinan, Daniel Shtauber, Roee Tzvi Esquira, Ori Aronson, Matan Toledano, Or Rappel-Kroyzer, Liron Lavi, Renana Keydar, Ittai Bar-Siman-Tov, and Reut Tsarfaty",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:45:13Z",
+   "reference_sha256": "5a13f314f7074c67d27c252f1e04e6f35859efe408d907132ec7a7bb5538b578",
+   "pdf_sha256": "7e18e82a315658a14868912ff5d80b94a303a65198a80d1aa9b7ba6205ba852b",
+   "pdf_bytes": 937711,
+   "features": {
+    "sections": 26,
+    "characters": 73690,
+    "tables": 5,
+    "footnotes": 14,
+    "formulas": 3,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.27944",
+   "version": 1,
+   "title": "In PRAISE of Attributes: Grounding Retrieval Geometry with Query-Conditioned Subspaces for Person Re-Identification",
+   "authors": "Rajarshi Bhattacharya, Aryan Shukla, Shakeeb Murtaza, Christian Desrosiers, Jose Dolz, Maguelonne Heritier, Eric Granger",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:52:06Z",
+   "reference_sha256": "547f1850868035b7866a82641974edb72eb7de86dc87ad335011c5670a6a1b31",
+   "pdf_sha256": "8758ef433b370cee7ee7a57c5cba13c2f0301b970b5e64b232cd927272d1de86",
+   "pdf_bytes": 5599358,
+   "features": {
+    "sections": 50,
+    "characters": 109172,
+    "tables": 10,
+    "footnotes": 5,
+    "formulas": 50,
+    "figures": 12
+   }
+  },
+  {
+   "arxiv_id": "2610.27952",
+   "version": 1,
+   "title": "Unsupervised Head Network Personalization for Split Computing via Federated Learning",
+   "authors": "Yutaro Horikawa, Takayuki Nishio",
+   "categories": [
+    "cs.LG",
+    "cs.DC",
+    "cs.NI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:57:52Z",
+   "reference_sha256": "a567191318c2c153704a1ea0e9c644dfe2bf6cbb9da88f934f2ad4ecb1a7c0e1",
+   "pdf_sha256": "f7e58aea0994b91c52663b53c7e4915adb599cf26ce08ba3a749f02ba76b616e",
+   "pdf_bytes": 1585038,
+   "features": {
+    "sections": 25,
+    "characters": 58046,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.27960",
+   "version": 1,
+   "title": "Efficient SAM3 Adaptation for Multi-Class Semantic Segmentation via Dense Competitive Representations",
+   "authors": "Wenbin Liao, Hao Zhu, Yike Ma, Hao Jiang, Feng Dai",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T10:06:19Z",
+   "reference_sha256": "00dc4f7bfa0a5d640527408226c85230b6069531cb96a6ba60dd870d3a3e846b",
+   "pdf_sha256": "f01da6dd3d755c8539dce6ad85043ff4969f5af9cbfe15b1b9c988470ab4841f",
+   "pdf_bytes": 2719251,
+   "features": {
+    "sections": 16,
+    "characters": 55645,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 13,
+    "figures": 16
+   }
+  },
+  {
+   "arxiv_id": "2610.27986",
+   "version": 1,
+   "title": "Recast the Past: Stable Long Video Generation with Full Context Memory",
+   "authors": "Yukuo Ma, Cong Liu, Junke Wang, Junqi Liu, Haibin Huang, Zuxuan Wu, Xuelong Li",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T10:27:07Z",
+   "reference_sha256": "f4ded289825701d22195934e3bc5543e33beaf9858fc7f7429aa16e8143e201d",
+   "pdf_sha256": "16e179a7f2f930b9fd504d1bff0170f03285941676888e48801c472a014117de",
+   "pdf_bytes": 30596036,
+   "features": {
+    "sections": 22,
+    "characters": 49731,
+    "tables": 15,
+    "footnotes": 0,
+    "formulas": 18,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.27989",
+   "version": 1,
+   "title": "On Johnson-Lindenstrauss Transforms for Byzantine-Robust Optimization",
+   "authors": "Aleksandr Shestakov, Vladimir Aletov, Aleksandr Beznosikov",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T10:29:32Z",
+   "reference_sha256": "9f327db3f7a7339a06e11793a1e6ecedb545bef89bdf553aeae32256ea3281ca",
+   "pdf_sha256": "d9d156d84eb383c60afd52e6a063d71c53df596a454cebfb1cab511bdb64b042",
+   "pdf_bytes": 769332,
+   "features": {
+    "sections": 26,
+    "characters": 86186,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 130,
+    "figures": 0
+   }
+  },
+  {
+   "arxiv_id": "2610.28000",
+   "version": 1,
+   "title": "Beyond the Evidence Boundary: Behavioral Mirage Under Progressive Degradation in Medical VLMs",
+   "authors": "Edric Castel C. Hao and Rez Samantha Z. Floresca",
+   "categories": [
+    "cs.CV",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T10:45:40Z",
+   "reference_sha256": "a986027d1a7b8dd21004672a8099557146612cd37997f3aabff93e3a2d6c2fca",
+   "pdf_sha256": "c626cc3ce50972816c35b6fb47677c0eef1adf0836d3b6ec078e249e37cc5322",
+   "pdf_bytes": 2917078,
+   "features": {
+    "sections": 4,
+    "characters": 62146,
+    "tables": 25,
+    "footnotes": 0,
+    "formulas": 3,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.28018",
+   "version": 1,
+   "title": "P$^3$-VLM: A Point-based Alternative for Grounded 3D Vision-Language Models",
+   "authors": "Anna-Maria Halacheva, Jan-Nico Zaech, Sombit Dey, Luc Van Gool, Danda Pani Paudel",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T11:08:07Z",
+   "reference_sha256": "d9a9c08f414f92412557fdb47580ffd70effc6b49856b8b681f278dac26b34d8",
+   "pdf_sha256": "cb0b2fdc978e9a6da9beaafece02a2c2824baa9b59f5acad23de1445dadf6c83",
+   "pdf_bytes": 4669188,
+   "features": {
+    "sections": 31,
+    "characters": 56924,
+    "tables": 14,
+    "footnotes": 0,
+    "formulas": 5,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.28040",
+   "version": 1,
+   "title": "Using Letter Positional Probabilities to Assess French Word Complexity",
+   "authors": "Michael Dalvean",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T11:25:50Z",
+   "reference_sha256": "5e0acd5ab259d6e852a9bec952c27f44e69d2a7421e712fc4ac5c4dee020f052",
+   "pdf_sha256": "4533ab2376c9babe47d2265b03c4cd151529c4effd17fb6fe3dd1656f7c3de05",
+   "pdf_bytes": 404616,
+   "features": {
+    "sections": 15,
+    "characters": 46741,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 0
+   }
+  },
+  {
+   "arxiv_id": "2610.28045",
+   "version": 1,
+   "title": "Poisoning-Based Backdoors Are Not Cryptographic",
+   "authors": "Masahiro Kaneko",
+   "categories": [
+    "cs.LG",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T11:27:30Z",
+   "reference_sha256": "1cd5a1b2a98be552b2532c2e7191e806bdee3e68e417f01b333e09648098f911",
+   "pdf_sha256": "1b6a02dfd3e7cef42840aa2f9772e06f1ca3d7c2198433d75852adf87be16913",
+   "pdf_bytes": 348760,
+   "features": {
+    "sections": 17,
+    "characters": 53299,
+    "tables": 5,
+    "footnotes": 5,
+    "formulas": 4,
+    "figures": 1
+   }
+  },
+  {
+   "arxiv_id": "2610.28048",
+   "version": 1,
+   "title": "On-Policy Transition Distillation",
+   "authors": "Runyang You, Yongqi Li, Tiezheng Yu, Wenjie Li",
+   "categories": [
+    "cs.CL",
+    "cs.AI",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T11:37:31Z",
+   "reference_sha256": "0b2d9d0a4e0c154e884fd4aac0404c8c70a836ab7f8c24b217062e5f9e31f399",
+   "pdf_sha256": "2334e7558966db0502d87b2c45185e0e5e6cf8d258f4cb5e4deadefdb6324b95",
+   "pdf_bytes": 1835597,
+   "features": {
+    "sections": 34,
+    "characters": 58800,
+    "tables": 12,
+    "footnotes": 1,
+    "formulas": 24,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.28067",
+   "version": 1,
+   "title": "Contextual Candour: Role-Aware Graduated Disclosure for LLMs over Mixed-Sensitivity Contexts",
+   "authors": "Devansh Srivastav, David Pape, Samira Abedini, Lea Sch\\\"onherr",
+   "categories": [
+    "cs.CR",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T11:50:25Z",
+   "reference_sha256": "033381b70a55a47a9ee4f9d808bcc4cec48a595236a084f807ea254b69bd2523",
+   "pdf_sha256": "b2ae6baa8219076cddd801dcbbad018808c0a8e8902556012c235b5e0c60b8d6",
+   "pdf_bytes": 6434961,
+   "features": {
+    "sections": 41,
+    "characters": 97633,
+    "tables": 23,
+    "footnotes": 0,
+    "formulas": 12,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.28074",
+   "version": 1,
+   "title": "Slot-JEPA: Object-Structured Prediction Interfaces for Latent World Models",
+   "authors": "Peisong Wen, Qianqian Xu, Minye Lei, Siran Dai, Yang Liu, and Qingming Huang",
+   "categories": [
+    "cs.AI",
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T11:53:42Z",
+   "reference_sha256": "73f08971ffdf0c2e567fb3e98078a7f645b3300efc69cd92ca7ac7d58021e916",
+   "pdf_sha256": "8e84fa19d395b4b7ff38ec21eee20d5c6bec5ef80d3e9e507bd2e00e7d92eef1",
+   "pdf_bytes": 5446142,
+   "features": {
+    "sections": 29,
+    "characters": 78832,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 21,
+    "figures": 15
+   }
+  },
+  {
+   "arxiv_id": "2610.28083",
+   "version": 1,
+   "title": "IECG: Weakly-Supervised Interpretability-Enhancing Foundation Model for Electrocardiogram",
+   "authors": "Huynh Dang Nguyen, Trong-Thang Pham, Anh-Thuan Do, Phuong-Nhi Dinh, Brijesh Patel, Ngan Le, Van Nguyen",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T12:03:09Z",
+   "reference_sha256": "42805e523e3fe82125fb90610e93b56947a5972c3cfb95f33b4ba98ebbf5d15c",
+   "pdf_sha256": "b569b91a152e6fb9b6e42835789bfa56fe944bbe61c16717e1397a005b794edf",
+   "pdf_bytes": 1015058,
+   "features": {
+    "sections": 31,
+    "characters": 63605,
+    "tables": 12,
+    "footnotes": 0,
+    "formulas": 13,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.28090",
+   "version": 1,
+   "title": "From Complex Histories to Simple Predictors: Predictive Dimension in Dynamic Graph Learning",
+   "authors": "Hantong Feng, Duxin Chen, Wenwu Yu",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T12:08:12Z",
+   "reference_sha256": "fa9e58957d330ec6fa3dea17cf34fdcb6ed4c06ab1a1eb8c434bc5be59fb0aed",
+   "pdf_sha256": "b1bb8593a6c28b78e128e46a02f0d2b6991037695240092f7b05397b20ea73cd",
+   "pdf_bytes": 9000608,
+   "features": {
+    "sections": 30,
+    "characters": 74290,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 14,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.28092",
+   "version": 1,
+   "title": "BAIT: Can LLMs Find What Biases a Reader? A Benchmark for Cognitive Bias Triggers in News",
+   "authors": "Yousra Fettach, Tijl De Bie",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T12:09:28Z",
+   "reference_sha256": "414b76f1d071be6910940343d5981bca2f13360a3a538a80b73bb4fe52c9a760",
+   "pdf_sha256": "7170e017688bf68e686c29f9aa11a836381fcfabaec8827a901ecc64c908a2bd",
+   "pdf_bytes": 444270,
+   "features": {
+    "sections": 40,
+    "characters": 76395,
+    "tables": 9,
+    "footnotes": 1,
+    "formulas": 6,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.28102",
+   "version": 1,
+   "title": "Polyscene: Scenario Planning as Diversity Planning",
+   "authors": "Mustafa F. Abdelwahed, Joan Espasa, Felipe Meneguzzi",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T12:17:06Z",
+   "reference_sha256": "aaa0963abb68d6e647deed84b1984e0a28d93ef1c9f90273ffaf9454170edaac",
+   "pdf_sha256": "ef356b2ef4016a0a3eab03bdff901d231b867c5c94d81dd5aee0385557194a3d",
+   "pdf_bytes": 585459,
+   "features": {
+    "sections": 20,
+    "characters": 114828,
+    "tables": 7,
+    "footnotes": 14,
+    "formulas": 1,
+    "figures": 0
+   }
+  },
+  {
+   "arxiv_id": "2610.28121",
+   "version": 1,
+   "title": "Interruption-Aware Recurrent Reinforcement Learning for UAS Navigation Under Temporary Overrides",
+   "authors": "Christopher Conrad, Deepak Panda, Weisi Guo, Antonios Tsourdos",
+   "categories": [
+    "cs.AI",
+    "cs.RO"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T12:30:41Z",
+   "reference_sha256": "5d1fad917b75ceee95e09d1823aaf733a9eb38f237c3e1b085cd20c376af32d5",
+   "pdf_sha256": "5e7c5f511d7ecd31e9c721d5c9a860fcd1805913184a4c56353f3ea39f3fd5d8",
+   "pdf_bytes": 32331285,
+   "features": {
+    "sections": 42,
+    "characters": 66676,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 26,
+    "figures": 19
+   }
+  },
+  {
+   "arxiv_id": "2610.28171",
+   "version": 1,
+   "title": "DocLayout-YOLO: Axis-Attentive Document Layout Detector with Mesh-Guided Synthetic Pretraining",
+   "authors": "Zhiyuan Zhao, Hengrui Kang, Guang Liang, Bin Wang, Conghui He",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T13:11:41Z",
+   "reference_sha256": "8062abc22dfd3ecb5444131e864901a94aceb53bbe14b99638a45f412f225e71",
+   "pdf_sha256": "904fc51f817d9a4a4929c732fae4fb260a2d752a01176746b61e702ae086f490",
+   "pdf_bytes": 31772480,
+   "features": {
+    "sections": 34,
+    "characters": 77983,
+    "tables": 19,
+    "footnotes": 1,
+    "formulas": 13,
+    "figures": 20
+   }
+  },
+  {
+   "arxiv_id": "2610.28178",
+   "version": 1,
+   "title": "Coincidence-Maximizing Customer Clustering Using Smart Meter Data",
+   "authors": "Ramiro H. G\\'alvez, Gabriel Martos Venturini, Iv\\'an Mondrzak",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T13:17:30Z",
+   "reference_sha256": "0adcfb65ae071bd879469830e38aacd11518f460556b9da4023137a2f0db0b1a",
+   "pdf_sha256": "62f1c284e109c8c92a623503ab14c1ef9fc7ad2a42d382b842f7210e1edfeca2",
+   "pdf_bytes": 450604,
+   "features": {
+    "sections": 23,
+    "characters": 74885,
+    "tables": 4,
+    "footnotes": 13,
+    "formulas": 10,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28190",
+   "version": 1,
+   "title": "CrossFit-GS: Out-of-Fold Pose Estimation for COLMAP-Free 3D Gaussian Splatting",
+   "authors": "Zijian Wu, Jinliang Wang, Mingfeng Jiang, Zidian Lin, Ying Song, and Ziqian Lu",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T13:29:26Z",
+   "reference_sha256": "e1ddbb3d8b2c7060ec7affc520acca1ef886605c69728384d7ae131477312fd8",
+   "pdf_sha256": "7d5ed64f0aeac41272c084bacca7605df829818836071dcc20496bbeaeffcb2a",
+   "pdf_bytes": 6513149,
+   "features": {
+    "sections": 19,
+    "characters": 32316,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28191",
+   "version": 1,
+   "title": "Unified RAW Image Exposure Correction and Restoration via Linear Illumination and Frequency-Adaptive Enhancement",
+   "authors": "Yingkai Zhang, Yunhao Zou, Ying Fu",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T13:31:28Z",
+   "reference_sha256": "79b470c9208a892467d064cbfb0f9a1d5cd2c8ee14c4286bbbf54ee152e1e906",
+   "pdf_sha256": "3379e76be43fbc8180c789ddfe7ce33ae08a8f97ef4f604c2eee6179df862cf6",
+   "pdf_bytes": 12687469,
+   "features": {
+    "sections": 15,
+    "characters": 30051,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.28194",
+   "version": 1,
+   "title": "Adaptive Pullback: Reweighting Supervision at Penalty Jumps in On-Policy Distillation",
+   "authors": "Guangyu Liu, Siyuan Gan, Shilong Zhou, Linjian Meng, Boyan Wang, Jing Huo",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T13:34:43Z",
+   "reference_sha256": "55e3b0145206fa6ba8653d8b1dad022cf66407410b62eaf3b06d0e34102a46e6",
+   "pdf_sha256": "9a34323e51fe1540c1d6bf7998108e00b2ebfdd397335b385f5f34c7fcce4db7",
+   "pdf_bytes": 479058,
+   "features": {
+    "sections": 30,
+    "characters": 51319,
+    "tables": 16,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.28212",
+   "version": 1,
+   "title": "ExeBench-FHD: Addressing Fidelity Issues in Decompiler Evaluation",
+   "authors": "Akarsh Ashok, Dinil Mon Divakaran, Vivek Balachandran",
+   "categories": [
+    "cs.SE",
+    "cs.LG",
+    "cs.PL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T13:49:18Z",
+   "reference_sha256": "75cf2667d09db07348d0e72cc878e34defe4befdb3791952ff169567d0bd7c1b",
+   "pdf_sha256": "4c6b88d99a16f6ff3794db3268ac696fb98ed8f30a573d7faef59481f75c5d0e",
+   "pdf_bytes": 516080,
+   "features": {
+    "sections": 39,
+    "characters": 58262,
+    "tables": 25,
+    "footnotes": 1,
+    "formulas": 0,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.28264",
+   "version": 1,
+   "title": "PI-MLLM: Psychophysics-Inspired Multimodal Large Language Model for Oddly Satisfying Video Emotion Analysis",
+   "authors": "Yuheng Zhang, Jie Zhang, Yuecong Min, Yunwei Zhao, Meichen Liu, Qiankun Li, Shiguang Shan",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:20:39Z",
+   "reference_sha256": "e47e13b24fa95ab0aef3f9a30ce8c4952dfb884ab0970c0a3ef0b29ed05f5975",
+   "pdf_sha256": "2240faff5339d36251b78cde85c03047e8f7277ed9c9dd688b751669505f2e72",
+   "pdf_bytes": 1248723,
+   "features": {
+    "sections": 22,
+    "characters": 39823,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 14,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28270",
+   "version": 1,
+   "title": "SWatcher+: A Holistic Approach to Deploying Learned Cardinality Estimators in a Dynamic Setting",
+   "authors": "Yuxi Liu and Vincent Capol and Xiao Hu and Pankaj K. Agarwal and Jun Yang",
+   "categories": [
+    "cs.DB"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:25:41Z",
+   "reference_sha256": "5316e390fc31243f338230078791d357d40eed57dd4918bbb40d5ef884b07d2e",
+   "pdf_sha256": "425e9777bca3fa125dfce9894d346acfd3013fdf6c3fc6f17dd2217b8745f8c4",
+   "pdf_bytes": 1140760,
+   "features": {
+    "sections": 17,
+    "characters": 87404,
+    "tables": 3,
+    "footnotes": 10,
+    "formulas": 0,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.28284",
+   "version": 1,
+   "title": "HRoPE: Homography Relative Positional Encoding",
+   "authors": "Huachen Gao, Yang Yang, Xiaoqian Liang, Xingyu Chen, Youjia Zhang, Qi Zhang, Baorui Ma, Anpei Chen, Wei Yang",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:36:51Z",
+   "reference_sha256": "fe0a71a626c58f29094eac0663652d5568d2b3d630a4495392e13aa0b78d1c65",
+   "pdf_sha256": "e17cff31cb872aef8e3daa27334faff135cb57778e2b2be79307c287d31e366f",
+   "pdf_bytes": 5203917,
+   "features": {
+    "sections": 22,
+    "characters": 63425,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 18,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.28289",
+   "version": 1,
+   "title": "CPVB-RG: Cross-Prior Visual Bridging for Prior-Aware Chest X-Ray Report Generation",
+   "authors": "Sike Xiang, Shuang Chen, Julie Cox, Amir Atapour-Abarghouei",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:38:03Z",
+   "reference_sha256": "63b606e5674c9b7445cd104db7e3a1d1af64997e258cd9e0c204c0beaba39b5b",
+   "pdf_sha256": "fcfbb3d424a2b9d1b2614dbf4aefe5465e8edc42dda34e073c08895158d4e31a",
+   "pdf_bytes": 4335244,
+   "features": {
+    "sections": 15,
+    "characters": 31701,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 15,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28291",
+   "version": 1,
+   "title": "AGGR-Mamba: Mamba-based Network with Attention-Guided Gated Residual Refinement for Undersampled MRI Reconstruction",
+   "authors": "Yue Zhuo, Wenbin Deng, Lingjun Liu, Xuhang Chen, Zhonghua Xie",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:39:35Z",
+   "reference_sha256": "40a06d63af844892ce1e6c6f1a9c8e1197133d213cdbee7aae7ca0e51b48e30b",
+   "pdf_sha256": "b9dcdb7e32eedece8f4c32d541c587535de83ce9d57217d3cf2d16e006c82dfc",
+   "pdf_bytes": 3801456,
+   "features": {
+    "sections": 16,
+    "characters": 32717,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 25,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28294",
+   "version": 1,
+   "title": "Adaptive Replay Refinement: Allocating Test-Time Compute Between Revision and Resampling",
+   "authors": "Ahsan Bilal, Muhammad Ahmed Mohsin, Muhammad Umer, Ayesha Mohsin, Sarmad Bilal, Dean F. Hougen",
+   "categories": [
+    "cs.CL",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:41:46Z",
+   "reference_sha256": "c5a6c51a46684abb65ebcfe2e2c21459ec99e4180d1a836f18bd9802e9a6a74c",
+   "pdf_sha256": "84076c5481d9bc9bea11d8b263f4e77358b467021d606d4bd908e4bd6287b52d",
+   "pdf_bytes": 875219,
+   "features": {
+    "sections": 37,
+    "characters": 63874,
+    "tables": 8,
+    "footnotes": 1,
+    "formulas": 7,
+    "figures": 18
+   }
+  },
+  {
+   "arxiv_id": "2610.28303",
+   "version": 1,
+   "title": "Reward Misspecification Degrades Chain-of-Thought Monitorability",
+   "authors": "Tianyi Lorena Yan, John Hewitt",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:45:29Z",
+   "reference_sha256": "62313119b3ee131f3bf76989700d98df1f4f40e6355b94e5384ba70f5029979e",
+   "pdf_sha256": "4641af61db07980ec086cf490ba22d64d4f65b6bf0496ab840396766d941afe0",
+   "pdf_bytes": 1484743,
+   "features": {
+    "sections": 30,
+    "characters": 51702,
+    "tables": 6,
+    "footnotes": 7,
+    "formulas": 8,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.28310",
+   "version": 1,
+   "title": "Recommending Bacterial Cultivation Conditions from 16S rRNA",
+   "authors": "Juntang Wang, Hao Wu, Yihan Wang, Runkun Guo, Shixin Xu, Dongmian Zou",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:51:18Z",
+   "reference_sha256": "a6b3595a452a52686c9fb11232f326f67e88ac3abbc3a20c0bc0565c477ea95b",
+   "pdf_sha256": "4f4f12259cbd4525985c151da39acbe31c0a8d44bd3ff8811de393e46cb86714",
+   "pdf_bytes": 377877,
+   "features": {
+    "sections": 37,
+    "characters": 50863,
+    "tables": 16,
+    "footnotes": 0,
+    "formulas": 4,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28315",
+   "version": 1,
+   "title": "Disclosure Begets Disclosure: A Self-Reinforcing Privacy Loop in LLM Agents with Persistent Memory",
+   "authors": "Masahiro Kaneko, Hiromi Arai, Timothy Baldwin",
+   "categories": [
+    "cs.CR",
+    "cs.CL",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:52:57Z",
+   "reference_sha256": "ec35fee66d02ecb3facf673d929b4592688e47023c9f9cea1484818a5c6d7fd3",
+   "pdf_sha256": "d64e10d4a41c118f6246779ec8a3e0ab6d25a7a89af2e741e7b107d8133b2cb9",
+   "pdf_bytes": 1621855,
+   "features": {
+    "sections": 63,
+    "characters": 100987,
+    "tables": 24,
+    "footnotes": 4,
+    "formulas": 8,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28316",
+   "version": 1,
+   "title": "ABACUS: A Benchmark for Image Editing Models to Assess Object Category and Counting Under Scene Conservation",
+   "authors": "Aymen Lassoued, Angelique Loesch, Romaric Audigier",
+   "categories": [
+    "cs.CV",
+    "cs.AI",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:53:22Z",
+   "reference_sha256": "f17ce21435d4e6df5d69ee2e8e7230e84757ce19a96d40f72c33e6d25b9afcac",
+   "pdf_sha256": "84c5f95f35fdd8fc3520cc2ac7666746d38741cd7699b0951135502ea4553bc0",
+   "pdf_bytes": 47636647,
+   "features": {
+    "sections": 35,
+    "characters": 70877,
+    "tables": 14,
+    "footnotes": 1,
+    "formulas": 8,
+    "figures": 20
+   }
+  },
+  {
+   "arxiv_id": "2610.28322",
+   "version": 1,
+   "title": "Manifold-Informed Neural Networks for Low-Label ECG Electrolyte Inference",
+   "authors": "Juntang Wang, Hao Wu, Yihan Wang, Dongmian Zou, Shixin Xu",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:56:48Z",
+   "reference_sha256": "be906078697af918b37faeacb8355d75d098937626c31bd2d6e34a2de24d706d",
+   "pdf_sha256": "3aa14a9bac8b990ab652514864a07dd560208d9697e44b4ce4d441ef85c54a5a",
+   "pdf_bytes": 508269,
+   "features": {
+    "sections": 23,
+    "characters": 58423,
+    "tables": 18,
+    "footnotes": 0,
+    "formulas": 2,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28325",
+   "version": 1,
+   "title": "Is Sycophancy a Form of In-Context Updating?",
+   "authors": "Itai Shapira, Myra Cheng, Hadas Orgad",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T14:59:54Z",
+   "reference_sha256": "518ff61411f97fef468bfea113de51d726ee74baaf90c9d850b9b544bbfeb068",
+   "pdf_sha256": "39d84d42433a7434168480fd0b9822b995cf2c2e713b0209e28e45811703dc28",
+   "pdf_bytes": 2575646,
+   "features": {
+    "sections": 34,
+    "characters": 108470,
+    "tables": 18,
+    "footnotes": 3,
+    "formulas": 15,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.28327",
+   "version": 1,
+   "title": "Observation Assimilation Transformer: Probabilistic Weather Analysis from Sparse Station Observations",
+   "authors": "Christian Donner and Michele Cattaneo and Maxim Samarin and Francesco Zanetta and Ic\\'iar Llor\\'ens Jover and Gabriela Aznar Siguan and Michele Volpi",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:00:09Z",
+   "reference_sha256": "946d57c35dabaf9b550830697f61f9dc3912cbe50fb806eb7a9218e6ba8f28f7",
+   "pdf_sha256": "116c8c17b9da41e9da0ae0af4c3fd566dbab964f777a843ebf3163fc566312ed",
+   "pdf_bytes": 10050272,
+   "features": {
+    "sections": 22,
+    "characters": 66395,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 12,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.28355",
+   "version": 1,
+   "title": "Beyond the Point Mass: Acceptance-Derived Weights and Distributional Losses for Speculative Decoding",
+   "authors": "Tianyu Wu, Zhuohan Wang, Jonathan Geuter, Yu Yao, Weifan Jiang, Chengxi Zhang, Ju Li, Minlan Yu",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:20:26Z",
+   "reference_sha256": "f3d04486bb67948ae4bc7844046b5df709762e17f519b33fa6440499c6a594f2",
+   "pdf_sha256": "50b544afdb3d99b81a8d8c213e98369495ddbcf6991cc2dd95acaac76b4db058",
+   "pdf_bytes": 358533,
+   "features": {
+    "sections": 21,
+    "characters": 41290,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 15,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28380",
+   "version": 1,
+   "title": "Object-Oriented Harness: Evolving Agent Harnesses through Object-Oriented Design",
+   "authors": "Gaotang Li, Bhavana Dalvi Mishra, Yifei Ming, Yanfei Chen, Zhongying CuiZhu, Lesly Miculicich, Long T. Le, Rui Meng, Chun-Liang Li, Hanghang Tong, Chen-Yu Lee, Tomas Pfister",
+   "categories": [
+    "cs.CL",
+    "cs.SE"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:32:52Z",
+   "reference_sha256": "ae66c96c26b972d48b5dad484a73fa6435b0c865445b9ce6523e7598029d3c1e",
+   "pdf_sha256": "30d157984f16072ebac9bb42f39eb2630ec0163dfcf0e096fc3a986974fe6a02",
+   "pdf_bytes": 5351168,
+   "features": {
+    "sections": 35,
+    "characters": 53178,
+    "tables": 4,
+    "footnotes": 8,
+    "formulas": 1,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.28385",
+   "version": 1,
+   "title": "RACE: RoPE-Aligned Attention Compression Based on Query-Key Activation Energies",
+   "authors": "Irene Tenison, Abdulrahman Alabdulkareem, Daniel Karl I. Weidele, Nima Dehmamy, Dan Gutfreund",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:34:02Z",
+   "reference_sha256": "82c035d830a6c139db75944f419463f6324d29ee52f794ea996d5686eb3dae6d",
+   "pdf_sha256": "3fe33d7c736951aa3f95baf96214d725e77ced7d62a9a81da907a6b8c64116ac",
+   "pdf_bytes": 4753123,
+   "features": {
+    "sections": 28,
+    "characters": 103053,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 94,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.28405",
+   "version": 1,
+   "title": "DIVE: Benchmarking Full-Duplex Interaction with Visual Engagement in Continuous Streams",
+   "authors": "Yuhang Chen, Guangyue Liu, Shilong Liu",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:48:29Z",
+   "reference_sha256": "d026a3b67e81e0a5615c14aa211915865c4ee87640e7fa033ce282b60f18bed6",
+   "pdf_sha256": "cefd6d4872d2e97e2c4858afb8dede09b3daf9773b803dc9b4739180fde68e00",
+   "pdf_bytes": 2673797,
+   "features": {
+    "sections": 21,
+    "characters": 49003,
+    "tables": 4,
+    "footnotes": 3,
+    "formulas": 6,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28407",
+   "version": 1,
+   "title": "The Instruction Tax on Factual Recall: Base Models Can Beat Their Instruction-Tuned Counterparts",
+   "authors": "Christophe Khalil and Aya Mourad",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:48:56Z",
+   "reference_sha256": "535b70c2826e06388d5ea3c156312d4767285a7f7a812c597b50df83c7399882",
+   "pdf_sha256": "360a38ba062deacc438394ccb8b87da50d0bc61ec23d04f23469ee7512c76786",
+   "pdf_bytes": 261130,
+   "features": {
+    "sections": 13,
+    "characters": 33137,
+    "tables": 6,
+    "footnotes": 1,
+    "formulas": 5,
+    "figures": 0
+   }
+  },
+  {
+   "arxiv_id": "2610.28409",
+   "version": 1,
+   "title": "Rewards for Budget-Aware Multi-Turn Agents That Adapt to Arbitrary Test-Time Constraints",
+   "authors": "Tom A. Lamb, Adam Golinski, Eleonora Gualdoni, Sinead Williamson, Michael Kirchhof",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:49:32Z",
+   "reference_sha256": "14546c6bbf90fb71456ee4e59a5e9cbac5e21935467d4302d319313be62907ab",
+   "pdf_sha256": "b98120edbbae1f0cb453540acb4879add61e9168937f127c0cfca6ed559935e5",
+   "pdf_bytes": 1995142,
+   "features": {
+    "sections": 38,
+    "characters": 106231,
+    "tables": 6,
+    "footnotes": 1,
+    "formulas": 38,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.28434",
+   "version": 1,
+   "title": "Every Model Leaves a Trace: Multi-Resolution LLM Fingerprinting",
+   "authors": "Mohammad Reza Modarres, Armin Tourajmehr, Artin Tavasoli, Yadollah Yaghoobzadeh, Mohammad Taher Pilehvar",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:00:34Z",
+   "reference_sha256": "a2667fff84c0cacd572045ca46a75eb1e126b5618a197e13aaab912cc33146f5",
+   "pdf_sha256": "81c39807ddc84d709efad4fe3ccf9d97af22fd34c042c69b562d67f410b428ca",
+   "pdf_bytes": 393779,
+   "features": {
+    "sections": 37,
+    "characters": 76780,
+    "tables": 26,
+    "footnotes": 1,
+    "formulas": 1,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28435",
+   "version": 1,
+   "title": "Multimodal Reranking Is a System One Decision",
+   "authors": "Zhuchenyang Liu, Yao Zhang, Yu Xiao",
+   "categories": [
+    "cs.IR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:00:45Z",
+   "reference_sha256": "ecd3a9d58e49613a9330509bd43c10c1c8219e6612a3006892187f10bbeb2912",
+   "pdf_sha256": "a44712eb97b2e1ef1640cfc821d203629f33ac37da28e501069b99eb2aaa88bd",
+   "pdf_bytes": 346026,
+   "features": {
+    "sections": 22,
+    "characters": 41240,
+    "tables": 12,
+    "footnotes": 0,
+    "formulas": 2,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.28441",
+   "version": 1,
+   "title": "Stratified Sparse Attention: Reducing the Sparse-to-Dense Gap at Extreme Sparsity",
+   "authors": "Sahil Joshi, Prithvi Dixit, Aryan Katiyar, Agniva Chowdhury, Joseph E. Gonzalez, Anshumali Shrivastava, Aditya Desai, Kumar Krishna Agrawal",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:02:12Z",
+   "reference_sha256": "a5d7b78dfad6e703ba88253950ac612fe22fa33d086ce97b54a3670252557d1d",
+   "pdf_sha256": "112c6248d4fbcc07adefd1cd6435309d69ffd20d68965bbab1e9762d367f86c6",
+   "pdf_bytes": 2219456,
+   "features": {
+    "sections": 19,
+    "characters": 53442,
+    "tables": 12,
+    "footnotes": 1,
+    "formulas": 58,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.28444",
+   "version": 1,
+   "title": "EvaOmni: An Evidence-Grounded Benchmark for Audio-Visual Reasoning",
+   "authors": "Xiaoxing Hu, Wenxi Yao, Chaoyuan Shi, Ziqi Ye, Xiaorong Guo, Peixuan Li, Zhuoran Sun, Ziyang Gong, Peiyuan Zhang, Mingxin Liu, Shuran Ma, Hongbo Liu, Xiaomin Yu, Yu Tian, Wentao Wang, Zhenjie Yang, Jian Hu, Yunhang Shen, Haoyu Cao, Xue Yang",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:03:30Z",
+   "reference_sha256": "b1357aaff6fcbeaabb138d0508dcb6c9bd7797b92dbb91a3b1174efd29c6bc8d",
+   "pdf_sha256": "23816d2eef5674e5b14a0c72cfe06df98092e84ae643fdbc6dc024ac0b5e36d0",
+   "pdf_bytes": 12742797,
+   "features": {
+    "sections": 28,
+    "characters": 59409,
+    "tables": 5,
+    "footnotes": 5,
+    "formulas": 4,
+    "figures": 18
+   }
+  },
+  {
+   "arxiv_id": "2610.28454",
+   "version": 1,
+   "title": "Toolflation: Seller Agents Distort Tool Markets Through Spontaneous Generative Engine Optimization",
+   "authors": "Zhenwei Tang, Di Bai, Jintao Liu, Xidong Wu, Qianfeng Wen, Xinwu Cheng",
+   "categories": [
+    "cs.AI",
+    "cs.CL",
+    "cs.MA"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:12:39Z",
+   "reference_sha256": "898df129dd7a653df02d1384349d944182529a659f308ebec3e9bea36932bd7a",
+   "pdf_sha256": "538da1d165fbfe2478fa2cbb8adc6757961916d2e1af81ae6ba52fde991260ee",
+   "pdf_bytes": 616671,
+   "features": {
+    "sections": 29,
+    "characters": 65781,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 5,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.28467",
+   "version": 1,
+   "title": "Beyond Trajectory Statistics: Community-Consistent Human Mobility Generation via Evolving User-Location Graphs",
+   "authors": "Bo Liu, Tong Li, Jiapeng Zhang, Zhu Xiao, Zhuo Tang, Kenli Li",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:21:17Z",
+   "reference_sha256": "af5404ec0558db5bba2b3db03ea3197b0b4556d256f3d9bbd403724893b34b3f",
+   "pdf_sha256": "9571ac1cd39fac37e11ed48f2fbddec59d8d9965140cf5fab9addc876079e66a",
+   "pdf_bytes": 6624572,
+   "features": {
+    "sections": 47,
+    "characters": 74051,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 18,
+    "figures": 20
+   }
+  },
+  {
+   "arxiv_id": "2610.28479",
+   "version": 1,
+   "title": "Claims of emergence in AI should be grounded in information decomposition",
+   "authors": "Christoph Riedl, Fernando E. Rosas",
+   "categories": [
+    "cs.AI",
+    "cs.HC",
+    "cs.IT",
+    "cs.LG",
+    "cs.MA",
+    "math.IT"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:29:28Z",
+   "reference_sha256": "801bdf1e87a4f4beefa8cc76e9503c0fd209b1b2e4e26290b5a19c66059a89a1",
+   "pdf_sha256": "6aa96bea82cb7b743489735e6f65f8c9c1f78484340ab26f7d409c86a30d3e26",
+   "pdf_bytes": 1772263,
+   "features": {
+    "sections": 22,
+    "characters": 60835,
+    "tables": 5,
+    "footnotes": 6,
+    "formulas": 12,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28489",
+   "version": 1,
+   "title": "Asymmetric Looped Transformers: Fixed Global Representations for an Iterative Decoder",
+   "authors": "Cheng Liang, Tengfei Zhang, Wenjie DU, Jianyu Wu, Changlian Ma, Shuchen Pu, Ya Zhang, Yanfeng Wang, Zhouhan Lin",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:36:33Z",
+   "reference_sha256": "83d42694a54adee6be2f9c16d674634ff070a10580c8ea7f82aaaac71081ee09",
+   "pdf_sha256": "20ebadfc8d60e450a6b7085c1f772c3bcb10bac6025040304d1856b69da83501",
+   "pdf_bytes": 502931,
+   "features": {
+    "sections": 43,
+    "characters": 51005,
+    "tables": 14,
+    "footnotes": 0,
+    "formulas": 7,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.28490",
+   "version": 1,
+   "title": "Learning from Automatic 3D Gaussian Splatting Edits for Online Bayesian Scene Change Detection",
+   "authors": "Changrui Zhu, Simon Julier",
+   "categories": [
+    "cs.CV",
+    "cs.GR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:36:39Z",
+   "reference_sha256": "4351e0e64baa53e6b6c5a9e8f5f6949a7ebd62cf810e406219053272146635d6",
+   "pdf_sha256": "5bb79d65e7310b0cd727b4df451f8d6c59ca1457e5ea3d477e6b33d673e51998",
+   "pdf_bytes": 47912137,
+   "features": {
+    "sections": 29,
+    "characters": 104476,
+    "tables": 11,
+    "footnotes": 1,
+    "formulas": 52,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.28495",
+   "version": 1,
+   "title": "Model- and Layer-Level Closed-Loop Forecasting with SSM-Based Spiking Neural Networks",
+   "authors": "Erik Stolt, Sanja Karilanova, Ayca Ozcelikkale",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:39:59Z",
+   "reference_sha256": "60cb7ac4f1c7525fd366f9241e2d64526f332b20ed8f4e43965df3fbd8ef9be3",
+   "pdf_sha256": "a721cd91de97b659c41a98c73a513fba0ff91197656089a957bde602d80c9f27",
+   "pdf_bytes": 857512,
+   "features": {
+    "sections": 20,
+    "characters": 31887,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 9,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28500",
+   "version": 1,
+   "title": "BitMTP: When Multi-Token Prediction Meets Low-Bit Large Language Models",
+   "authors": "Ning Zhang, Shihao Wang, Jinrui Zhang, Chaodong Xiao, Lei Zhang",
+   "categories": [
+    "cs.CL",
+    "cs.AI",
+    "cs.DC",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:42:17Z",
+   "reference_sha256": "d776c74afa73387401afa9cc3b7a836732d168b40176e9833342e68645e5ed44",
+   "pdf_sha256": "92d171b1071cbaf4c7b831b565db6c2ad693e8f6b9b370cae9444fffabdff665",
+   "pdf_bytes": 14487864,
+   "features": {
+    "sections": 16,
+    "characters": 51114,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 8,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.28502",
+   "version": 1,
+   "title": "GazeLens for Efficient Egocentric Video Question Answering with Simple Gaze-Driven Adaptive Token Reduction",
+   "authors": "Trong-Thang Pham, Anh Nguyen, Hien Van Nguyen, Ngan Le",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:43:06Z",
+   "reference_sha256": "68c0acdf5d7874293674dcace805f78367f34c10cbac84c11ae6cb4f25e556e3",
+   "pdf_sha256": "3b949ddb4501d34ef18f79f30443bde9707eb0bebe94d7e9119fa0270588e08b",
+   "pdf_bytes": 8804675,
+   "features": {
+    "sections": 31,
+    "characters": 42134,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 13
+   }
+  },
+  {
+   "arxiv_id": "2610.28507",
+   "version": 1,
+   "title": "ECG for laboratory values:A comprehensive physiological and technical analysis",
+   "authors": "Walentin Palanchuk",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:46:26Z",
+   "reference_sha256": "8fdb09b5e3a3791006f4eeb1986f8a92708eb924a8cee68e58327fee2ca804a7",
+   "pdf_sha256": "3558091c5dd79b8f037b7e008a6579934793542ee104d1ba8e237e05b83d0cd0",
+   "pdf_bytes": 2607642,
+   "features": {
+    "sections": 70,
+    "characters": 92011,
+    "tables": 15,
+    "footnotes": 0,
+    "formulas": 2,
+    "figures": 17
+   }
+  },
+  {
+   "arxiv_id": "2610.28511",
+   "version": 1,
+   "title": "SenseAlign: Understanding Vision and Touch through Language at Test Time",
+   "authors": "Chuyang Ye, Qinting Jiang, Jingyan Jiang",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:50:13Z",
+   "reference_sha256": "3d4148ed286cf469285d9cba7e5935b13a56ff31cea6d26dc018a7457ada5299",
+   "pdf_sha256": "2f06ff780138ae39c33e2b93d60aa86557722049c25ca62e67aab73482af7a34",
+   "pdf_bytes": 4003516,
+   "features": {
+    "sections": 47,
+    "characters": 91537,
+    "tables": 26,
+    "footnotes": 0,
+    "formulas": 29,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.28559",
+   "version": 1,
+   "title": "Large Flow Language Models",
+   "authors": "Arnav Chavan, Chanhyuk Lee, Udbhav Bamba, Jaehoon Yoo, Seunghoon Hong, Aditi Raghunathan, Jinwoo Kim",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:20:29Z",
+   "reference_sha256": "9725e048b86d3f7e978b3f5728a4314feae7439bee0f283661250a2e55349a79",
+   "pdf_sha256": "025ef8a4df563c29904b9c9a5040d599114534468a54281a2a8214ff76a17e10",
+   "pdf_bytes": 1102349,
+   "features": {
+    "sections": 24,
+    "characters": 67879,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 32,
+    "figures": 12
+   }
+  },
+  {
+   "arxiv_id": "2610.28560",
+   "version": 1,
+   "title": "Agentic Ensemble with Vision-Language Models for Visual Anomaly Detection",
+   "authors": "Shangquan Sun, Wenjun Luo, Xu He, Yoonsoo Lee, and Shijian Lu",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:22:25Z",
+   "reference_sha256": "97f4ebc696776c764e7bc036ead7e1615bb9950da558e579d08ef7124b214c7c",
+   "pdf_sha256": "25ac20e6d63e16e936e6ca57879c8385e7971d9ff4641de1b9f5a3bc121041f4",
+   "pdf_bytes": 6612259,
+   "features": {
+    "sections": 16,
+    "characters": 41659,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 13,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.28567",
+   "version": 1,
+   "title": "Continual Concept Personalization in Diffusion Models via Residual-Space Adaptation",
+   "authors": "Yuzhi Liu, Enis Simsar, Giulia Lanzillotta, Thomas Hofmann",
+   "categories": [
+    "cs.CV",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:26:18Z",
+   "reference_sha256": "653ad941aa5b33e3c977b62adde83d9f40c8b66de6377250912e998532f3eeb7",
+   "pdf_sha256": "61b20c9b49063ef6638f2727c9b5444045ea466076a3d6ed1eb15e4adce3b2c5",
+   "pdf_bytes": 48321763,
+   "features": {
+    "sections": 31,
+    "characters": 49623,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 29,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.28576",
+   "version": 1,
+   "title": "The Token-Energy Law of LLM Decode: Active Bytes and Realized Time Account for Joules per Token",
+   "authors": "Chenxu Niu, Batuhan Sencer, Wei Zhang, Yong Chen",
+   "categories": [
+    "cs.LG",
+    "cs.DC",
+    "cs.PF"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:32:08Z",
+   "reference_sha256": "7248ae1b03dfd33fc31a4d7ee11617672cc5761c06440be9aa3b60a3dc8e10ce",
+   "pdf_sha256": "de2a19d934ec5fd2a83c2ab5b02cd7ff1ab2192056d4bec56494e5ab993fd373",
+   "pdf_bytes": 1170607,
+   "features": {
+    "sections": 26,
+    "characters": 62864,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 13,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.28586",
+   "version": 1,
+   "title": "Capable Teacher, Myopic Scorer: Reward-Free Teacher Repair for Agentic On-Policy Distillation",
+   "authors": "Shu Zhao, Tan Yu",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:40:08Z",
+   "reference_sha256": "11374b52155374ebbfae75dcc30f3b2e05f3d1b228714915cf88705fb7706c38",
+   "pdf_sha256": "51a28b6780528467963ac84182e0b7936551ff9f6c67821d26200e7fcfd70728",
+   "pdf_bytes": 533263,
+   "features": {
+    "sections": 21,
+    "characters": 58346,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 4,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28594",
+   "version": 1,
+   "title": "Learning the 4D World through Point Trajectory Forecasting",
+   "authors": "Byungwoo Jeon, Sunghwan Hong, Dohyeon Kim, Jonghoon Lee, Jungwoo Park, Inhee Lee, Doosan Baek, Jinil Kim, Taehyun Lim, Hanbyul Joo, Marc Pollefeys, Saining Xie, Jinwoo Shin",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:45:45Z",
+   "reference_sha256": "8738a95fcb8ab37467dc5150d87003274166581730bed39141be588640e68a66",
+   "pdf_sha256": "47acbadd4b1293a0c48aac62a78cd69277b1a7ab08eaa54b6cdd6d15d68d0677",
+   "pdf_bytes": 15467735,
+   "features": {
+    "sections": 62,
+    "characters": 113285,
+    "tables": 30,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 14
+   }
+  },
+  {
+   "arxiv_id": "2610.28598",
+   "version": 1,
+   "title": "Neural Implicit Energy Optimization for LiDAR Mapping",
+   "authors": "Hrishikesh Viswanath, Md Ashiqur Rahman, Chi Lin, Damon Conover, Aniket Bera",
+   "categories": [
+    "cs.CV",
+    "cs.GR",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:47:07Z",
+   "reference_sha256": "933c49247e88d0600c3c7eae06299dd8249f5f2208309c11495264c4789c813a",
+   "pdf_sha256": "c43da2be664a7f8050985c3e1b5a3c6ef933cdb6f6c4f83f4dc313945d9dae33",
+   "pdf_bytes": 39849951,
+   "features": {
+    "sections": 28,
+    "characters": 54956,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 5,
+    "figures": 16
+   }
+  },
+  {
+   "arxiv_id": "2610.28602",
+   "version": 1,
+   "title": "Turning TS2Vec into a Foundation Model for Time Series Classification",
+   "authors": "Vasilii Feofanov, Zhenghan Tai, Andrei Ermakov, Irina Rish",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:47:51Z",
+   "reference_sha256": "19c75ec81a534f837571f027bf6f1d2c6657ad8e1adae8319fbe1fe2c5b185aa",
+   "pdf_sha256": "ee4acefa10a323e62272583cb6a537dedfff8c717cf7b5ed60bb79a81491bfa3",
+   "pdf_bytes": 373990,
+   "features": {
+    "sections": 15,
+    "characters": 69226,
+    "tables": 11,
+    "footnotes": 0,
+    "formulas": 7,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28604",
+   "version": 1,
+   "title": "Value-Rich, Differently Organized: Measuring Value Expression and Organization in AI-Generated Debates",
+   "authors": "Maoyuan Li, Haoyuan Li, Zhongsheng Wang, Jiamou Liu",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:48:56Z",
+   "reference_sha256": "2cb583a06c848067b034fcc0f0077ee182e196fd57f6a956047c7d000c57f8de",
+   "pdf_sha256": "4edf943d1f303cffa69f57e089ea5305c3e7e326bafbc7f752244e48c3cd42c6",
+   "pdf_bytes": 5169464,
+   "features": {
+    "sections": 39,
+    "characters": 66045,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 14,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28618",
+   "version": 1,
+   "title": "Efficient Edge-aware Attention Network for Graph Generation",
+   "authors": "Vincent Jung, Alba Carballo-Castro, Yiming Qin, Lonneke van der Plas, Pascal Frossard",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:56:05Z",
+   "reference_sha256": "ec7e4109b9fa9c7035855961fb6e80f94aa4972ce91a6367eded11203c875f96",
+   "pdf_sha256": "a51ad4d4dd5bd956d3941745a6d27ad14326e74db3722e3eb4e1e0c1c166e5a4",
+   "pdf_bytes": 517329,
+   "features": {
+    "sections": 24,
+    "characters": 40122,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 21,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28619",
+   "version": 1,
+   "title": "Adaptive Multi-Token Prediction: How far should we go?",
+   "authors": "Emile Anand, Mohammed Rehan Parwani, Xinyuan Cao",
+   "categories": [
+    "cs.AI",
+    "cs.LG",
+    "cs.SY",
+    "eess.SY"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:56:32Z",
+   "reference_sha256": "fe8b0ca22138f9138ae23d168e7437b61dd13964065022a8b55359a889dc2c3e",
+   "pdf_sha256": "41c4f97cb6cecd3e9325fbb13711d62f99b2c3249af5eb141dcb9dbd7fbabf1c",
+   "pdf_bytes": 960561,
+   "features": {
+    "sections": 24,
+    "characters": 80124,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 54,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.28623",
+   "version": 1,
+   "title": "Planning under Noise with Neural Operators",
+   "authors": "Michael Chen, Hong Chul Nam, Xi Deng, Anima Anandkumar",
+   "categories": [
+    "cs.LG",
+    "cs.RO"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T17:58:30Z",
+   "reference_sha256": "c68e2bc14bd5841781227bce447bbc3021f638174afd4dffa01ef2c3fa592b43",
+   "pdf_sha256": "630924d11d2cb4bf55a428d734e89077ab42209f4b3f77f048cc01ca7de4ed1f",
+   "pdf_bytes": 5803678,
+   "features": {
+    "sections": 41,
+    "characters": 104512,
+    "tables": 10,
+    "footnotes": 3,
+    "formulas": 62,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.28693",
+   "version": 1,
+   "title": "Interaction-Gated Time-Frequency Learning for Parameter-Efficient PPG-Based Heart Rate Estimation",
+   "authors": "Anh Khoi Pham, Phat Lam, Thien Truong Nguyen Ly, Lam Pham",
+   "categories": [
+    "cs.LG",
+    "cs.AI",
+    "eess.SP"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T09:10:28Z",
+   "reference_sha256": "7c31b79cb9c9c979a9d0a823caba406beff044e5a56c27c0ed95a4cc5dca9a7e",
+   "pdf_sha256": "24e90f78704b128fb5cff4c421c7b0b098a9915403d255929a5ad6e72b3a2739",
+   "pdf_bytes": 440057,
+   "features": {
+    "sections": 24,
+    "characters": 31159,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 18,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.28702",
+   "version": 1,
+   "title": "Multi-agent LLMs on the Cloud-Edge-IoT Continuum: A Systematic Mapping Study on Architectures, Deployment, and Evaluation",
+   "authors": "Mahyar Tourchi Moghaddam, Tiziano Santilli, Leo Wilhelm Lierse, Sebastian Werner, Francesco Daghero",
+   "categories": [
+    "cs.SE"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T11:48:10Z",
+   "reference_sha256": "09859e1b3524c66c372bfec5cbd590a3250d85b6409818109b4d96c527065b39",
+   "pdf_sha256": "fe28d3b15271032eb4ce55b02bcb00f32235d64151ff0d81cc58bbc907c8c7f6",
+   "pdf_bytes": 638686,
+   "features": {
+    "sections": 18,
+    "characters": 91242,
+    "tables": 12,
+    "footnotes": 1,
+    "formulas": 0,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.28707",
+   "version": 1,
+   "title": "SimHack: Predicting the onset of detectable reward hacking before RL training",
+   "authors": "Junwei Deng, Alex Bie, Natalia Ponomareva",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T15:58:47Z",
+   "reference_sha256": "b9ef626213d501df9d9e6b50eeb9a12170018858b0e2c4dbc8faf40c0148a033",
+   "pdf_sha256": "66bf4119bb9857862cff667a1a497715dce5acdffdb81a727b2c53c84c3e31e3",
+   "pdf_bytes": 1130901,
+   "features": {
+    "sections": 31,
+    "characters": 52715,
+    "tables": 5,
+    "footnotes": 1,
+    "formulas": 19,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.28709",
+   "version": 1,
+   "title": "STAR-XPC: Set Transformer for Estimating X-ray Transmission in Polymer Composites",
+   "authors": "Can Erer, H. Birkan Yilmaz, Nebahat Aral",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T16:39:39Z",
+   "reference_sha256": "8d50b577508e563c553aee9365fc39437599559ab2b17d8b233c503691686b4f",
+   "pdf_sha256": "38df6d2c57601a4db47e4bfdd8993017e79ef0c1711d7ba2276c8eed73899e6f",
+   "pdf_bytes": 2088693,
+   "features": {
+    "sections": 23,
+    "characters": 53689,
+    "tables": 6,
+    "footnotes": 2,
+    "formulas": 26,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.28767",
+   "version": 1,
+   "title": "SkillEval: Learning Interpretable Ability Profiles of LLMs via Cognitive Diagnosis Models",
+   "authors": "Berke Arda, Peng Cui, Qiaoyuan Zheng, Rudolf Debelak, Mubashara Akhtar, Mrinmaya Sachan",
+   "categories": [
+    "cs.CL",
+    "cs.AI",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T18:06:47Z",
+   "reference_sha256": "429c81cf177a9c4c7724c549124910c25f3bef41844275fba7102f7a6d8a1842",
+   "pdf_sha256": "e2dcc339493b74e066fdf11939d47ea9fe947d35947873662cbda31f7d4b83df",
+   "pdf_bytes": 905645,
+   "features": {
+    "sections": 29,
+    "characters": 69471,
+    "tables": 11,
+    "footnotes": 4,
+    "formulas": 5,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.28770",
+   "version": 1,
+   "title": "ReAPO: Retry-Aware Policy Optimization for Efficient Exploration in LLM Reasoning",
+   "authors": "Nghi Dao, Calder Morton-Ferguson, Noah Golowich, and Adam Block",
+   "categories": [
+    "cs.LG",
+    "cs.AI",
+    "stat.ML"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T18:08:29Z",
+   "reference_sha256": "de3ffc956674f3eb8e733d09d88242b07d0b58fe652cf79312b6b06cd3bb93e5",
+   "pdf_sha256": "be777fb33a508f75a51383a07764ddcd17316609147f16ddfa90121eb2a2e28e",
+   "pdf_bytes": 725211,
+   "features": {
+    "sections": 31,
+    "characters": 79962,
+    "tables": 8,
+    "footnotes": 2,
+    "formulas": 38,
+    "figures": 17
+   }
+  },
+  {
+   "arxiv_id": "2610.28773",
+   "version": 1,
+   "title": "Building a Nested LADDER for LLM Unstructured Post-Training Pruning",
+   "authors": "Nicol\\'as Mauricio Cuadrado \\'Avila, Ivo Gollini Navarrete, Martin Tak\\'a\\v{c}, Samuel Horv\\'ath",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T18:10:32Z",
+   "reference_sha256": "2caa0e567a79d0a567f22372ff1f041aa6ef53894cff41fc76fd2ec1aab40863",
+   "pdf_sha256": "ba21bb6589816d6f4e99914a15bc3647fc32925124d4976ed3ac96bdb36175cc",
+   "pdf_bytes": 1489640,
+   "features": {
+    "sections": 28,
+    "characters": 53312,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 15,
+    "figures": 15
+   }
+  },
+  {
+   "arxiv_id": "2610.28802",
+   "version": 1,
+   "title": "How Much Does the Harness Matter, and for Whom? A Multi-Model Study of Context in LLM-Driven Vulnerability Discovery",
+   "authors": "Ganni Galea Curmi and Ben Wilde",
+   "categories": [
+    "cs.CR",
+    "cs.SE"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T18:25:47Z",
+   "reference_sha256": "a1778337a2dd7d0e5b5fbcad88bfdeb019c9440a0c2bdba8e2981556b2831cae",
+   "pdf_sha256": "61ff6d0677eff8993704ca5c104e05b198aee8b4e4c7df01e8d9ce2ac6add821",
+   "pdf_bytes": 564638,
+   "features": {
+    "sections": 23,
+    "characters": 80229,
+    "tables": 11,
+    "footnotes": 1,
+    "formulas": 0,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.28815",
+   "version": 1,
+   "title": "Forging More Tasks into Better Harnesses: Agentic Harness Evolution via Successive Scale Racing",
+   "authors": "Jingzhe Liu, Jiliang Tang, Tong Zhao, Neil Shah, Clark Mingxuan Ju",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T18:36:33Z",
+   "reference_sha256": "e86947cc794be9735071de743a5d7192853f4362dd17147885b80f21e96b9cf4",
+   "pdf_sha256": "e595bd3075babaa4bb34c081f2153f85b470f3b3861e3291a17a75d91b4a45ce",
+   "pdf_bytes": 605702,
+   "features": {
+    "sections": 37,
+    "characters": 62115,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 34,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.28827",
+   "version": 1,
+   "title": "WorldStream: Streaming Interactive 3D Worlds with Hierarchical Planning and Persistent State",
+   "authors": "Xiaoxiao Ma, Weiyang Jin, Yanwen Ma, Haoran Li, Zhixiang Wei, Songchun Zhang, Yaowei Li, Junhao Zhuang, Zeyue Xue, Yuming Li, Zheming Fu, Haoyang Huang, Nan Duan, Feng Zhao",
+   "categories": [
+    "cs.CV",
+    "cs.GR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T18:47:26Z",
+   "reference_sha256": "09a835ca2886200ead0a653dfcb6fdbcd03f650ac4bd0de9213bf5f977f560a2",
+   "pdf_sha256": "de2f0636e0ef0325ba50e357874393f26790b839b05707889a9166d3f980127c",
+   "pdf_bytes": 19368568,
+   "features": {
+    "sections": 26,
+    "characters": 45507,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.28829",
+   "version": 1,
+   "title": "HorizonComposer: Spatiotemporally Consistent Driving Video Editing with Enriched Traffic Semantics",
+   "authors": "Mauricio Soroco, Yuqiu Liu, Zaid Tasneem, Francesco Pittaluga, Abhishek Aich, Wuyang Chen, Manmohan Chandraker, Ziyu Jiang",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T18:51:48Z",
+   "reference_sha256": "295f3ca04b97a562741cf1113b3a26a43aee84a2ccf1e8fc65ed8e28b81c0e6b",
+   "pdf_sha256": "4246bbca257ed040107e4d5b1527845985e9e1801674b1eaa49ee23e660bb50b",
+   "pdf_bytes": 18084028,
+   "features": {
+    "sections": 41,
+    "characters": 107119,
+    "tables": 19,
+    "footnotes": 0,
+    "formulas": 6,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.28838",
+   "version": 1,
+   "title": "How to Use Parallel Data for Multilingual Pretraining",
+   "authors": "Zhihong Huang, Yao Lu, Derek F. Wong, Hamid Alinejad-Rokny, Min Yang",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T19:07:04Z",
+   "reference_sha256": "3029ed017808936e38d2101b57758a15d14e94ed28c734840c7d84863c424e46",
+   "pdf_sha256": "bddf7c8fa09530b66a303bcd5d3a754d800882653b3eed30f5afe67889e92fd5",
+   "pdf_bytes": 1471432,
+   "features": {
+    "sections": 30,
+    "characters": 50228,
+    "tables": 13,
+    "footnotes": 2,
+    "formulas": 1,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.28864",
+   "version": 1,
+   "title": "A General Topological Symmetry Index for Critical Orbits In Neural Network Loss Landscapes",
+   "authors": "Jingzhou Liu",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T19:35:52Z",
+   "reference_sha256": "6ac871e77538bc357a5f69ffe47a0a0fe83bf3e8cfef0e8f71973cd078e2dc64",
+   "pdf_sha256": "357c92057236533f9d854b32af5d3a75b72abc8be4da6c2412c368a9e3b8f120",
+   "pdf_bytes": 772304,
+   "features": {
+    "sections": 20,
+    "characters": 80826,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 176,
+    "figures": 1
+   }
+  },
+  {
+   "arxiv_id": "2610.28872",
+   "version": 1,
+   "title": "LEAN: Loss-Engineered Modulation of the Model Weight-Sensitivity Distribution for Efficient, Error-Tolerant Neural Networks",
+   "authors": "Habibur Rahaman, Swarup Bhunia",
+   "categories": [
+    "cs.LG",
+    "cs.CR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T19:44:33Z",
+   "reference_sha256": "c997be47ce90c8b4b6832768ed8e98ba9a7922b375784122c6530a3748b1a839",
+   "pdf_sha256": "c18538de296d445b5835f64377b5403c60a8b8d341a2073a403e51697f2d4c38",
+   "pdf_bytes": 4071798,
+   "features": {
+    "sections": 8,
+    "characters": 70125,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 3,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.28887",
+   "version": 1,
+   "title": "Building AI Research Teams for Autonomous Discovery of Linear Attention Architectures",
+   "authors": "Yujian Liu, Li An, Zelin He, Jacob Helwig, Jiabao Ji, Rohit Jain, Siyu Zhu, Shiyu Chang",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T20:09:31Z",
+   "reference_sha256": "a1c4cf43357ad1c175b450dced72f226fc19abce4b63143316d5b9734e510c92",
+   "pdf_sha256": "55b29852e553eb2aa66e2769f7c24f7b951a215b510104a5b9f55f5845260a2e",
+   "pdf_bytes": 10786361,
+   "features": {
+    "sections": 25,
+    "characters": 82821,
+    "tables": 14,
+    "footnotes": 1,
+    "formulas": 10,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.28891",
+   "version": 1,
+   "title": "Fig: Automated Multiagent Behavior Elicitor",
+   "authors": "Anrui Gu, Zhichao Wang, Nicolai Ouporov",
+   "categories": [
+    "cs.AI",
+    "cs.MA"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T20:16:08Z",
+   "reference_sha256": "cf4aadcb91d76a3bc79e6fda1bd8580aaeb6a12f81541293f2109cfeb833eea4",
+   "pdf_sha256": "7ce6529f652f385abc24787c2653f5aa0c26ce286f3d6c0f722446834bfb3a00",
+   "pdf_bytes": 1061471,
+   "features": {
+    "sections": 36,
+    "characters": 73168,
+    "tables": 15,
+    "footnotes": 0,
+    "formulas": 6,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.28892",
+   "version": 1,
+   "title": "Combating Catastrophic Forgetting in Continual Domain Adaptation via Knowledge Recasting",
+   "authors": "Zijie Liu, Zhen Tan, Charles Fleming, Tianlong Chen",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T20:16:40Z",
+   "reference_sha256": "1544a4faa9bf2b5063282c1cb92c5565b796da52abe6e7f35b3d0aff7e0f2be1",
+   "pdf_sha256": "0ed9a7d69dcce1e7f5ca9abdd9ce4d9507171b3697e514372648471db89a7cf4",
+   "pdf_bytes": 1830145,
+   "features": {
+    "sections": 20,
+    "characters": 63274,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 41,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.28895",
+   "version": 1,
+   "title": "CSD: Common-Support Distillation for Cross-Tokenizer Knowledge Transfer",
+   "authors": "Mingyu Yang, Sharath Turuvekere Sreenivas, Adithyakrishna Venkatesh Hanasoge, Nima Tajbakhsh, Ashwath Aithal, Pavlo Molchanov",
+   "categories": [
+    "cs.CL",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T20:18:46Z",
+   "reference_sha256": "f3b29cadd9eb99da8a1c71f0b047301b73eea71cfd7f37df3d9d8947f6f2272c",
+   "pdf_sha256": "53f786263f3b10a730c044882dd329b6c79a7353bc6f271bc9c6e75ef449954d",
+   "pdf_bytes": 1183231,
+   "features": {
+    "sections": 30,
+    "characters": 62486,
+    "tables": 13,
+    "footnotes": 3,
+    "formulas": 3,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.28922",
+   "version": 1,
+   "title": "Constrained Tagging for Span Labeling",
+   "authors": "Radek \\v{S}tulc and Jan Drchal",
+   "categories": [
+    "cs.IR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T20:56:08Z",
+   "reference_sha256": "2a971d3337bc0b15137882623d769ea436cb0fe5e3d9513c8e94f662b36252d7",
+   "pdf_sha256": "5403c24c6cef408435cae98c839ec379d19e98ed8cb65d046ad466e9b381a7bd",
+   "pdf_bytes": 846823,
+   "features": {
+    "sections": 27,
+    "characters": 65385,
+    "tables": 13,
+    "footnotes": 1,
+    "formulas": 0,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.28947",
+   "version": 1,
+   "title": "Is 2:4 Sparsity Still Worth It? Semi-Structured Sparsity versus Quantization in LLM Inference",
+   "authors": "Xiuyi Qin",
+   "categories": [
+    "cs.LG",
+    "cs.PF"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T21:48:45Z",
+   "reference_sha256": "e98f48f0e2e284366959f55470dda4f6876ae1d8caa7c4bca437ccd23998fb56",
+   "pdf_sha256": "0963a4257b2cf49f9baef331b4d503c9ecd6410b99834c30b6af424af778464a",
+   "pdf_bytes": 622419,
+   "features": {
+    "sections": 31,
+    "characters": 60156,
+    "tables": 17,
+    "footnotes": 0,
+    "formulas": 7,
+    "figures": 12
+   }
+  },
+  {
+   "arxiv_id": "2610.28957",
+   "version": 1,
+   "title": "Scan or Index? large Evidence Coverage, Answer Quality, and Cost in Long-Document RAG",
+   "authors": "Juan Terven, Diana-Margarita C\\'ordova-Esparza, Julio-Alejandro Romero-Gonz\\'alez, Edgar Chavez-Urbiola, Juan Irving Vasquez, Julian Andres Ramirez-Bautista, Silvia L. Chaparro-C\\'ardenas, Gendry Alfonso-Francia",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-20T22:11:07Z",
+   "reference_sha256": "0f469d4b4001c98249290e5150aeaeffaaa073112b556cb42a5588f68a2f0546",
+   "pdf_sha256": "69cfc14e30d38b9113f2f9fb51468f03b7be4cfa4788fa58ab952ee513d4597f",
+   "pdf_bytes": 436190,
+   "features": {
+    "sections": 16,
+    "characters": 41928,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 3,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.29005",
+   "version": 1,
+   "title": "VeriEvolve: Evaluator-First Evolution for Tool-Using Agents",
+   "authors": "Yueshen Li, Kamer Ali Yuksel, Gokhan Tur, Dilek Hakkani-T\\\"ur, Jo\\~ao Pedro Maia",
+   "categories": [
+    "cs.SE",
+    "cs.AI",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T00:13:29Z",
+   "reference_sha256": "8a885c5875024fd9f39351d146c9f5a320a9370f85a8612a3132c259bc05586d",
+   "pdf_sha256": "14b7688fce14435129091a21ca347228c02c0e1368cd45b1ae1c04848b13fec2",
+   "pdf_bytes": 615065,
+   "features": {
+    "sections": 52,
+    "characters": 91604,
+    "tables": 25,
+    "footnotes": 1,
+    "formulas": 2,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.29008",
+   "version": 1,
+   "title": "Enhancing Cross-Grade Generalization in Banana Variety Classification via Hybrid CNN-Transformers and Knowledge Self-Distillation",
+   "authors": "Khush Kataruka, Mohammad Muzammila, Zahid Akhtar, Raghavendra Ramachandra, Praveen Kumar Chandaliya",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T00:19:09Z",
+   "reference_sha256": "3f43d9951406797ecb0fccdb20c803bbcd0cb5ae06d6086e5e6b851ef2a5a3a7",
+   "pdf_sha256": "5cf7dbb2559f756bde1669cd2d1999a60dd1b26606f9f34ec3dd65d45178f28c",
+   "pdf_bytes": 4043623,
+   "features": {
+    "sections": 34,
+    "characters": 60723,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 15,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.29014",
+   "version": 1,
+   "title": "GenXR-Bench: Benchmarking Coding Agents for Interactive XR Development",
+   "authors": "William Huang, David Li, Xiang 'Anthony' Chen, Xun Qian, Nels Numan, Zhongyi Zhou, Hyunsung Cho, Salman Muin Kayser Chishti, Ding Xia, Xincheng Huang, Jiahao Ren, Faraz Faruqi, Tianyu Xu, Yang Zhang, David Kim, Ruofei Du",
+   "categories": [
+    "cs.AI",
+    "cs.GR",
+    "cs.HC"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T00:28:16Z",
+   "reference_sha256": "0e974db6f00d157edbb15667850014d9280baf8120563ee61858ad80ce00f675",
+   "pdf_sha256": "8543814643135e94fe3cb713e6bbed7332c303a650a9e21171e27f5f760a51b3",
+   "pdf_bytes": 32031805,
+   "features": {
+    "sections": 31,
+    "characters": 82511,
+    "tables": 14,
+    "footnotes": 1,
+    "formulas": 0,
+    "figures": 14
+   }
+  },
+  {
+   "arxiv_id": "2610.29027",
+   "version": 1,
+   "title": "Beyond Tokens: NumAnchor for Address-Grounded Numeric Operand Representation in Assembly Language Models",
+   "authors": "Kun Liu, Keith Mitchell, Xin Hu, Jiangcheng Yu, Chenke Luo, Zhengming Ding, Haotian Zhang, Jiang Ming",
+   "categories": [
+    "cs.CR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T00:59:38Z",
+   "reference_sha256": "d7bafeba9749a139def1cf4f77a47d4c5d67cfae5b42788493831ce7835b635c",
+   "pdf_sha256": "83fe29e72e26053ea7bc42ec700cac658599074d90c2df7a841f7da494fb1c6d",
+   "pdf_bytes": 580917,
+   "features": {
+    "sections": 20,
+    "characters": 52780,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29046",
+   "version": 1,
+   "title": "AutoFraming: Synthesizing Dynamic Frames of C Code with LLMs",
+   "authors": "Han Zhou, Yu Luo, Dianxiang Xu",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T01:22:00Z",
+   "reference_sha256": "5b1fd79a043783ff68cb360f5ab207fb01b30e1a635b857846510affc5db3eac",
+   "pdf_sha256": "7e68d24524fcc14bef897ab75b849abf5ee39bbb859f97e6bbd99fdb2aacf370",
+   "pdf_bytes": 710680,
+   "features": {
+    "sections": 19,
+    "characters": 56173,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 1
+   }
+  },
+  {
+   "arxiv_id": "2610.29061",
+   "version": 1,
+   "title": "OccJEPA: Occlusion as Masking for Amodal Video Segmentation",
+   "authors": "Genpei Zhang",
+   "categories": [
+    "cs.CV",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T01:40:59Z",
+   "reference_sha256": "fc11a4767c429269a777849e5612e71b2e9933a81d679b7a00e81940cc1b4421",
+   "pdf_sha256": "734edefb6c813edc38928a5a06c823bb5f7220505d41810ac7f7af92ca07a75d",
+   "pdf_bytes": 26320394,
+   "features": {
+    "sections": 19,
+    "characters": 65182,
+    "tables": 19,
+    "footnotes": 0,
+    "formulas": 6,
+    "figures": 13
+   }
+  },
+  {
+   "arxiv_id": "2610.29091",
+   "version": 1,
+   "title": "Context-Augmented, Session-Calibrated Blood Pressure Tracking from Photoplethysmography",
+   "authors": "Farouk Ganiyu Adewumi, Timothy Oladunni",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T02:34:07Z",
+   "reference_sha256": "aecca8a66f3d6096afc34c0850405986ceddb9edec297ce9f6d115225f78c76b",
+   "pdf_sha256": "291411ee6e713324a528951d4e9c8c227fe7fc27718303a0762de4bec63a10e1",
+   "pdf_bytes": 610496,
+   "features": {
+    "sections": 44,
+    "characters": 55993,
+    "tables": 14,
+    "footnotes": 0,
+    "formulas": 3,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.29106",
+   "version": 1,
+   "title": "DriftNeRF: Cross-Ray Density Drifting for Sparse-View Neural Radiance Fields",
+   "authors": "Juntang Wang, Yihan Wang, Sheng'en Li, Hao Wu, Dongmian Zou, Shixin Xu",
+   "categories": [
+    "cs.CV",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T02:49:34Z",
+   "reference_sha256": "a055d0846c4adc94280350a586eecfc91db80bbc2fff530d6b6efcd0721c69de",
+   "pdf_sha256": "bfdef7f32dc0d52825f50adb1237caf79a8db8d3498f28ff70833f9a2fb07eba",
+   "pdf_bytes": 7228169,
+   "features": {
+    "sections": 29,
+    "characters": 57331,
+    "tables": 18,
+    "footnotes": 0,
+    "formulas": 9,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.29107",
+   "version": 1,
+   "title": "PhyMo: Learning Physical Dynamics with Accurate and Continuous Motion from Multi-View Videos",
+   "authors": "Shangjia Liu, Jinxi Li, Siyuan Zhou, Bo Yang, Bing Wang",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T02:49:38Z",
+   "reference_sha256": "f083c4d03ac659b0f792a75f1b242de0b0bda246547f5a41f29f91973a125fc4",
+   "pdf_sha256": "8c26539ee1b2e22651d1dc30e96b932f486a1a7a2bda0710b94e9b902b21c439",
+   "pdf_bytes": 3555131,
+   "features": {
+    "sections": 24,
+    "characters": 75499,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 13,
+    "figures": 14
+   }
+  },
+  {
+   "arxiv_id": "2610.29129",
+   "version": 1,
+   "title": "Mitigating Reward Hacking in Realistic Scenarios Through Representation Engineering",
+   "authors": "Austin Meek and Kyle Cox and Matthew Nguyen and Austin J. Brockmeier and Steven Basart",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T03:12:22Z",
+   "reference_sha256": "50f1fa5ae9b44cbe9f5bfb1cd3b105befe0dc13edb630ca963796efb6df08269",
+   "pdf_sha256": "3c300a4cb1b12d281962a80c87d5f4cc78a8f4a81f16663c0c24e68dc33e4886",
+   "pdf_bytes": 1295353,
+   "features": {
+    "sections": 37,
+    "characters": 70224,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 8,
+    "figures": 12
+   }
+  },
+  {
+   "arxiv_id": "2610.29138",
+   "version": 1,
+   "title": "Progressive Learning from Content to Relevance to Personalization for CTR Prediction",
+   "authors": "Zhiguang Yang, Yulin Yang, Fuyu Lv, Dan Ou",
+   "categories": [
+    "cs.IR",
+    "cs.MM"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T03:19:02Z",
+   "reference_sha256": "70714fa6b5c98712a6a719b7349b69bb9ff1ffd8330586fa87e9dbf7b11c2f81",
+   "pdf_sha256": "7f76e8623d87436d4a75c0d274de759d4e2299dafda253c235ef2cc5bdbfd2cc",
+   "pdf_bytes": 496047,
+   "features": {
+    "sections": 23,
+    "characters": 35885,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 9,
+    "figures": 1
+   }
+  },
+  {
+   "arxiv_id": "2610.29158",
+   "version": 1,
+   "title": "SICAF: Time-Varying Focus Bottleneck for Self-Supervised Event-Based Optical Flow with Spiking Neural Network",
+   "authors": "Shuangming Yang, Qing He, Shangqi Guo, Badong Chen",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T03:48:08Z",
+   "reference_sha256": "50d96cd945ebbc455dc0b2fa438a1f8fbe7c03afd96b23491b56435bcd3dd33f",
+   "pdf_sha256": "d50ff1fa4966d72e508021e87cfef4cbaed33d2d0714de40d29a95314a459521",
+   "pdf_bytes": 35239043,
+   "features": {
+    "sections": 28,
+    "characters": 77303,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 58,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.29159",
+   "version": 1,
+   "title": "RiO-DETRv2: Geometry-Aware Uncertainty Modeling Meets Real-Time Oriented Object Detection Transformer",
+   "authors": "Zhangchi Hu, Zilong He, Yifan Zhao, Xiangyu Yu, Jie Chen, Peixi Wu, Yansong Peng, Hebei Li, Xiaoyan Sun",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T03:48:13Z",
+   "reference_sha256": "0c5b11b5dd4da286ce8e2a5b9c084def59bab7fd31a6b50d419a63a6f2a89dc0",
+   "pdf_sha256": "0c3d5e376da9d7f90c2cd21ae076721814a3c6be223a345b22b4b97640c58b8b",
+   "pdf_bytes": 2461585,
+   "features": {
+    "sections": 34,
+    "characters": 56367,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 23,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.29162",
+   "version": 1,
+   "title": "Why is AI-generated language so hard to understand?",
+   "authors": "Thomas Hikaru Clark, Matias B. Martin, Kyle Mahowald",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T03:54:08Z",
+   "reference_sha256": "31d3b1cd7d0b9c0f3e8af10eb0b6d6c60b6518bc81576c01b0578f488079c377",
+   "pdf_sha256": "22b070a715665f70ffa1c8f7ef9977959c9b223b60138cb2b38459d0dd3f55b7",
+   "pdf_bytes": 920810,
+   "features": {
+    "sections": 30,
+    "characters": 65817,
+    "tables": 5,
+    "footnotes": 1,
+    "formulas": 6,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.29167",
+   "version": 1,
+   "title": "TeachBack: Learning to Teach via Bidirectional Preference Optimization for On-Policy Self-Distillation",
+   "authors": "Linfei Ji (1), Jiayun Li (2), Haozhao Wang (1), Siyu Jiang (1), Zehao Wang (3), Longtao Xiao (1), Yu-Jie Yuan (4), Ruixuan Li (1) ((1) Huazhong University of Science and Technology, (2) Tsinghua University, (3) Harbin Institute of Technology, (4) Huawei Technologies Ltd.)",
+   "categories": [
+    "cs.AI",
+    "cs.CL",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T03:59:23Z",
+   "reference_sha256": "77a3e2626854f75a98abd94274d86785bed36e2ace634e3e284803e9d140d803",
+   "pdf_sha256": "11ce0c47be3f06d150fb4779ba4f8698edc5d042e244be9dedef1a2bc2914590",
+   "pdf_bytes": 2945204,
+   "features": {
+    "sections": 39,
+    "characters": 63302,
+    "tables": 8,
+    "footnotes": 0,
+    "formulas": 21,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29207",
+   "version": 1,
+   "title": "norregel: a preregistered benchmark of dated numeric values in Norwegian law",
+   "authors": "Eirik Botten Nicolaysen (EcoDeco AS)",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T04:55:58Z",
+   "reference_sha256": "be1842feb1686ab44bcaf5b60ad8ef5ea0f9b77767f4f0f7364e844581550d58",
+   "pdf_sha256": "09a8b77cf46616bb8d9675f09f3fa539a5335e69ac270bb8e73c5bb3c1e706ea",
+   "pdf_bytes": 586192,
+   "features": {
+    "sections": 19,
+    "characters": 73808,
+    "tables": 24,
+    "footnotes": 0,
+    "formulas": 0,
+    "figures": 1
+   }
+  },
+  {
+   "arxiv_id": "2610.29210",
+   "version": 1,
+   "title": "Understanding Target Probability Reuse in Speculative Decoding",
+   "authors": "Jungseob Lee, Giyoon Jang, Chailin Nam, Jiwoo Kum, Sihyeon Lee, Kyojun Choo, Jihun Song, Eunseo Song, Chanjun Park",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:02:50Z",
+   "reference_sha256": "9ce42a6a75563afba1b8007f7ce663e2604ba9e624635429598bc890af57a650",
+   "pdf_sha256": "a285f123dd156f6df9d18b3397503d5abce025707385e2f53800954e481d3005",
+   "pdf_bytes": 784129,
+   "features": {
+    "sections": 38,
+    "characters": 108059,
+    "tables": 29,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.29212",
+   "version": 1,
+   "title": "DetM-Tracker: Deterministic and Memory-Efficient VIS for Autonomous Industrial Inspection",
+   "authors": "You-Rui Lin, Jen-Chieh Wu, Tzu-Ti Wei, Jen-Jee Chen, and Yu-Chee Tseng",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:09:38Z",
+   "reference_sha256": "f1867971f482e6fa5efb2aade5c88d198260bbfd241d521db9600a42a20ff143",
+   "pdf_sha256": "b9f246a47db08c16af1cff36ae019183717b96c237889bcba71830133039ae8f",
+   "pdf_bytes": 3389265,
+   "features": {
+    "sections": 18,
+    "characters": 37342,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.29217",
+   "version": 1,
+   "title": "When Multiple Choices Are Correct: Asymmetric Probability Allocation in Jev and Other Decision Models",
+   "authors": "Rushab Munot",
+   "categories": [
+    "cs.AI",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:18:35Z",
+   "reference_sha256": "89080bf999b2950b026b483c272cd56492bf3f7e2b0abfb246cc2d802d51c748",
+   "pdf_sha256": "78aacd1f6d5afd8ccdb02bbfae7b54562cbe06662d6cdeefc4efee0ca0c01f4b",
+   "pdf_bytes": 257662,
+   "features": {
+    "sections": 17,
+    "characters": 41637,
+    "tables": 22,
+    "footnotes": 0,
+    "formulas": 0,
+    "figures": 2
+   }
+  },
+  {
+   "arxiv_id": "2610.29219",
+   "version": 1,
+   "title": "PerSPL: Personalized Semi-supervised Preference Learning",
+   "authors": "Xiaoan Xu, Tingzhou Wei, Juncheng Dong, Korel Gundem, Ethan X. Fang, Zhengling Qi",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:21:36Z",
+   "reference_sha256": "7e914f1cf49bfb454b1a39feff7a685149e0fa937d0e23ddc4384e07b5c4b94c",
+   "pdf_sha256": "44b89aab0234cf8e148f16c6ef99625936a455a0091582c2aaac8e5c27b68e8c",
+   "pdf_bytes": 810773,
+   "features": {
+    "sections": 30,
+    "characters": 72658,
+    "tables": 12,
+    "footnotes": 0,
+    "formulas": 35,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.29223",
+   "version": 1,
+   "title": "C$^2$U in RAG: Compositional Concept Unlearning in Retrieval-Augmented Generation",
+   "authors": "Yiyang Duan, Fan Wu, Tiantong Wu, Che Wang, Zhiren Gong, Wei Guo, Yang Cao, Wei Yang Bryan Lim",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:30:06Z",
+   "reference_sha256": "d0991dd7485b4b797c6218304cb3a1e3062161487b04bd858fbc179df8134ec1",
+   "pdf_sha256": "59fda98b11f234b94160a714c46d9eea23d2751edbdf13d6cb9adf67bcf3b62e",
+   "pdf_bytes": 2455797,
+   "features": {
+    "sections": 40,
+    "characters": 116751,
+    "tables": 15,
+    "footnotes": 0,
+    "formulas": 29,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.29225",
+   "version": 1,
+   "title": "Beyond Binary Labels: Diagnostic Evaluation of LLM Safety with Prompt-Level Rubrics",
+   "authors": "Hongyu Li, Xinlong Huang, Zhan Yu, Jing Zhao, Zhe Zhao, Juntao Zhong, Xiong Kuang, Rui Yuan, ZhenXiang Yan, Huilin Xu, Haitao Yu, Lilin Wang, Rui Chen, Blaze Chen, Fengzong Lian, Renfen Hu",
+   "categories": [
+    "cs.CL",
+    "cs.AI",
+    "cs.CR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:33:50Z",
+   "reference_sha256": "50a63db12781ce6d46a5fc6e66a769531c1d3fb1cc331dab52ff9c7651bc852d",
+   "pdf_sha256": "ba6d20a360be8c8578220e6cf2df582906fa92df8de64f07dafe4e716dfd1a5a",
+   "pdf_bytes": 1210191,
+   "features": {
+    "sections": 31,
+    "characters": 82255,
+    "tables": 24,
+    "footnotes": 1,
+    "formulas": 0,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.29234",
+   "version": 1,
+   "title": "Learning Marginal Viewpoint Utility for Budgeted Evidence Selection in RAG",
+   "authors": "Yiyang Duan, Ziqi Yu, Tiantong Wu, Yebo Wu, Wei Yang Bryan Lim",
+   "categories": [
+    "cs.IR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:44:09Z",
+   "reference_sha256": "809df434beec8702f402a6c1ad99b09b8156cc4043240289c0e5a1b10af81b0e",
+   "pdf_sha256": "6883354110bd75ae7abc0ee457f9fba53a87232e7f57286e8e8006090eefd467",
+   "pdf_bytes": 1797171,
+   "features": {
+    "sections": 35,
+    "characters": 98343,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.29241",
+   "version": 1,
+   "title": "Encoded but Unused: Bounding the Sources of VLM Errors",
+   "authors": "Anat Veikherman, Mor Ventura, Nitay Calderon, Lihi Zelnik-Manor, Roi Reichart",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:47:57Z",
+   "reference_sha256": "e83b2bb89e5d0e068df37a145fef374daf5cfd302215a023e184ca099f123e3e",
+   "pdf_sha256": "724f823571214d8b32820eef5543bf41b4af5e099da0bdce222fb9a3b90261b4",
+   "pdf_bytes": 34735392,
+   "features": {
+    "sections": 35,
+    "characters": 82139,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 36,
+    "figures": 12
+   }
+  },
+  {
+   "arxiv_id": "2610.29248",
+   "version": 1,
+   "title": "ER-Chord: Spatially Consistent One-Step Image Editing via Equal-Energy Reliability Redistribution",
+   "authors": "Peize Li, Hanzhen Zhao, Xingguo Xu, Yilong Fan, Zhen Tao, Bo Yin, Zhifei Liu, Qingdong He, Xiaobin Hu",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:53:12Z",
+   "reference_sha256": "7f9986e4b25d09bc864b1d77058f46e7c9d9f62198244e70326357e54f6d1f41",
+   "pdf_sha256": "b59b3a110634a9d2282a30f866a40c6cd53659abd438899f37c52384d1d46546",
+   "pdf_bytes": 8089666,
+   "features": {
+    "sections": 21,
+    "characters": 51094,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 32,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.29249",
+   "version": 1,
+   "title": "MOSAIC: An Omni-Modal Benchmark for Long-Term Memory and Cross-Modal Reasoning in Conversational Agents",
+   "authors": "Hong Ting Tsang, Boyi Zhang, Haoyu Huang, Jiaxin Bai, Yufei Li, Yisen Gao, Zhongwei Xie, Hongyu Luo, Jeff Z. Pan, and Yangqiu Song",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T05:55:20Z",
+   "reference_sha256": "e3e1b3d541298b0007edb885a4cf45c0f140bac840a33f28706fcd0699ff1470",
+   "pdf_sha256": "7cb367910e4507e08bea2f4743e6dff3709940ef0a40fee4d20a5be434b557f6",
+   "pdf_bytes": 5354546,
+   "features": {
+    "sections": 72,
+    "characters": 100807,
+    "tables": 33,
+    "footnotes": 0,
+    "formulas": 1,
+    "figures": 12
+   }
+  },
+  {
+   "arxiv_id": "2610.29255",
+   "version": 1,
+   "title": "Hierarchical Masked Diffusion Language Models",
+   "authors": "Parul Gupta, Satwik, Avni Aggarwal, Bhavesh Gurnani, Arnab Kumar Mondal, Dinesh Khandelwal, Dinesh Garg, Parag Singla",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T06:06:01Z",
+   "reference_sha256": "222377cc902535186b9c67c572d1ae89301ec467ab8357866566b76d4f30ff79",
+   "pdf_sha256": "d0e1b866bfa098d5bd48d6ccfe654377e4e04e7bb9db02e04fae8776ff662a28",
+   "pdf_bytes": 1386718,
+   "features": {
+    "sections": 43,
+    "characters": 90703,
+    "tables": 8,
+    "footnotes": 2,
+    "formulas": 106,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.29257",
+   "version": 1,
+   "title": "CRAB: Cuboid-based Representation for As-built BIM from Point Clouds",
+   "authors": "Haoran Xiong, Jing Wang, Shanshan Pan, Zihao Yan, Minglun Gong, Hui Huang",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T06:06:13Z",
+   "reference_sha256": "37af2810e3f15415310b8b5891981be7ea0732c7a45295d4be7b6aa289994bcf",
+   "pdf_sha256": "c818e256804f235f8e277349796ccf8770cddcd50921b8d6a6fba8f421459c5d",
+   "pdf_bytes": 38139804,
+   "features": {
+    "sections": 16,
+    "characters": 42478,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 8,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.29276",
+   "version": 1,
+   "title": "Design and Tuning of Multi-Agent Systems Using Bayesian Evolutionary Optimization",
+   "authors": "Dominik Jehle and Tom Zehle",
+   "categories": [
+    "cs.LG",
+    "cs.MA"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T06:31:27Z",
+   "reference_sha256": "272728b33673d2ec43a5bca5fab1e1f7d13527f1e1958c882fef11f938f2b874",
+   "pdf_sha256": "3b9821c0d4b730600e6ee85cd86608d357a99265c67492e139d7dd2799995939",
+   "pdf_bytes": 911823,
+   "features": {
+    "sections": 15,
+    "characters": 23501,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29331",
+   "version": 1,
+   "title": "From Prompts to Posteriors: Can LLM Agents Perform Bayesian Inference in Context?",
+   "authors": "Linus Filbry, Luckeciano C. Melo, Yarin Gal",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T07:29:24Z",
+   "reference_sha256": "ca440df26deaf1eef8971d263b566b3c7a749005c6093df899a6d469a41499f8",
+   "pdf_sha256": "83a265ceee4a3e4cfca9b48047da29c7b7d5868f3ef5b1b59bc7cb00c944342d",
+   "pdf_bytes": 5537972,
+   "features": {
+    "sections": 41,
+    "characters": 89495,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 19,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.29339",
+   "version": 1,
+   "title": "ChronoSynth: Constraint-Aware Question Synthesis over Temporal Knowledge Graphs",
+   "authors": "Feng Liang, Weixin Zeng, Runhao Zhao, Mingjun Zhou, Shaoshi Yang, Xiang Zhao",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T07:35:17Z",
+   "reference_sha256": "ae0bdceaf213dc07aa1e73b85fa8af615f97eedcd9fe461872324ee0807bf604",
+   "pdf_sha256": "4381308b86e0494b123e5c78e18f5bc7a99a29e061f2094e101e827a6bdfb98d",
+   "pdf_bytes": 685684,
+   "features": {
+    "sections": 36,
+    "characters": 59559,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 9,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29350",
+   "version": 1,
+   "title": "B-CARE: Blind Classwise Assessment of Relative Evidence for Stance Error Ranking",
+   "authors": "Meysam Sabbaghan, Doina Caragea",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T07:43:27Z",
+   "reference_sha256": "5608eab83d4bce7fc56d793d7dc9d370d8adc9a0b0aa2e0c41d01235d2bef8ce",
+   "pdf_sha256": "d198d8e1fd9deee47ca173963d7fe4eb0634ba0a0767cc4ed6e5e2ff803fad79",
+   "pdf_bytes": 9473211,
+   "features": {
+    "sections": 33,
+    "characters": 73859,
+    "tables": 13,
+    "footnotes": 1,
+    "formulas": 23,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.29355",
+   "version": 1,
+   "title": "GaP-MoE : Explicit Expert Specialization in Mixture-of-Experts via Orthogonal Gradient Accumulation and Projection",
+   "authors": "Donghyun Jeong and Yoon-Yeong Kim",
+   "categories": [
+    "cs.LG",
+    "stat.ML"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T07:48:07Z",
+   "reference_sha256": "acdb333f729d8688f8ce89a637d85184716332e59ad3c58b24c8e8e1bd2d19b5",
+   "pdf_sha256": "479b7749a8aebbc781d39adb6f9dc7e4afa482cc4afdd0e3ea3245f79df44489",
+   "pdf_bytes": 2176089,
+   "features": {
+    "sections": 21,
+    "characters": 37976,
+    "tables": 3,
+    "footnotes": 1,
+    "formulas": 23,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.29362",
+   "version": 1,
+   "title": "Compositional neural networks for multimodal X-ray and neutron scattering inversion",
+   "authors": "Valentin Munteanu, Alexander Hinderhofer, Dmitry Lapkin, Vladimir Starostin and Frank Schreiber",
+   "categories": [
+    "cs.LG",
+    "cond-mat.mtrl-sci",
+    "physics.app-ph"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T07:54:26Z",
+   "reference_sha256": "858dc460e5ea16ac6237f5eca2b8a36c75e94eab4eb8ba0d8a8c1b46eb3fd091",
+   "pdf_sha256": "009fc2e221ab6d27af99fb21955aecc2d2fa679afd34a2678fd8c1f493370c9a",
+   "pdf_bytes": 32651312,
+   "features": {
+    "sections": 22,
+    "characters": 85627,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 52,
+    "figures": 24
+   }
+  },
+  {
+   "arxiv_id": "2610.29409",
+   "version": 1,
+   "title": "LLMSeg: Training-Free Text-Prompted Image Segmentation with B-Splines",
+   "authors": "Abdullah Hamdi",
+   "categories": [
+    "cs.CV",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T08:35:16Z",
+   "reference_sha256": "1392f49e0b282c7c895a7aaaa4545bbbba13d29fef868e2e2a807ef666950319",
+   "pdf_sha256": "7e42370fc9cd01309df38f11dd487abe40c3604f7b047657a6a31809386bfb77",
+   "pdf_bytes": 18930158,
+   "features": {
+    "sections": 38,
+    "characters": 117526,
+    "tables": 11,
+    "footnotes": 2,
+    "formulas": 4,
+    "figures": 26
+   }
+  },
+  {
+   "arxiv_id": "2610.29411",
+   "version": 1,
+   "title": "The Predictive--Optimization Gap in GuanDan Self-Play",
+   "authors": "Qicheng Zou, Biao Yuan, Siyu Song, Wentao Liu, Xiaokun Wang",
+   "categories": [
+    "cs.LG",
+    "stat.ML"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T08:36:09Z",
+   "reference_sha256": "c799694e8127e7fd720e29d0cd7849553ea2928beed27f8f410552e9a71507fc",
+   "pdf_sha256": "48996ebf99e7a08386fe79d5a372f00bed2fcf59b0d48a5c6d07598dc971f898",
+   "pdf_bytes": 447581,
+   "features": {
+    "sections": 26,
+    "characters": 50694,
+    "tables": 7,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.29415",
+   "version": 1,
+   "title": "CCG Diffusion: Combinatory Categorial Grammar-Driven Compositional and Syntactically Disambiguated Text-to-Image Generation",
+   "authors": "Ryosuke Yamaki, Daichi Mochihashi, Nobutaka Shimada, Seitaro Shinagawa, Tadahiro Taniguchi",
+   "categories": [
+    "cs.CV",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T08:38:18Z",
+   "reference_sha256": "ee4cdd3746d0b72dc3ef509b2e872252ded2f734a4d1d431e68c6093dc8d271e",
+   "pdf_sha256": "a0707fd0eeba4ac2ee0d2b79c64f8e935a6c37f8209943067ec1a0ee16f01911",
+   "pdf_bytes": 14808119,
+   "features": {
+    "sections": 37,
+    "characters": 82177,
+    "tables": 9,
+    "footnotes": 5,
+    "formulas": 8,
+    "figures": 11
+   }
+  },
+  {
+   "arxiv_id": "2610.29426",
+   "version": 1,
+   "title": "BIRD-RL: Scaling Agentic Reinforcement Learning over Stateful Data-Centric Environments",
+   "authors": "Ge Qu, Jinyang Li, Xiaohan Xu, Xiaolong Li, Bowen Qin, Nan Huo, Ziwei Tang, Chenhao Ma, Reynold Cheng",
+   "categories": [
+    "cs.LG",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T08:50:39Z",
+   "reference_sha256": "3990d21c910e48370bd683e019869aeedea8bf81a25dfb373af8f8cb68139ee9",
+   "pdf_sha256": "e8c9232482b6cce191f5bca6b7a92b945b93c44f8fa5871e95af34706c0f25dc",
+   "pdf_bytes": 2484661,
+   "features": {
+    "sections": 37,
+    "characters": 65394,
+    "tables": 10,
+    "footnotes": 4,
+    "formulas": 11,
+    "figures": 17
+   }
+  },
+  {
+   "arxiv_id": "2610.29454",
+   "version": 1,
+   "title": "BlazeVGGT: 13x Faster VGGT at 2,000 Frames via Camera Token without Training",
+   "authors": "Shujun Yao, Junhui Lin, Congying Han, Tiande Guo, Ziwen Liu, Bonan Li",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:11:19Z",
+   "reference_sha256": "864a6d4bd99a6c72af3efe1ca668bc79795156056559dd28dbab21bd1e1db8a5",
+   "pdf_sha256": "d141edee1804fb46ae1279cc2a5596b35520cd00217753b8f0cdf681bc4022b0",
+   "pdf_bytes": 3674457,
+   "features": {
+    "sections": 14,
+    "characters": 55370,
+    "tables": 10,
+    "footnotes": 0,
+    "formulas": 16,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29464",
+   "version": 1,
+   "title": "Directional Posterior Feedback Fusion for Query Reformulation in Dense Retrieval",
+   "authors": "Yiteng Tu, Qingyi Pan, Weihang Su, Jiaxin Mao, Yiqun Liu, Qingyao Ai",
+   "categories": [
+    "cs.IR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:20:56Z",
+   "reference_sha256": "093806e038410056747d0a968b45e72f5de7b4e9542a16cbb7c26d75b613bc21",
+   "pdf_sha256": "6e860db6dda036883342021d2d09e30732b8bad232da874b32fd8215d6eaf8b3",
+   "pdf_bytes": 915502,
+   "features": {
+    "sections": 30,
+    "characters": 63182,
+    "tables": 5,
+    "footnotes": 4,
+    "formulas": 23,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29472",
+   "version": 1,
+   "title": "OmniSimulator: Aligning Small Language Models for Authentic Heterogeneous Behavior Modeling",
+   "authors": "Jiawei Chen, Ruoxi Xu, Boxi Cao, Zhuoqun Li, Ruotong Pan, Yunfei Zhang, Zhirui Yang, Jingyan Chen, Tingting Gao, Han Li, Yaojie Lu, Xianpei Han, Le Sun, Xiangyu Wu, Hongyu Lin",
+   "categories": [
+    "cs.CL",
+    "cs.AI",
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:30:12Z",
+   "reference_sha256": "3879ee6ef4dcf54f9d6d9cd03f0c5764042e80f637fae2f50a53f1d8874afdd9",
+   "pdf_sha256": "9dab50819e16825b4b8757571d7fa8109b8393cc4ea2277c8048b59225876c34",
+   "pdf_bytes": 884425,
+   "features": {
+    "sections": 26,
+    "characters": 60327,
+    "tables": 10,
+    "footnotes": 1,
+    "formulas": 9,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29475",
+   "version": 1,
+   "title": "Density-Level Backward Error for Low-NFE Generative Flows",
+   "authors": "Ewsey Obzherin, Valentin Khrulkov",
+   "categories": [
+    "cs.LG",
+    "cs.NA",
+    "math.NA",
+    "stat.ML"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:30:21Z",
+   "reference_sha256": "3a5548eb8b533472730625a15cf58543fbd783e2963f5138eb99b22bbc238c30",
+   "pdf_sha256": "dc43b1274f7f75682c617aad2f2c1f06cd3c8ad888f0d06c1441625f9fc9a89d",
+   "pdf_bytes": 1400842,
+   "features": {
+    "sections": 54,
+    "characters": 93530,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 180,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.29491",
+   "version": 1,
+   "title": "RubricOpt: Self-Revision of Semantic Rubrics for Preference Optimization",
+   "authors": "Wei Chen, Yubing Wu, Shigui Li, Delu Zeng, Jingfeng Liu, Junmei Yang, Zhiheng Zhou, Bo Li, Min Chen, Zhou Wang",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:46:37Z",
+   "reference_sha256": "dbe275ac7b89018a07957b059d9d1d9a34fa2154948b2d914266bb9ca7f53a20",
+   "pdf_sha256": "4e9a01a7ab9fdfd3610ed14e6dd4e91940ebd4ff4ef6b5508fc4fb2b1414e022",
+   "pdf_bytes": 614313,
+   "features": {
+    "sections": 26,
+    "characters": 83177,
+    "tables": 11,
+    "footnotes": 0,
+    "formulas": 30,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29498",
+   "version": 1,
+   "title": "A Strong MoE Is All You Need for Process Supervision",
+   "authors": "Guanzhi Deng, Zengyan Liu, Haibo Wang, Kuan Wu, Shing Yin Wong, Sichun Luo, Zhuoran Wang, Linqi Song",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:51:01Z",
+   "reference_sha256": "29d3779594e2f625165b05897d74c65f0e0ece7575cee22c7e55cb03a273ee1c",
+   "pdf_sha256": "878f8bd83e1d84709ea18217b0c33936a28df77bc70ff5f983d1c9a719aa0206",
+   "pdf_bytes": 727959,
+   "features": {
+    "sections": 46,
+    "characters": 74211,
+    "tables": 17,
+    "footnotes": 0,
+    "formulas": 23,
+    "figures": 6
+   }
+  },
+  {
+   "arxiv_id": "2610.29501",
+   "version": 1,
+   "title": "Parallel Thinking for Large Language Model with Path Diversity",
+   "authors": "Jiaru Qian, Yihong Dong, Xue Jiang, Chun-Wah Hsu, Zhi Jin, Ge Li",
+   "categories": [
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:51:42Z",
+   "reference_sha256": "1733af2da7d657cea1ed7de868141410d14b9a2b7988b81236cc8d5e13b038d6",
+   "pdf_sha256": "333d84aa030b8d3e0f74d40a3a51d88fd091a2dcdacb35d134194fccba07abe6",
+   "pdf_bytes": 2117899,
+   "features": {
+    "sections": 24,
+    "characters": 49487,
+    "tables": 9,
+    "footnotes": 0,
+    "formulas": 11,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.29507",
+   "version": 1,
+   "title": "Keeping Time vs. Understanding Time: Neither Alone Explains Temporal Reasoning in LLMs",
+   "authors": "Auss Abbood, Fernando Mart\\'inez-Plumed, Jos\\'e Hern\\'andez-Orallo and Nigel Collier",
+   "categories": [
+    "cs.CL",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:58:46Z",
+   "reference_sha256": "bc2cc6a71f736caff53a1380f6a95385d58fdf432832d24f270e43664199879f",
+   "pdf_sha256": "d9e468564a8c68f4a1c01773db8f43ba7ec03baef26fe5fabc53be2b0fe90c5b",
+   "pdf_bytes": 529869,
+   "features": {
+    "sections": 34,
+    "characters": 75346,
+    "tables": 24,
+    "footnotes": 3,
+    "formulas": 1,
+    "figures": 9
+   }
+  },
+  {
+   "arxiv_id": "2610.29508",
+   "version": 1,
+   "title": "Shortcut-Resistant CAM Distillation for Long-Tailed Recognition",
+   "authors": "Wenhai Wan, Teng Zhang, Shao-Yuan Li, Xinrui Wang, Qiang-Sheng Hua, Songcan Chen",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T09:58:58Z",
+   "reference_sha256": "62fc1a16a7a9b9916168b6ee7ed463c06f86d89226e185570c5f4c60b6b75670",
+   "pdf_sha256": "7fd3f891b94833f9b58680320bf58c990686ed744d428128a4e45e0ce4e94fe1",
+   "pdf_bytes": 1024521,
+   "features": {
+    "sections": 59,
+    "characters": 114031,
+    "tables": 11,
+    "footnotes": 0,
+    "formulas": 69,
+    "figures": 8
+   }
+  },
+  {
+   "arxiv_id": "2610.29533",
+   "version": 1,
+   "title": "Block Diffusion for Longitudinal EHR: Accuracy, Efficiency, and Representation Trade-offs",
+   "authors": "Ashvin Gupta, Joshua Placidi, Brendan Delaney, Alessandra Russo",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T10:23:34Z",
+   "reference_sha256": "d6d68e662c4ef3a61ed7b1cb95c54fb73804c125321a647cd3a85330c75fa467",
+   "pdf_sha256": "2919f2fdd52e2f8e006e919939fff3c9c88ae0fa987765006e468391a48fa331",
+   "pdf_bytes": 533147,
+   "features": {
+    "sections": 16,
+    "characters": 23479,
+    "tables": 3,
+    "footnotes": 0,
+    "formulas": 9,
+    "figures": 5
+   }
+  },
+  {
+   "arxiv_id": "2610.29538",
+   "version": 1,
+   "title": "Stochastic Pruning of the DPO Computation Graph: 1.4x Faster Training and Lower Peak Memory",
+   "authors": "Yubing Wu, Wei Chen, Junmei Yang, Delu Zeng, Tiewen Pan",
+   "categories": [
+    "cs.LG",
+    "cs.AI"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T10:25:15Z",
+   "reference_sha256": "9113300921336a1277e72704548e11f4e950a6feb8548da3e94cd4a97fc9478f",
+   "pdf_sha256": "dc00268811f87cd22f258344b32fc4cf7c9f5624b4242e5ab62c45f86af1a39e",
+   "pdf_bytes": 574113,
+   "features": {
+    "sections": 40,
+    "characters": 81236,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 48,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.29545",
+   "version": 1,
+   "title": "PACE: Periodic and Channel-Aligned Encoding of Four-Bit Recurrent States",
+   "authors": "Patrick Haller, Filipe Laitenberger, Alan Akbik",
+   "categories": [
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T10:31:52Z",
+   "reference_sha256": "e7d5345bb2c022723f06d010b04f6f040fb9621a2fb4d232f2a8ab4c888fbd0e",
+   "pdf_sha256": "b4d7c42aa10822c6f705e52e42360b9829abce5d9035cfe7bc4624a3b9749fe3",
+   "pdf_bytes": 1038515,
+   "features": {
+    "sections": 31,
+    "characters": 38166,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 6,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.29549",
+   "version": 1,
+   "title": "On the Effectiveness of Snapshot Testing: An Empirical Study",
+   "authors": "Shun Fujita, Satoru Tomizawa, Yutaro Kashiwa, Bin Lin, Hajimu Iida",
+   "categories": [
+    "cs.SE"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T10:35:35Z",
+   "reference_sha256": "2d89500b8c42be2d696afdc8a409680756b1ad3e0872d23906b7a4eed382a311",
+   "pdf_sha256": "c8ad731a861c5b93378955c9bcf0a8863a14305f36ef6ebb498cf0e1342e9d38",
+   "pdf_bytes": 3035746,
+   "features": {
+    "sections": 37,
+    "characters": 72011,
+    "tables": 9,
+    "footnotes": 10,
+    "formulas": 2,
+    "figures": 7
+   }
+  },
+  {
+   "arxiv_id": "2610.29552",
+   "version": 1,
+   "title": "Generalized CycleGRPO for Fine-Grained Multimodal Understanding and Grounding",
+   "authors": "Xin Zhang, Haochen Wang, Beibei Lin, Zhaoxiang Zhang, Robby T. Tan, Jason Li, Dacheng Tao",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T10:39:56Z",
+   "reference_sha256": "27290f9a1730ef4867b479ff7d70544f9b4f5856f86ace4891517e2e2ecf9ac0",
+   "pdf_sha256": "d1cdc698b5a76ff6c0d8c468a28d6003b70eb0fed596df193e84c0878f20830a",
+   "pdf_bytes": 16573096,
+   "features": {
+    "sections": 24,
+    "characters": 79933,
+    "tables": 16,
+    "footnotes": 0,
+    "formulas": 15,
+    "figures": 14
+   }
+  },
+  {
+   "arxiv_id": "2610.29555",
+   "version": 1,
+   "title": "WRDO: Weighted Refusal Direction Optimization in Aligned Language Models",
+   "authors": "Grigoriy Evseev and Vladimir Solodkin and Dmitry Bylinkin and Daniil Medyakov and Vladimir Aletov and Aleksandr Beznosikov",
+   "categories": [
+    "cs.LG",
+    "cs.CL"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T10:42:25Z",
+   "reference_sha256": "73a4174af43f810e899e7f6e1b1f61f61faa6a0044eb4cad715e942dbf66cfb8",
+   "pdf_sha256": "97d292f3b5a216f7e1f045a77606014367a37189816ff07960b1b548ffa8b4b4",
+   "pdf_bytes": 712736,
+   "features": {
+    "sections": 35,
+    "characters": 67741,
+    "tables": 13,
+    "footnotes": 0,
+    "formulas": 20,
+    "figures": 0
+   }
+  },
+  {
+   "arxiv_id": "2610.29556",
+   "version": 1,
+   "title": "SOAR: Social and Opinion-Aware Recommendations",
+   "authors": "Giannis Christoforidis and Apostolos N. Papadopoulos",
+   "categories": [
+    "cs.LG",
+    "cs.IR"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T10:42:44Z",
+   "reference_sha256": "1c40016dd4e68d6e27fe81340df0f49ec4facc728552a121805e55a2d4e667d9",
+   "pdf_sha256": "84873416fc5c9649c450356e44f9249b5c221a3a29cdc5757ba1157b67e94130",
+   "pdf_bytes": 1975185,
+   "features": {
+    "sections": 15,
+    "characters": 38418,
+    "tables": 6,
+    "footnotes": 1,
+    "formulas": 19,
+    "figures": 16
+   }
+  },
+  {
+   "arxiv_id": "2610.29571",
+   "version": 1,
+   "title": "Implicit Feature Reweighting for Label-Free Graph Generalization",
+   "authors": "Tianjun Yao, Chen Xi, Xinyang Li, Lixian Zhang",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T11:04:32Z",
+   "reference_sha256": "da92f95f0526dd0adc7066a44bee142cbb9561e9401643a336b58ccb0d9a3b7d",
+   "pdf_sha256": "bb406dd5e1e630bf2ab177f15a34f74000219c440e3e8ad35d40cda7bd0070e2",
+   "pdf_bytes": 894109,
+   "features": {
+    "sections": 22,
+    "characters": 66203,
+    "tables": 5,
+    "footnotes": 0,
+    "formulas": 44,
+    "figures": 10
+   }
+  },
+  {
+   "arxiv_id": "2610.29589",
+   "version": 1,
+   "title": "Fragment-Level Graph Encoding for Interpretable Molecular Property Prediction",
+   "authors": "Rafael Lopes Almeida (1) and Ina P\\\"ohner (1) ((1) School of Pharmacy, University of Eastern Finland, Kuopio, Finland)",
+   "categories": [
+    "cs.LG",
+    "stat.ML"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T11:29:50Z",
+   "reference_sha256": "db207c219efa9b5325f5dc50bb988fefbff9911ed77533c4c170a05badfbb6c5",
+   "pdf_sha256": "d5007c3a82b5ff86fe05670c798941d6a46565369045dd2d7f54bf0a2bdbb579",
+   "pdf_bytes": 556412,
+   "features": {
+    "sections": 24,
+    "characters": 60712,
+    "tables": 11,
+    "footnotes": 0,
+    "formulas": 2,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.29604",
+   "version": 1,
+   "title": "Local and Global Recursive Ridge Regression for Online Residual Correction of Frozen Multivariate Forecasters under Label Delay",
+   "authors": "Takumi Fujimoto and Hiroaki Nishi",
+   "categories": [
+    "cs.LG"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T11:43:05Z",
+   "reference_sha256": "9fe9744c2803ef747b77e0e3eae01e40d091dcf722a0ecf891a31dbb5702e2b2",
+   "pdf_sha256": "ea207715cd6e077d700cc93f06f2743ebd683fa5566882a2861dcf134243f15d",
+   "pdf_bytes": 559847,
+   "features": {
+    "sections": 19,
+    "characters": 39174,
+    "tables": 6,
+    "footnotes": 0,
+    "formulas": 6,
+    "figures": 4
+   }
+  },
+  {
+   "arxiv_id": "2610.29611",
+   "version": 1,
+   "title": "Diff-IrisPAD: Modeling Bona Fide Iris Distributions for Unsupervised Presentation Attack Detection",
+   "authors": "Geetanjali Sharma, Harsh Yadav, Tanmay Deshpande, Shubham Ashwani, Aditya Nigam, Raghavendra Ramachandra",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T11:51:28Z",
+   "reference_sha256": "a8a65a4f9e87e37fd4b4c176d6e5f0e816a746ce7a8421210cd5f349c70fb4d5",
+   "pdf_sha256": "5c41ff8e67019e69bbfd1b205f3ed43d9f1bb982c4d5c6cc3e1f4083c2855908",
+   "pdf_bytes": 2506153,
+   "features": {
+    "sections": 22,
+    "characters": 37931,
+    "tables": 4,
+    "footnotes": 0,
+    "formulas": 10,
+    "figures": 3
+   }
+  },
+  {
+   "arxiv_id": "2610.29651",
+   "version": 1,
+   "title": "Spatially Gated Demographic Steering for Debiasing Multi-Person Text-to-Image Generation",
+   "authors": "Venkatesh Thirugnana Sambandham, Torsten Schon",
+   "categories": [
+    "cs.CV"
+   ],
+   "license": "http://creativecommons.org/licenses/by/4.0/",
+   "submitted": "2026-10-21T12:32:16Z",
+   "reference_sha256": "ec202763f7e80dc4b7474f89888e6ad72610d963cde866e2afbbf103061f5033",
+   "pdf_sha256": "6eb18cf6b0eb058335d88d28d4dc36d72fafde994ac74a8becb0d4679e872c07",
+   "pdf_bytes": 14692287,
+   "features": {
+    "sections": 34,
+    "characters": 71370,
+    "tables": 12,
+    "footnotes": 3,
+    "formulas": 19,
+    "figures": 9
+   }
+  }
+ ]
+}

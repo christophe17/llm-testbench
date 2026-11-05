@@ -9,9 +9,11 @@
 harness) and 2 (gate, comparison, HTML report) are built and measured. Step 3 is built
 except for what needs a calibrated judge: generation is measured on the gold context and
 end to end on HotpotQA and QASPER, closed book on three datasets, and **the calibration
-waits for Christophe's 50 labels** (`make eval-annotate`). Step 4 (in-house corpus, golden
-set) and notebooks 2 to 4 remain. Budget: hard cap $10 (`data/results/spend.jsonl`).
-Decisions in ADR 011, ADR 012 and ADR 013.
+waits for Christophe's 50 labels** (`make eval-annotate`). Step 4 is built up to the
+review: the in-house corpus is selected and downloaded, 83 golden questions are drafted
+and checked, and **the golden set waits for Christophe's review** (`make golden-review`).
+Notebooks 2 to 4 remain. Budget: hard cap $10, $4.81 spent (`data/results/spend.jsonl`).
+Decisions in ADR 011 to ADR 014.
 
 **Phase 1 — Production skeleton: built** (2026-09-03), merged into `main` on
 2026-10-16 with PR #2 (PR #3). Since then, everything happens on `main`, with no branch or PR
@@ -89,15 +91,26 @@ course; the testbench proves nothing until phase 1 is studied and run.
   the generator reasons first (answers cut or empty, silently). One cap now, shared by the
   API and the harness, and every run reports its share of cut answers.
 
+- **In-house corpus and golden set** (ADR 014): 200 arXiv papers under CC BY 4.0, first
+  submitted after every model used was released, selected for what breaks a PDF
+  extraction (tables, footnotes, formulas); a versioned manifest, the documents in the
+  local cache (`make corpus-download`); a reference text per document from arXiv's HTML
+  rendering; one naive PDF extractor (`ingest/pdf.py`). Golden set tooling: drafting with
+  quotes checked word for word, two automatic checks of the drafts, a terminal review, a
+  frozen set with a changelog (`make golden-draft`, `golden-probe`, `golden-review`,
+  `golden-freeze`, `golden-status`). 83 drafts on 30 documents are waiting.
+
 ## Remaining in phase 2
 
 1. **Christophe: label the 50 calibration items**, `make eval-annotate`, about one hour,
    resumable. Then `make eval-calibrate` (about $0.40) gives the kappa of both judges; the
    judged baseline, the bias probes (`make eval-bias`) and a rubric for correctness
    against the reference answer (QASPER needs it) follow.
-2. **Step 4**: in-house corpus (download script and manifest), naive text extractor,
-   golden set of 50 to 80 questions. **Christophe**: full review of the drafted questions,
-   two to three hours.
+2. **Christophe: review the 83 drafted questions**, `make golden-review`, two to three
+   hours, resumable (each draft shows the link to its paper on arXiv; nothing to
+   download); then `make golden-freeze VERSION=v1 SUMMARY="..."`. The arms that run the
+   golden set on the naive text and on the reference text follow, and need the corpus
+   (`make corpus-download`, 20 minutes, 1.1 GB).
 3. Notebooks 2 to 4, the diagram of the harness, the phase closing.
 
 **Local database recreated on 2026-11-05** (`JOURNAL.md`: a commit made Tilt delete the

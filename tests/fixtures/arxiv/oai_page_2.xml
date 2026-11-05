@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+  <ListRecords>
+    <record>
+      <header><identifier>oai:arXiv.org:2610.00003</identifier><datestamp>2026-10-25</datestamp></header>
+      <metadata>
+        <arXivRaw xmlns="http://arxiv.org/OAI/arXivRaw/">
+          <id>2610.00003</id>
+          <version version="v1"><date>Sat, 24 Oct 2026 08:00:00 GMT</date><size>40kb</size></version>
+          <title>A Fresh Paper With Nothing To Break</title>
+          <authors>Fourth Author</authors>
+          <categories>cs.CL</categories>
+          <license>http://creativecommons.org/licenses/by/4.0/</license>
+          <abstract>Plain.</abstract>
+        </arXivRaw>
+      </metadata>
+    </record>
+    <record>
+      <header><identifier>oai:arXiv.org:2610.00004</identifier><datestamp>2026-10-25</datestamp></header>
+      <metadata>
+        <arXivRaw xmlns="http://arxiv.org/OAI/arXivRaw/">
+          <id>2610.00004</id>
+          <version version="v1"><date>Sat, 24 Oct 2026 09:00:00 GMT</date><size>40kb</size></version>
+          <title>A Fresh Paper In Another Field</title>
+          <authors>Fifth Author</authors>
+          <categories>math.CO cs.DM</categories>
+          <license>http://creativecommons.org/licenses/by/4.0/</license>
+          <abstract>Elsewhere.</abstract>
+        </arXivRaw>
+      </metadata>
+    </record>
+    <resumptionToken cursor="4" completeListSize="5"></resumptionToken>
+  </ListRecords>
+</OAI-PMH>

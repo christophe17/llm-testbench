@@ -889,3 +889,63 @@ its fixtures are unambiguous. Mine was green by luck for a day. The dense arms k
 weakness I did not remove: the chunk search orders equal distances as the database finds
 them; the fixtures now have none, and a test says so for HotpotQA, but nothing in the SQL
 enforces an order.
+
+## 2026-11-05 — Phase 2, step 4: a corpus no model has read, and 83 drafts waiting for a reviewer
+
+**Trigger**: phase 2.5 and 2.6. The corpus was decided in the morning (arXiv papers under
+CC BY 4.0); everything else about it was still to choose.
+
+**Done** (ADR 014): the arXiv client (`eval/corpus/arxiv.py`: the OAI-PMH interface for
+licenses and the date of each version, one request every three seconds); the reference
+text from arXiv's HTML rendering (`eval/corpus/reference.py`); the selection and the
+manifest (`eval/corpus/build.py`, `manifest.py`, `config/corpus.toml`, `make corpus-build`,
+`corpus-download`, `corpus-verify`); the naive PDF extractor (`ingest/pdf.py`, `pypdf`);
+the golden set: taxonomy and states of a question (`eval/golden/types.py`), drafting with
+quotes checked word for word (`drafting.py`, `prompts/golden_draft.md`), two automatic
+checks of the drafts (`make golden-probe`), the terminal review (`review.py`,
+`make golden-review`), the frozen set and its changelog (`store.py`, `make golden-freeze`),
+the golden set as a dataset of the harness on the naive or the reference text
+(`dataset.py`). 34 tests, offline.
+
+**Measured**:
+- **Corpus**: 2,762 fresh candidates under CC BY 4.0 in sixteen days of computer science;
+  355 examined, 200 kept, all first submitted on 2026-10-20 or 2026-10-21. Median document:
+  63,740 characters, 9 tables, 11 displayed formulas; 66 have a footnote. 55 cs.LG,
+  52 cs.CV, 40 cs.CL, 39 cs.AI, 14 others.
+- **Drafts**: 83 on 30 documents, 15 of each kind except temporal (8). 106 quotes, all
+  found word for word in their paper. Asked without any document, the generator said it
+  did not know on 78 drafts and gave the reference answer on 2; on HotpotQA it gives it on
+  53 questions in 100. 3 of the 15 drafts marked unanswerable are answered deeper in their
+  paper, according to a second model that quoted the passage.
+- **Cost**: $0.57 for the drafts (about $0.02 a document), $0.07 for the closed-book check,
+  $0.05 for the second reading. $4.81 spent in all.
+
+**Incidents / surprises**:
+- **The first selection kept 2 papers in 70.** I had required two footnotes, from an idea
+  of what a paper looks like. Counted on the first 24 candidates: tables are everywhere
+  (median 7), footnotes almost nowhere. The thresholds were set again on that count, and
+  every page fetched is now kept in the cache so that choosing thresholds costs arXiv
+  nothing twice.
+- **"Published after the cutoff" could not be established from a cutoff.** I do not know
+  the training cutoff of the models, and a provider's statement of it is not evidence. A
+  release date is: the floor is after the day each model is known to have been available,
+  from dated files of this repository. All 200 documents were first submitted after it.
+- **arXiv lists records by last modification**: two days of "recent" records held papers
+  first submitted in 2013. The date that counts is the one of the first version.
+- **The provider refuses a schema with an optional field.** Strict structured outputs want
+  every property required and no open object; the drafting schema had defaults and failed
+  with a 400 on the first call. The judge's schema was already strict, by luck.
+- **An "unanswerable" draft is a claim about the whole paper made by a model that read a
+  third of it.** The drafter is given the first 24,000 characters. A second, cheaper model
+  now rereads the whole paper for those drafts and must quote; 3 in 15 were caught. The
+  reviewer is shown the passage, and how much of the paper the drafter read.
+- The temporal kind is thin: 8 drafts in 15 requested, several of them on citation years.
+  Research papers state few dates. To be seen at the review; the kind may not survive.
+
+**Not done**: the review (Christophe, two to three hours: `make golden-review`), so no
+frozen set and no measurement on it; the arms that run the golden set on the naive text
+and on the reference text; the ingestion of the corpus (it waits for those arms); the
+completion probe of contamination (continue a passage, measure the overlap), dropped for
+the closed-book probe, which gave a clear answer for a quarter of the price.
+
+**Next**: notebooks 2 to 4; then the calibration and the review, which are Christophe's.

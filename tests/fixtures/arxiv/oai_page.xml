@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OAI-PMH xmlns="http://www.openarchives.org/OAI/2.0/">
+  <responseDate>2026-11-05T00:00:00Z</responseDate>
+  <ListRecords>
+    <record>
+      <header><identifier>oai:arXiv.org:2610.00001</identifier><datestamp>2026-10-22</datestamp></header>
+      <metadata>
+        <arXivRaw xmlns="http://arxiv.org/OAI/arXivRaw/">
+          <id>2610.00001</id>
+          <version version="v1"><date>Wed, 21 Oct 2026 09:00:00 GMT</date><size>90kb</size></version>
+          <title>A Fresh Paper
+            With Tables</title>
+          <authors>Ada Lovelace, Charles Babbage</authors>
+          <categories>cs.CL cs.IR</categories>
+          <license>http://creativecommons.org/licenses/by/4.0/</license>
+          <abstract>Fresh.</abstract>
+        </arXivRaw>
+      </metadata>
+    </record>
+    <record>
+      <header><identifier>oai:arXiv.org:1307.02827</identifier><datestamp>2026-10-30</datestamp></header>
+      <metadata>
+        <arXivRaw xmlns="http://arxiv.org/OAI/arXivRaw/">
+          <id>1307.02827</id>
+          <version version="v1"><date>Wed, 10 Jul 2013 15:30:01 GMT</date><size>6kb</size></version>
+          <version version="v2"><date>Fri, 30 Oct 2026 15:34:56 GMT</date><size>6kb</size></version>
+          <title>An Old Paper Revised Yesterday</title>
+          <authors>Someone Else</authors>
+          <categories>cs.CL</categories>
+          <license>http://creativecommons.org/licenses/by/4.0/</license>
+          <abstract>Old.</abstract>
+        </arXivRaw>
+      </metadata>
+    </record>
+    <record>
+      <header><identifier>oai:arXiv.org:2610.00002</identifier><datestamp>2026-10-23</datestamp></header>
+      <metadata>
+        <arXivRaw xmlns="http://arxiv.org/OAI/arXivRaw/">
+          <id>2610.00002</id>
+          <version version="v1"><date>Thu, 22 Oct 2026 10:00:00 GMT</date><size>50kb</size></version>
+          <title>Fresh But Not Reusable</title>
+          <authors>Third Author</authors>
+          <categories>cs.CL</categories>
+          <license>http://arxiv.org/licenses/nonexclusive-distrib/1.0/</license>
+          <abstract>Closed.</abstract>
+        </arXivRaw>
+      </metadata>
+    </record>
+    <record>
+      <header status="deleted"><identifier>oai:arXiv.org:2610.00009</identifier><datestamp>2026-10-23</datestamp></header>
+    </record>
+    <resumptionToken cursor="0" completeListSize="5">token-page-2</resumptionToken>
+  </ListRecords>
+</OAI-PMH>

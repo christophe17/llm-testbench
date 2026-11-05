@@ -1,0 +1,57 @@
+# The in-house corpus (phase 2.5): how its documents are selected.
+# `make corpus-build` applies this selection once and writes the versioned manifest
+# (data/corpus/arxiv-fresh/manifest.json); `make corpus-download` fetches what the manifest
+# lists. The documents themselves stay in the local cache, never in the repository.
+
+name = "arxiv-fresh"
+
+# Freshness. A document is kept only if its FIRST version was submitted on or after the
+# floor, and the floor is after the day each model below is known to have been available:
+# a model cannot have been trained on a text published after it was released. A dated
+# property: add a model here when the testbench starts using it; if it is newer than the
+# floor, loading this file fails, and the corpus has to be rebuilt with a later floor.
+freshness_floor = 2026-10-20
+harvest_until = 2026-11-04
+
+# Selection. Two criteria and two only: fresh (above) and hard to parse. Difficulty is
+# counted on the reference text: difficulty = tables + footnotes + displayed formulas.
+# The topic is not a criterion; the categories only bound the harvest.
+# Thresholds set on the first 24 candidates examined (2026-11-05): tables are everywhere
+# (median 7), footnotes are rare (3 papers in 24 have any), so a footnote is counted in the
+# difficulty but not required. About 15 candidates in 24 pass.
+set_spec = "cs"
+categories = ["cs.CL", "cs.IR", "cs.LG", "cs.AI", "cs.CV", "cs.SE", "cs.CR", "cs.DB"]
+license = "http://creativecommons.org/licenses/by/4.0/"
+size = 200
+min_difficulty = 12
+min_tables = 3
+min_footnotes = 0
+min_characters = 20000
+max_characters = 120000
+
+[models."claude-sonnet-5-5"]
+available_by = 2026-10-19
+evidence = "docs/decisions.md, 2026-10-19: default generator, notebooks 1 and 2 re-executed with it"
+
+[models."gpt-5.6-luna"]
+available_by = 2026-09-03
+evidence = "config/llm_pricing.toml: OpenAI pricing page recorded on 2026-09-03"
+
+[models."gpt-5.6-terra"]
+available_by = 2026-09-03
+evidence = "config/llm_pricing.toml: OpenAI pricing page recorded on 2026-09-03"
+
+# The golden set (phase 2.6): drafts written by a model from the reference text of a few
+# documents, then reviewed one by one by a person (make golden-review). The drafter is not
+# the generator under test. documents x per_document drafts, the kinds asked in rotation:
+# 30 x 3 = 90 drafts, 15 of each kind, for 50 to 80 questions after review.
+# The drafter reads the first max_characters of a paper; for each draft it marks
+# "unanswerable", a cheaper model (checker) rereads the whole paper and quotes the passage if
+# the answer is there after all.
+[golden]
+drafter = "openai/gpt-5.6-terra"
+checker = "openai/gpt-5.6-luna"
+documents = 30
+per_document = 3
+seed = 0
+max_characters = 24000

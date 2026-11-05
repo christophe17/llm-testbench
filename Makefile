@@ -103,6 +103,33 @@ JUDGE ?= openai/gpt-5.6-luna
 eval-bias: ## Bias probes of one judge (JUDGE): does its verdict move when only the form of the answer does — paid, under the spend cap
 	uv run python -m llm_testbench.eval.cli bias --judge $(JUDGE)
 
+# The in-house corpus (phase 2.5): fresh arXiv papers under CC BY 4.0, selected by
+# config/corpus.toml. The manifest is versioned, the documents stay in data/cache/.
+corpus-build: ## Selects the in-house corpus and writes its manifest (run once; ~20 min, arXiv allows one request every 3 s)
+	uv run python -m llm_testbench.eval.corpus.cli build
+
+corpus-download: ## Downloads the documents the versioned manifest lists into data/cache/ and checks their hashes (~20 min)
+	uv run python -m llm_testbench.eval.corpus.cli download
+
+corpus-verify: ## Checks the downloaded corpus against its manifest, prints its summary
+	uv run python -m llm_testbench.eval.corpus.cli verify
+
+# The in-house golden set (phase 2.6): drafted by a model, decided by a person.
+golden-draft: ## A model drafts the golden questions from the corpus (resumable; DRAFT_FLAGS="--limit 3" to price it first) — paid, under the spend cap
+	uv run python -m llm_testbench.eval.golden.cli draft $(DRAFT_FLAGS)
+
+golden-probe: ## Two checks of the drafts: asked without any document (guessable?), and the unanswerable ones reread against the whole paper — paid, under the spend cap
+	uv run python -m llm_testbench.eval.golden.cli probe
+
+golden-review: ## Reviews the drafts one by one in the terminal (resumable): accept, edit, reject
+	uv run python -m llm_testbench.eval.golden.cli review $(REVIEW_FLAGS)
+
+golden-freeze: ## Writes the reviewed set and its changelog: make golden-freeze VERSION=v1 SUMMARY="first review"
+	uv run python -m llm_testbench.eval.golden.cli freeze --version $(VERSION) --summary "$(SUMMARY)"
+
+golden-status: ## Where the golden set stands: drafts, reviews, frozen questions
+	uv run python -m llm_testbench.eval.golden.cli status
+
 # ---------------------------------------------------------------- local cluster
 
 k3d-up: ## Creates the k3d cluster and deploys Postgres/pgvector
@@ -207,4 +234,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (run only once, AWS account re
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update eval-calibration-set eval-annotate eval-calibrate eval-bias k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update corpus-build corpus-download corpus-verify golden-draft golden-probe golden-review golden-freeze golden-status eval-calibration-set eval-annotate eval-calibrate eval-bias k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply
