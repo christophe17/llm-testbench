@@ -125,3 +125,46 @@ async def test_search_returns_nearest_chunks_with_cosine_scores_and_filters(
     first = EmbeddingInput.from_chunk(docs["a"][0], chunker.chunk(docs["a"][0])[0])
     with pytest.raises(ValueError, match="dimension 2"):
         await store.add_embeddings(spec, [(first, [1.0, 0.0])])
+
+
+async def test_search_documents_ranks_each_document_once_by_its_best_chunk(
+    store: PgVectorStore, spec: IndexSpec, source_key: str
+) -> None:
+    chunker = RecursiveChunker(chunk_size=40, chunk_overlap=0)
+    # "long" is cut in several chunks; one of them is the nearest to the query, another
+    # the farthest. "short" has a single chunk, in between.
+    long = parse_text("long", "First sentence of the document. Second sentence, a little longer.")
+    short = parse_text("short", "One chunk only.")
+    long_chunks, short_chunks = chunker.chunk(long), chunker.chunk(short)
+    assert len(long_chunks) >= 2
+    await store.upsert_document(source_key, long, long_chunks)
+    await store.upsert_document(source_key, short, short_chunks)
+    vectors = [[1.0, 0.0, 0.0], [0.0, 0.0, 1.0], [0.0, 0.0, 1.0]][: len(long_chunks)]
+    await store.add_embeddings(
+        spec,
+        [
+            (EmbeddingInput.from_chunk(long, chunk), vector)
+            for chunk, vector in zip(long_chunks, vectors, strict=True)
+        ],
+    )
+    await store.add_embeddings(
+        spec, [(EmbeddingInput.from_chunk(short, short_chunks[0]), [0.7, 0.7, 0.0])]
+    )
+
+    for mode in ({"exact": True}, {"exact": False}, {"exact": False, "ef_search": 100}):
+        hits = await store.search_documents(spec, [1.0, 0.0, 0.0], k=5, **mode)
+        assert [hit.doc_id for hit in hits] == ["long", "short"]
+        assert hits[0].score == pytest.approx(1.0, abs=1e-6)  # the best chunk, not the mean
+        assert hits[0].chunks == len(long_chunks)
+        assert hits[1].score == pytest.approx(0.7071, abs=1e-3)
+
+    # A chunk-level search returns "long" once per chunk; the document-level one never does.
+    chunk_level = [hit.chunk.doc_id for hit in await store.search(spec, [1.0, 0.0, 0.0], k=5)]
+    assert chunk_level.count("long") == len(long_chunks)
+    assert [hit.doc_id for hit in await store.search_documents(spec, [1.0, 0.0, 0.0], k=1)] == [
+        "long"
+    ]
+    # Fewer candidates than chunks: only the documents of the nearest chunks are ranked.
+    nearest = await store.search_documents(spec, [1.0, 0.0, 0.0], k=5, candidates=1)
+    assert [hit.doc_id for hit in nearest] == ["long"]
+    assert nearest[0].chunks == 1

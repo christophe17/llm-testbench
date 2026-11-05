@@ -8,6 +8,9 @@ from llm_testbench.llm.providers.openai_compatible import (
     OpenAICompatibleProvider,
     OpenAIEmbeddingProvider,
 )
+from llm_testbench.llm.providers.sentence_transformers import (
+    SentenceTransformerEmbeddingProvider,
+)
 from llm_testbench.llm.registry import BackendConfig, BackendKind
 
 
@@ -19,12 +22,18 @@ def build_provider(backend: str, config: BackendConfig) -> LLMProvider:
     """
     if config.kind in (BackendKind.ANTHROPIC, BackendKind.ANTHROPIC_BEDROCK):
         return AnthropicProvider.from_config(backend, config)
+    if config.kind is BackendKind.SENTENCE_TRANSFORMERS:
+        raise InvalidRequestError(
+            f"backend {backend!r} ({config.kind.value}) only provides embeddings", backend=backend
+        )
     return OpenAICompatibleProvider.from_config(backend, config)
 
 
 def build_embedding_provider(backend: str, config: BackendConfig) -> EmbeddingProvider:
-    """Anthropic has no embeddings endpoint: only OpenAI-compatible backends
-    (and, later, local models) provide them."""
+    """Anthropic has no embeddings endpoint: only OpenAI-compatible backends and
+    in-process models provide them."""
+    if config.kind is BackendKind.SENTENCE_TRANSFORMERS:
+        return SentenceTransformerEmbeddingProvider.from_config(backend, config)
     if config.kind is not BackendKind.OPENAI_COMPATIBLE:
         raise InvalidRequestError(
             f"backend {backend!r} ({config.kind.value}) does not provide embeddings",
@@ -37,6 +46,7 @@ __all__ = [
     "AnthropicProvider",
     "OpenAICompatibleProvider",
     "OpenAIEmbeddingProvider",
+    "SentenceTransformerEmbeddingProvider",
     "build_embedding_provider",
     "build_provider",
 ]

@@ -1,0 +1,20 @@
+{
+  "task": "SciFact",
+  "metric": "ndcg_at_10",
+  "generated_at": "2026-11-05T14:38:41.716590Z",
+  "sampled": false,
+  "scores": [
+    {
+      "model": "openai/text-embedding-3-small",
+      "ndcg_at_10": 0.73131,
+      "recall_at_10": 0.85422,
+      "map_at_10": 0.6867,
+      "dimensions": null,
+      "elapsed_s": 54.927589166909456,
+      "cost_usd": 0.033275640000000016,
+      "published_ndcg_at_10": null,
+      "published_source": "OpenAI does not publish per-task scores",
+      "backend": "openai"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ def loader(offline_settings: Settings) -> BeirLoader:
 
 def test_unknown_beir_dataset_rejected() -> None:
     with pytest.raises(ValueError, match="not wired"):
-        BeirLoader("nfcorpus")
+        BeirLoader("trec-covid")
 
 
 def test_full_test_split(loader: BeirLoader) -> None:

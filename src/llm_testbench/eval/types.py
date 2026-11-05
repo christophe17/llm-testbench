@@ -17,6 +17,8 @@ to the papers):
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from llm_testbench.ingest.parsing import ParsedDocument, parse_sections
+
 # query_id -> (doc_id -> relevance level). Levels are integers >= 0;
 # most BEIR datasets are binary (1), some are graded (NFCorpus: 0-2).
 Qrels = dict[str, dict[str, int]]
@@ -115,6 +117,23 @@ class RetrievalDataset(BaseModel):
             cached = {d.doc_id: d for d in self.documents}
             object.__setattr__(self, "_doc_index", cached)
         return cached
+
+    def parsed_documents(self) -> list[ParsedDocument]:
+        """The corpus as the ingestion pipeline takes it: each entry a one-section
+        document, its title kept apart (the pipeline embeds ``title + " " + text``, the
+        BEIR convention)."""
+        location = self.info.source.split(" ")[0]
+        name = self.info.key.rpartition("/")[2]
+        return [
+            parse_sections(
+                document.doc_id,
+                [("", document.text)],
+                title=document.title,
+                source_uri=f"{location}/{document.doc_id}",
+                metadata={"dataset": name},
+            )
+            for document in self.documents
+        ]
 
     def describe(self) -> dict[str, int | str | bool]:
         """Compact summary — what the notebook displays, what the harness will log."""

@@ -591,3 +591,79 @@ no API model, no e5 run.
 **Incidents**: ruff format turns a config line whose trailing comment passes 100 columns into a
 parenthesized three-line assignment, which breaks the "edit one flag" contract of the config
 cell — keep config comments short. In zsh, `status` is read-only: `rc=$?`.
+
+## 2026-11-05 — Phase 2 opened: the retrieval harness reproduces three published scores
+
+**Trigger**: `GO PHASE 2`. Plan and consistency audit accepted the same day; the audit's
+corrections are in `docs/roadmap/phase-2.md` (what each dataset is for, the two kinds of
+arms, the naive extractor for the in-house corpus, "temporal" questions on a static corpus,
+what the sample-mode gate guards and what it does not).
+
+**Done, step 1 — retrieval harness** (ADR 011): retrieval metrics as pure functions with
+`trec_eval`'s conventions (`eval/metrics/retrieval.py`), bootstrap intervals and paired
+comparison (`eval/stats.py`), a `Retriever` contract answering at the document level with two
+arms (`retrieval/bm25.py` on `bm25s`, `retrieval/dense.py` on pgvector, chunks folded into
+documents by their best chunk, exact or HNSW), open embedding models in process behind the
+embedding contract (backend `hf`, `EmbeddingRequest.input_type`), NFCorpus and FiQA wired,
+the runner and its record (`eval/runner.py`, `eval/runs.py`), suites declared in
+`config/eval_suites.toml` whose arms build the index they read, run history in Postgres
+(`eval_runs`, `eval_query_results`), the CLI (`make eval`).
+
+**Done, step 2 — industrialization**: `make eval-gate` (sample mode forced, about three
+seconds, baseline `data/results/gate/baseline.json`) as a `pre-push` hook and a CI step;
+`make eval-compare` (two archived arms, query by query); `make eval` says how each arm
+differs from the archived run it replaces; `make eval-report` builds a self-contained HTML
+report (interval plot, tables, paired comparisons) under `build/eval/`.
+
+**Measured** (SciFact test, 300 queries, nDCG@10 with 95% bootstrap interval; full runs
+archived under `data/results/runs/retrieval-baseline/`):
+
+| Arm | nDCG@10 | Interval | Recall@100 | Reference | Gap |
+|---|---|---|---|---|---|
+| BM25 (`bm25s`) | 0.6863 | 0.643 – 0.729 | 0.913 | 0.6863 through `mteb` | 0.000 |
+| bge-base-en-v1.5, whole documents, exact | 0.7404 | 0.700 – 0.780 | 0.967 | 0.7404 model card | 0.000 |
+| text-embedding-3-small, whole documents, exact | 0.7318 | 0.689 – 0.773 | 0.973 | 0.7313 through `mteb` | +0.001 |
+| text-embedding-3-small, chunks 1000/200, exact | 0.7346 | 0.692 – 0.775 | 0.963 | — | — |
+| **phase 1 as built**: same index, HNSW defaults | 0.7304 | 0.687 – 0.771 | 0.912 | — | — |
+| same index, HNSW `ef_search = 400` | 0.7346 | 0.692 – 0.775 | 0.963 | — | — |
+
+NFCorpus (graded judgments, the check of the linear gain): BM25 0.321 against 0.325 for the
+BEIR paper's Anserini, bge-base-en-v1.5 0.3744 against 0.3739 on its model card. Paired
+comparisons, same 300 queries: the phase 1 system against BM25
++0.044 [+0.009, +0.079], significant; chunks against whole documents +0.003 [-0.008, +0.014],
+not significant; bge-base against text-embedding-3-small +0.009 [-0.015, +0.033], not
+significant; HNSW defaults against exact search -0.004 on nDCG@10, not significant, but
+**-0.052 [-0.078, -0.028] on recall@100, significant**. Cost: $0.033 to embed SciFact whole
+(1.66 M tokens), $0.038 in chunks (10,460 chunks), $0.0001 for the 300 queries of an arm.
+The pending re-ingestion of `STATE.md` is done by the suite: the index the API serves
+(`scifact-recursive-oai-small`) was rebuilt with titles.
+
+**Incidents / surprises**:
+- **The interval is wider than the differences people quote.** On 300 queries nDCG@10 is
+  known to ±0.04. The 0.021 between the two BM25 implementations, the 0.009 between bge-base
+  and the OpenAI model, are inside it. Only the paired comparison separates dense from BM25.
+- **pgvector's HNSW returns at most `hnsw.ef_search` rows (40 by default), whatever the
+  `LIMIT`.** Asking for 400 chunks returned 40, without an error: 18 to 35 documents once
+  folded. nDCG@10 barely moves; recall@100, what a re-ranker is fed, loses five points. Found
+  by measuring exact search next to the index, which is why both arms stay in the suite.
+- **A run on fixtures called itself publishable.** The fixtures hold three queries, fewer
+  than the sample size of five, so the loader did not flag the dataset as truncated and the
+  BM25 arm of a test would have been archived as a number. The run now carries its own
+  `sample_mode` flag, set whenever fixtures or simulated embeddings are in play.
+- **Thirteen notebook links went stale.** Adding lines to `beir.py`, `types.py`,
+  `chunking.py` and `store.py` moved the definitions the notebooks link to;
+  `tests/test_notebook_source_links.py` named each one with the anchor to write.
+- **Checking an up-to-date index took 40 seconds** for 5,183 documents: two round trips per
+  document. The pipeline now reads the state of the source and of the index in two queries.
+- `bm25s` fills a ranking with zero-score documents when fewer than `k` share a word with
+  the query; the retriever drops them. No effect on the reproduced score.
+
+**Not done / deferred**: the latency columns of these archived runs were measured while the
+machine was running tests and another index build; they are re-measured on an idle machine
+before being quoted. The FiQA arms (57,638 documents) and the NFCorpus system arm were still
+running when this entry was written. Working-tree only: the anchors of notebooks 00, 02 and
+2b were rewritten in place; notebooks 00 and 02 carry another session's uncommitted work and
+are not part of this commit. No diagram yet for the harness: it comes with notebook 1.
+
+**Next**: step 3 — generation metrics, SQuAD 2.0 and HotpotQA loaders, the judge and its
+calibration, which needs Christophe's 50 hand labels.

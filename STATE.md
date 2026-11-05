@@ -5,6 +5,11 @@
 
 ## Current phase
 
+**Phase 2 — Evaluation: in progress** since `GO PHASE 2` (2026-11-05). Steps 1 (retrieval
+harness) and 2 (gate, comparison, HTML report) are built and measured; steps 3 (generation
+metrics, judge and calibration) and 4 (in-house corpus, contamination, golden set) remain,
+with the four notebooks. Detail below, decisions in ADR 011.
+
 **Phase 1 — Production skeleton: built** (2026-09-03), merged into `main` on
 2026-10-16 with PR #2 (PR #3). Since then, everything happens on `main`, with no branch or PR
 (ADR 008). What remains requires Christophe's actions (keys, AWS account), not code.
@@ -43,9 +48,37 @@ course; the testbench proves nothing until phase 1 is studied and run.
   (notebook 2b): BM25 through `mteb/baseline-bm25s` **0.686** (the paper's Anserini: 0.665;
   `data/results/bm25_scifact.json`); bge-base-en-v1.5 without its query instruction 0.738.
 - Tests: 162 offline, 6 on a database, 2 network; mypy strict; pre-commit hooks aligned.
-- **Pending re-ingestion**: since 2026-11-02 the pipeline embeds `title + " " + text`; the
-  SciFact index of 2026-10-26 holds title-less vectors and is recomputed in full at the next
-  `make ingest-scifact` (~$0.04).
+- **Re-ingestion done on 2026-11-05**: the index the API serves
+  (`scifact-recursive-oai-small`) was rebuilt by the evaluation suite with `title + " " +
+  text` (10,460 chunks, $0.038).
+
+## Done in phase 2 (2026-11-05, ADR 011)
+
+- **Retrieval harness**: metrics recall@k, precision@k, MRR@k, nDCG@k (`trec_eval`
+  conventions, cross-checked against `pytrec_eval`); bootstrap intervals and paired
+  comparison of two runs; `Retriever` contract at the document level, BM25 (`bm25s`) and
+  dense (pgvector, best chunk per document, exact or HNSW); open embedding models in
+  process (backend `hf`); NFCorpus and FiQA loaders; suites and arms in
+  `config/eval_suites.toml`, an arm building the index it reads; run record archived under
+  `data/results/runs/` and saved to Postgres (`eval_runs`, `eval_query_results`).
+- **Industrialization**: `make eval` (run, archive, difference with the previous archive,
+  report), `make eval-report` (HTML, `build/eval/`), `make eval-compare`, `make eval-gate`
+  in sample mode as a `pre-push` hook and a CI step, `make eval-gate-update`.
+- Ingestion reads the state of an index in two queries: an up-to-date index is verified in
+  seconds.
+
+## Remaining in phase 2
+
+1. **Step 3**: SQuAD 2.0 and HotpotQA loaders, generation metrics (groundedness, relevance,
+   citation accuracy, correct refusal and over-refusal), the judge with its rubrics, the
+   annotation CLI, calibration (Cohen's kappa) and the bias experiments, N runs.
+   **Christophe**: 50 examples to label by hand, about one hour, once the CLI exists.
+2. **Step 4**: in-house corpus (download script and manifest), naive text extractor,
+   contamination probes, golden set of 50 to 80 questions. **Christophe**: full review of
+   the generated questions, two to three hours.
+3. Notebooks 1 to 4, the diagram of the harness, the phase closing.
+4. Re-measure the latency columns of the archived runs on an idle machine; finish the FiQA
+   arms.
 
 ## Remaining in phase 1 (Christophe's actions)
 
@@ -79,12 +112,29 @@ course; the testbench proves nothing until phase 1 is studied and run.
 
 ## Current numbers
 
-First number of the testbench (mteb protocol, not our harness yet). Reference points:
-BM25 = 0.665 nDCG@10 on SciFact (BEIR paper); embeddings measured on 2026-09-03: bge-base-en-v1.5 0.740 (= published), all-MiniLM-L6-v2 0.645.
-BM25 measured locally on 2026-11-04 (`mteb/baseline-bm25s`, stemmed): 0.686 — the rerunnable lexical baseline.
+Through our harness since 2026-11-05 (SciFact test, 300 queries, nDCG@10 with its 95%
+bootstrap interval; `data/results/runs/retrieval-baseline/`, table in `JOURNAL.md`):
+
+- Reproductions: BM25 **0.686** (0.686 through `mteb`; the BEIR paper's Anserini: 0.665),
+  bge-base-en-v1.5 on whole documents with exact search **0.740** (model card: 0.740),
+  text-embedding-3-small **0.732** (0.731 through `mteb`). NFCorpus, graded judgments: BM25
+  0.321 (paper: 0.325), bge-base-en-v1.5 0.374 (model card: 0.374).
+- **Phase 1 system as built** (text-embedding-3-small, chunks 1000/200, HNSW defaults):
+  **0.730** [0.687, 0.771], recall@100 0.912; against BM25 +0.044 [+0.009, +0.079].
+- Same index searched exactly, or with `ef_search = 400`: 0.735, recall@100 0.963. The HNSW
+  default list of 40 candidates costs five points of recall@100 (significant) and nothing
+  measurable on nDCG@10.
+- On 300 queries an nDCG@10 is known to about ±0.04: bge-base against text-embedding-3-small
+  (+0.009) and chunks against whole documents (+0.003) are not significant differences.
+
+Earlier, through `mteb` (phase 1): all-MiniLM-L6-v2 0.645.
 
 ## Decisions awaiting a call
 
+- **Phase 2, proposed with the plan and applied at steps 3 and 4 unless overridden**
+  (`docs/decisions.md`, 2026-11-05): judge `openai/gpt-5.6-terra`; in-house corpus = arXiv
+  papers under CC BY 4.0 (alternatives: US Federal Register, SEC EDGAR filings); Ragas as
+  the third-party evaluator measured; about $35 for the full baseline, hard cap $60.
 - **AWS bootstrap to be applied by Christophe** following `docs/infra/00-bootstrap.md`
   (existing AWS account, eu-west-3 region, no budget and no state bucket to date — the
   `eks-foundations-terraform-chris` bucket belongs to another project, we do not touch it).

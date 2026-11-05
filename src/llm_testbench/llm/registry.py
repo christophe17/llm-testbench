@@ -25,6 +25,8 @@ class BackendKind(StrEnum):
     ANTHROPIC = "anthropic"
     OPENAI_COMPATIBLE = "openai_compatible"
     ANTHROPIC_BEDROCK = "anthropic_bedrock"
+    SENTENCE_TRANSFORMERS = "sentence_transformers"
+    """Embedding models run in process (``sentence-transformers``): no chat, no network."""
 
 
 class StructuredOutputMode(StrEnum):
@@ -32,6 +34,20 @@ class StructuredOutputMode(StrEnum):
     """The backend enforces a JSON schema itself (output guaranteed to match the schema)."""
     PROMPT = "prompt"
     """The schema is requested in the prompt, validation happens afterwards."""
+
+
+class EmbeddingModelConfig(BaseModel):
+    """What the registry knows about one embedding model of a backend."""
+
+    model_config = ConfigDict(frozen=True)
+
+    dimensions: int | None = None
+    """Native size of the vectors: the dimension of the index tables built with this model."""
+    revision: str | None = None
+    """Pinned revision of the weights (Hugging Face commit): a score that must be
+    reproduced cannot depend on what the repository's ``main`` points to that day."""
+    query_prompt: str = ""
+    """Instruction prepended to a query, never to a document (asymmetric models)."""
 
 
 class BackendConfig(BaseModel):
@@ -43,6 +59,7 @@ class BackendConfig(BaseModel):
     region: str | None = None
     enabled: bool = True
     structured_output: StructuredOutputMode = StructuredOutputMode.PROMPT
+    embedding_models: dict[str, EmbeddingModelConfig] = {}
     governance: BackendGovernance
 
     def api_key(self) -> str | None:
@@ -99,6 +116,13 @@ class Registry(BaseModel):
             raise UnknownBackendError(
                 f"unknown backend: {name!r} (known: {sorted(self.backends)})"
             ) from None
+
+    def embedding_dimensions(self, ref: ModelRef | str) -> int | None:
+        """Declared vector size of an embedding model, ``None`` when the registry does not
+        know it (the caller then has to state it)."""
+        model_ref = ModelRef.parse(ref) if isinstance(ref, str) else ref
+        declared = self.get(model_ref.backend).embedding_models.get(model_ref.model)
+        return declared.dimensions if declared is not None else None
 
     def resolve(self, ref: ModelRef | str) -> tuple[ModelRef, BackendConfig]:
         """Reference → (parsed reference, backend configuration), or a clear error."""

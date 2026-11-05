@@ -17,6 +17,11 @@ from llm_testbench.llm.budget import estimate_tokens
 
 DEFAULT_SEPARATORS: tuple[str, ...] = ("\n\n", "\n", ". ", " ", "")
 
+NO_SPLIT = 10_000_000
+"""A chunk size no section reaches: one chunk per section, so one per document on the
+single-section BEIR corpora. It is how ``mteb`` and the published scores see a corpus
+(the model's window then truncates the long ones)."""
+
 
 class Chunk(BaseModel):
     model_config = ConfigDict(frozen=True)

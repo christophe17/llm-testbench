@@ -5,7 +5,7 @@ is required and the policy applies. This is the point most often forgotten
 when "securing" a RAG by looking only at the generator.
 """
 
-from typing import Protocol, runtime_checkable
+from typing import Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -13,6 +13,8 @@ from llm_testbench.llm.governance import DataClass
 from llm_testbench.llm.types import ModelRef, Usage
 
 Vector = tuple[float, ...]
+
+InputType = Literal["document", "query"]
 
 
 class EmbeddingRequest(BaseModel):
@@ -23,6 +25,11 @@ class EmbeddingRequest(BaseModel):
     data_class: DataClass
     dimensions: int | None = Field(default=None, ge=1)
     """Truncation requested from the provider when it supports it (OpenAI v3); ignored otherwise."""
+    input_type: InputType = "document"
+    """Which side of a search the texts are on. Many retrieval models are asymmetric: the
+    question gets an instruction the passages do not (bge: "Represent this sentence for
+    searching relevant passages: "). A provider without that notion (OpenAI) ignores it;
+    one with it applies it. Forgetting it costs a fraction of a point, silently."""
 
 
 class EmbeddingResult(BaseModel):

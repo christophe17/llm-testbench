@@ -61,6 +61,31 @@ ingest-qasper: ## Indexes QASPER (validation) into pgvector
 bench-embeddings: ## Compares 3 embedding models on SciFact via mteb (bench group, OpenAI key) → data/results/
 	uv run --group bench python -m llm_testbench.eval.embeddings_bench --device mps
 
+# ---------------------------------------------------------------- evaluation
+
+SUITE ?= retrieval-baseline
+# make eval ARMS="scifact-bm25 scifact-bge-whole-exact" restricts the run to these arms.
+ARMS ?=
+
+eval: ## Runs the arms of an evaluation suite (SUITE, ARMS), archives them, rebuilds the HTML report — database, keys, bench group
+	uv run --group bench python -m llm_testbench.eval.cli run --suite $(SUITE) $(foreach arm,$(ARMS),--arm $(arm))
+	$(MAKE) eval-report SUITE=$(SUITE)
+
+eval-report: ## Rebuilds the HTML report of a suite from its archived runs, without running anything → build/eval/
+	uv run python -m llm_testbench.eval.cli report --suite $(SUITE)
+
+eval-compare: ## Two archived arms query by query: make eval-compare BASELINE=scifact-bm25 CANDIDATE=scifact-bge-whole-exact
+	uv run python -m llm_testbench.eval.cli compare --suite $(SUITE) --baseline $(BASELINE) --candidate $(CANDIDATE)
+
+# Sample mode, forced by the command: fixtures and a simulated embedder, no key, no cost.
+# Without a reachable database the dense arms are skipped and said so; CI passes
+# GATE_FLAGS=--require-db.
+eval-gate: ## Regression gate (pre-push hook, CI): fails when a sample-mode score drops below data/results/gate/baseline.json
+	uv run python -m llm_testbench.eval.cli gate $(GATE_FLAGS)
+
+eval-gate-update: ## Records the current sample-mode scores as the gate baseline (database required)
+	uv run python -m llm_testbench.eval.cli gate --update
+
 # ---------------------------------------------------------------- local cluster
 
 k3d-up: ## Creates the k3d cluster and deploys Postgres/pgvector
@@ -165,4 +190,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (run only once, AWS account re
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper bench-embeddings k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply

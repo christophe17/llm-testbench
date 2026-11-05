@@ -1,0 +1,42 @@
+{
+ "suite": "gate",
+ "generated_at": "2026-11-05T15:35:07.542392Z",
+ "git_sha": "57201fd",
+ "scores": {
+  "scifact-bm25": {
+   "ndcg_at_10": 0.5377157309218195,
+   "recall_at_10": 0.5,
+   "recall_at_100": 0.5,
+   "precision_at_10": 0.06666666666666667,
+   "mrr_at_10": 0.6666666666666666
+  },
+  "nfcorpus-bm25": {
+   "ndcg_at_10": 1.0,
+   "recall_at_10": 1.0,
+   "recall_at_100": 1.0,
+   "precision_at_10": 0.15000000000000002,
+   "mrr_at_10": 1.0
+  },
+  "scifact-dense-whole-exact": {
+   "ndcg_at_10": 0.5192595532115999,
+   "recall_at_10": 1.0,
+   "recall_at_100": 1.0,
+   "precision_at_10": 0.13333333333333333,
+   "mrr_at_10": 0.3333333333333333
+  },
+  "scifact-dense-chunks-hnsw": {
+   "ndcg_at_10": 0.5192595532115999,
+   "recall_at_10": 1.0,
+   "recall_at_100": 1.0,
+   "precision_at_10": 0.13333333333333333,
+   "mrr_at_10": 0.3333333333333333
+  },
+  "nfcorpus-dense-chunks-exact": {
+   "ndcg_at_10": 1.0,
+   "recall_at_10": 1.0,
+   "recall_at_100": 1.0,
+   "precision_at_10": 0.15000000000000002,
+   "mrr_at_10": 1.0
+  }
+ }
+}

@@ -21,6 +21,8 @@ dependencies = [
     "numpy>=2.5.2",
     "fastapi>=0.141.1",
     "uvicorn[standard]>=0.52.4",
+    "bm25s>=0.3.16",
+    "pystemmer>=3.1.0",
 ]
 
 [dependency-groups]
@@ -82,7 +84,7 @@ mypy_path = "src"
 packages = ["llm_testbench"]
 
 [[tool.mypy.overrides]]
-module = ["datasets.*", "mteb.*", "sentence_transformers.*"]
+module = ["datasets.*", "mteb.*", "sentence_transformers.*", "bm25s.*", "Stemmer.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

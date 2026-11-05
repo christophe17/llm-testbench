@@ -1,0 +1,181 @@
+# Evaluation suites of the harness (phase 2): what `make eval` runs.
+#
+# An arm = one system under measurement: a dataset, a retriever and, for a dense retriever,
+# the index it reads (chunking, embedding model, how the index is searched). The index is
+# built on demand by the ingestion pipeline; one that exists costs nothing.
+#
+#   retriever        "bm25" | "dense"
+#   embedding_model  backend/model (dense)
+#   chunk_size       characters; 0 = whole documents (default 1000, overlap 200: phase 1)
+#   search           "hnsw" (the approximate index, default) | "exact" (every vector compared)
+#   ef_search        pgvector's candidate list for hnsw (server default: 40; at most 1000)
+#   index_key + source_key   pin an existing index instead of deriving its name
+#
+# `references` are scores to compare ours with: published ones, or measured here with
+# another tool. Each carries its source. The first one is the gap shown in the report.
+
+[suites.retrieval-baseline]
+description = "Phase 2 baseline: the harness validated against published scores, then the phase 1 system as built."
+
+# --- SciFact: validate the harness ----------------------------------------------------
+
+[[suites.retrieval-baseline.arms]]
+name = "scifact-bm25"
+dataset = "beir/scifact"
+retriever = "bm25"
+references = [
+    { label = "mteb/baseline-bm25s", value = 0.6863, source = "our mteb run of 2026-11-04, data/results/bm25_scifact.json" },
+    { label = "BM25 Anserini", value = 0.665, source = "Thakur et al. 2021, BEIR, table 2" },
+]
+
+[[suites.retrieval-baseline.arms]]
+name = "scifact-bge-whole-exact"
+dataset = "beir/scifact"
+retriever = "dense"
+embedding_model = "hf/BAAI/bge-base-en-v1.5"
+chunk_size = 0
+search = "exact"
+references = [
+    { label = "model card (MTEB)", value = 0.7404, source = "HF model card of BAAI/bge-base-en-v1.5, read on 2026-11-05" },
+]
+
+[[suites.retrieval-baseline.arms]]
+name = "scifact-oai-whole-exact"
+dataset = "beir/scifact"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+chunk_size = 0
+search = "exact"
+references = [
+    { label = "our mteb run", value = 0.7313, source = "notebook 2 run of 2026-11-05, data/results/embeddings_scifact_api.json" },
+]
+
+# --- SciFact: the phase 1 system as built ---------------------------------------------
+
+[[suites.retrieval-baseline.arms]]
+name = "scifact-oai-chunks-exact"
+dataset = "beir/scifact"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+index_key = "scifact-recursive-oai-small"
+source_key = "docs:scifact"
+search = "exact"
+
+[[suites.retrieval-baseline.arms]]
+name = "scifact-oai-chunks-hnsw"
+dataset = "beir/scifact"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+index_key = "scifact-recursive-oai-small"
+source_key = "docs:scifact"
+search = "hnsw"
+
+[[suites.retrieval-baseline.arms]]
+name = "scifact-oai-chunks-hnsw-400"
+dataset = "beir/scifact"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+index_key = "scifact-recursive-oai-small"
+source_key = "docs:scifact"
+search = "hnsw"
+ef_search = 400
+
+# --- NFCorpus: graded judgments (0 to 2), the linear-gain check ------------------------
+
+[[suites.retrieval-baseline.arms]]
+name = "nfcorpus-bm25"
+dataset = "beir/nfcorpus"
+retriever = "bm25"
+references = [
+    { label = "BM25 Anserini", value = 0.325, source = "Thakur et al. 2021, BEIR, table 2" },
+]
+
+[[suites.retrieval-baseline.arms]]
+name = "nfcorpus-bge-whole-exact"
+dataset = "beir/nfcorpus"
+retriever = "dense"
+embedding_model = "hf/BAAI/bge-base-en-v1.5"
+chunk_size = 0
+search = "exact"
+references = [
+    { label = "model card (MTEB)", value = 0.3739, source = "HF model card of BAAI/bge-base-en-v1.5, read on 2026-11-05" },
+]
+
+[[suites.retrieval-baseline.arms]]
+name = "nfcorpus-oai-chunks-hnsw"
+dataset = "beir/nfcorpus"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+search = "hnsw"
+
+# --- FiQA: a corpus eleven times larger (57,638 documents) ----------------------------
+
+[[suites.retrieval-baseline.arms]]
+name = "fiqa-bm25"
+dataset = "beir/fiqa"
+retriever = "bm25"
+references = [
+    { label = "BM25 Anserini", value = 0.236, source = "Thakur et al. 2021, BEIR, table 2" },
+]
+
+[[suites.retrieval-baseline.arms]]
+name = "fiqa-bge-whole-exact"
+dataset = "beir/fiqa"
+retriever = "dense"
+embedding_model = "hf/BAAI/bge-base-en-v1.5"
+chunk_size = 0
+search = "exact"
+references = [
+    { label = "model card (MTEB)", value = 0.4065, source = "HF model card of BAAI/bge-base-en-v1.5, read on 2026-11-05" },
+]
+
+[[suites.retrieval-baseline.arms]]
+name = "fiqa-oai-chunks-hnsw"
+dataset = "beir/fiqa"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+search = "hnsw"
+
+# --- The regression gate ----------------------------------------------------------------
+# Sample mode only (`make eval-gate` forces it): fixtures and a simulated embedder, a few
+# seconds, no key. It guards the code paths (loaders, chunking, storage, both search modes,
+# metrics), not the quality of a model. Baseline: data/results/gate/baseline.json.
+
+[suites.gate]
+description = "Regression gate in sample mode: every code path of the harness on fixtures."
+
+[[suites.gate.arms]]
+name = "scifact-bm25"
+dataset = "beir/scifact"
+retriever = "bm25"
+
+[[suites.gate.arms]]
+name = "nfcorpus-bm25"
+dataset = "beir/nfcorpus"
+retriever = "bm25"
+
+[[suites.gate.arms]]
+name = "scifact-dense-whole-exact"
+dataset = "beir/scifact"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+chunk_size = 0
+search = "exact"
+
+[[suites.gate.arms]]
+name = "scifact-dense-chunks-hnsw"
+dataset = "beir/scifact"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+chunk_size = 120
+chunk_overlap = 30
+search = "hnsw"
+
+[[suites.gate.arms]]
+name = "nfcorpus-dense-chunks-exact"
+dataset = "beir/nfcorpus"
+retriever = "dense"
+embedding_model = "openai/text-embedding-3-small"
+chunk_size = 60
+chunk_overlap = 0
+search = "exact"

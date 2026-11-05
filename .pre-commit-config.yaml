@@ -1,3 +1,8 @@
+# `pre-commit install` installs both hook types; every hook runs at commit time unless it
+# says otherwise (the evaluation gate runs at push time).
+default_install_hook_types: [pre-commit, pre-push]
+default_stages: [pre-commit]
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
@@ -33,3 +38,13 @@ repos:
         language: system
         pass_filenames: false
         files: ^(src|tests)/.*\.py$
+      # Phase 2.7: we work on main without PRs (ADR 008), so nothing can block a merge.
+      # The block moves here: a push that lowers a sample-mode score is refused. Bypassed
+      # by --no-verify, in which case the same gate turns the CI red on main.
+      - id: eval-gate
+        name: evaluation gate (sample mode)
+        entry: make eval-gate
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]

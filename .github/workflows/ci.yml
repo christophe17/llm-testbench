@@ -48,6 +48,11 @@ jobs:
       - name: Tests (offline, database included)
         run: uv run python -m pytest -m "not network"
 
+      # The same gate as the pre-push hook, with the database arms mandatory: red here
+      # means the hook was bypassed (ADR 008).
+      - name: Evaluation gate (sample mode, offline)
+        run: uv run python -m llm_testbench.eval.cli gate --require-db
+
       - name: Notebooks (sample mode, offline)
         env:
           LLM_TESTBENCH_SAMPLE: "1"

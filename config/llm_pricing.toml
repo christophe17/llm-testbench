@@ -100,3 +100,14 @@ output_per_mtok = 0.0
 [models."text-embedding-3-large"]
 input_per_mtok = 0.13
 output_per_mtok = 0.0
+
+# Open models run in process (backend `hf`): nothing is billed per token. The machine's
+# time is not priced here; self-hosting against API is the calculation of phase 6.
+
+[models."bge-base-en-v1.5"]
+input_per_mtok = 0.0
+output_per_mtok = 0.0
+
+[models."all-MiniLM-L6-v2"]
+input_per_mtok = 0.0
+output_per_mtok = 0.0

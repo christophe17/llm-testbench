@@ -74,6 +74,18 @@ class SearchHit(BaseModel):
     ingested_at: dt.datetime
 
 
+class DocumentHit(BaseModel):
+    """A document as ranked by its best chunk."""
+
+    model_config = ConfigDict(frozen=True)
+
+    doc_id: str
+    score: float
+    """Cosine similarity of the best chunk of the document (1 - cosine distance)."""
+    chunks: int = Field(ge=1)
+    """How many chunks of this document were among the candidates."""
+
+
 class IndexMismatchError(ValueError):
     """An index already exists under this key with another definition."""
 
@@ -228,6 +240,17 @@ class PgVectorStore:
             ).fetchone()
         return None if row is None else str(row[0])
 
+    async def document_checksums(self, source_key: str) -> dict[str, str]:
+        """doc_id -> fingerprint for a whole source, in one query: what lets the pipeline
+        skip the unchanged documents without a round trip per document."""
+        async with self._pool.connection() as conn:
+            rows = await (
+                await conn.execute(
+                    "SELECT doc_id, checksum FROM documents WHERE source_key = %s", (source_key,)
+                )
+            ).fetchall()
+        return {str(doc_id): str(checksum) for doc_id, checksum in rows}
+
     async def upsert_document(
         self, source_key: str, document: ParsedDocument, chunks: Sequence[Chunk]
     ) -> bool:
@@ -346,6 +369,15 @@ class PgVectorStore:
         present = {str(chunk_id): str(checksum) for chunk_id, checksum in rows}
         return [item for item in inputs if present.get(item.chunk.chunk_id) != item.checksum]
 
+    async def embedding_checksums(self, spec: IndexSpec) -> dict[str, str]:
+        """chunk_id -> fingerprint of the text embedded, for a whole index, in one query."""
+        query = sql.SQL("SELECT chunk_id, checksum FROM {} WHERE source_key = %s").format(
+            sql.Identifier(spec.table)
+        )
+        async with self._pool.connection() as conn:
+            rows = await (await conn.execute(query, (spec.source_key,))).fetchall()
+        return {str(chunk_id): str(checksum) for chunk_id, checksum in rows}
+
     async def add_embeddings(
         self, spec: IndexSpec, rows: Sequence[tuple[EmbeddingInput, Sequence[float]]]
     ) -> None:
@@ -422,4 +454,63 @@ class PgVectorStore:
                 ingested_at=row["ingested_at"],
             )
             for row in rows
+        ]
+
+    async def search_documents(
+        self,
+        spec: IndexSpec,
+        vector: Sequence[float],
+        *,
+        k: int = 10,
+        exact: bool = False,
+        ef_search: int | None = None,
+        candidates: int | None = None,
+    ) -> list[DocumentHit]:
+        """The ``k`` best **documents**, each ranked by its best chunk ("MaxP").
+
+        The index stores chunks, the evaluation datasets judge documents: the nearest
+        chunks are folded back into documents, a document keeping the score of its best
+        chunk. Two ways to find the nearest chunks, and the harness measures both:
+
+        - ``exact=True``: the index is switched off for the query and every vector is
+          compared. Slow at scale, but it is the truth the index approximates, and what a
+          published score assumes;
+        - otherwise the HNSW index answers. It explores a bounded list of candidates
+          (``hnsw.ef_search``, 40 by default in pgvector) and **never returns more rows
+          than that list holds**, whatever the ``LIMIT``: asking for 100 chunks with the
+          default setting returns 40, without an error. ``ef_search`` raises the bound
+          (1,000 at most), at the price of latency.
+
+        ``candidates`` is the number of nearest chunks folded into documents (default
+        ``4 * k``; ignored when ``exact``, where every chunk is a candidate).
+        """
+        needle = np.asarray(vector, dtype=np.float32)
+        query = sql.SQL(
+            "SELECT doc_id, max(score) AS score, count(*) AS chunks FROM ("
+            " SELECT c.doc_id, 1 - (e.embedding <=> %(v)s) AS score"
+            " FROM {} e"
+            " JOIN chunks c ON c.source_key = e.source_key AND c.chunk_id = e.chunk_id"
+            " WHERE e.source_key = %(source)s"
+            " ORDER BY e.embedding <=> %(v)s LIMIT %(candidates)s"
+            ") nearest GROUP BY doc_id ORDER BY score DESC, doc_id LIMIT %(k)s"
+        ).format(sql.Identifier(spec.table))
+        params = {
+            "v": needle,
+            "source": spec.source_key,
+            "candidates": None if exact else (candidates or 4 * k),
+            "k": k,
+        }
+        # SET LOCAL lives and dies with the transaction: the pooled connection goes back
+        # to the pool with its default settings.
+        async with self._pool.connection() as conn, conn.transaction():
+            if exact:
+                await conn.execute("SET LOCAL enable_indexscan = off")
+            elif ef_search is not None:
+                await conn.execute(
+                    sql.SQL("SET LOCAL hnsw.ef_search = {}").format(sql.Literal(ef_search))
+                )
+            rows = await (await conn.execute(query, params)).fetchall()
+        return [
+            DocumentHit(doc_id=str(doc_id), score=float(score), chunks=int(chunks))
+            for doc_id, score, chunks in rows
         ]

@@ -36,6 +36,7 @@ class DocumentSource:
                 texts=(query.text,),
                 data_class=query.data_class,
                 dimensions=self.spec.dimensions,
+                input_type="query",
             )
         )
         hits = await self._store.search(

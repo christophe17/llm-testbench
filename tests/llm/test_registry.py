@@ -16,7 +16,7 @@ def registry() -> Registry:
 
 
 def test_real_config_declares_the_six_backend_roles(registry: Registry) -> None:
-    assert set(registry.backends) == {"anthropic", "openai", "openrouter", "bedrock", "local"}
+    assert set(registry.backends) == {"anthropic", "openai", "openrouter", "bedrock", "local", "hf"}
     assert registry.get("anthropic").kind is BackendKind.ANTHROPIC
     assert registry.get("openrouter").kind is BackendKind.OPENAI_COMPATIBLE
     assert registry.get("openrouter").structured_output is StructuredOutputMode.PROMPT

@@ -37,6 +37,12 @@ api_key_env = "OPENAI_API_KEY"
 base_url = "https://api.openai.com/v1"
 structured_output = "native"
 
+[backends.openai.embedding_models."text-embedding-3-small"]
+dimensions = 1536
+
+[backends.openai.embedding_models."text-embedding-3-large"]
+dimensions = 3072
+
 [backends.openai.governance]
 entity = "OpenAI, L.L.C."
 country = "US"
@@ -101,3 +107,30 @@ trains_on_inputs = false
 subprocessors = "fixed"
 verified_on = 2026-09-03
 notes = "Ollama in phase 1 (dev), vLLM in phase 6. The text does not leave the machine."
+
+# Open embedding models run in process with sentence-transformers (uv `bench` group): the
+# harness reproduces their published scores with our own pipeline (phase 2.2). Embeddings
+# only. Revision and query prompt are those `mteb` uses for the same model, read in its
+# model table (mteb 2.20.5) on 2026-11-05.
+[backends.hf]
+kind = "sentence_transformers"
+
+[backends.hf.embedding_models."BAAI/bge-base-en-v1.5"]
+dimensions = 768
+revision = "a5beb1e3e68b9ab74eb54cfd186867f64f240e1a"
+query_prompt = "Represent this sentence for searching relevant passages: "
+
+[backends.hf.embedding_models."sentence-transformers/all-MiniLM-L6-v2"]
+dimensions = 384
+
+[backends.hf.governance]
+entity = "self"
+country = "self"
+inference_region = "self"
+default_retention_days = 0
+zero_retention = true
+zero_retention_available = true
+trains_on_inputs = false
+subprocessors = "fixed"
+verified_on = 2026-11-05
+notes = "Weights downloaded once from Hugging Face, then inference in the Python process. The text does not leave the machine."

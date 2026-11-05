@@ -1,4 +1,4 @@
-"""BEIR loader — reference dataset of phase 0: SciFact.
+"""BEIR loader — SciFact (reference dataset of phase 0), NFCorpus, FiQA.
 
 Specifics of the BEIR distribution on Hugging Face (verified on 2026-08-26):
 
@@ -25,7 +25,9 @@ from llm_testbench.config import Settings, get_settings
 from llm_testbench.eval.loaders.base import RetrievalLoader
 from llm_testbench.eval.types import DatasetInfo, Document, Qrels, Query, RetrievalDataset
 
-# Only dataset wired in phase 0. Adding one = an entry here + its fixtures + its tests.
+# SciFact since phase 0; NFCorpus and FiQA with the phase 2 harness: graded judgments
+# (0 to 2) for the first, a corpus ten times larger for the second.
+# Adding one = an entry here + its fixtures + its tests.
 BEIR_DATASETS: dict[str, DatasetInfo] = {
     "scifact": DatasetInfo(
         key="beir/scifact",
@@ -33,6 +35,20 @@ BEIR_DATASETS: dict[str, DatasetInfo] = {
         homepage="https://github.com/allenai/scifact",
         license="cc-by-sa-4.0 (claim of the BEIR packaging, see ADR 001)",
         source="hf:BeIR/scifact + hf:BeIR/scifact-qrels",
+    ),
+    "nfcorpus": DatasetInfo(
+        key="beir/nfcorpus",
+        name="NFCorpus (BEIR)",
+        homepage="https://www.cl.uni-heidelberg.de/statnlpgroup/nfcorpus/",
+        license="cc-by-sa-4.0 (claim of the BEIR packaging, see ADR 001)",
+        source="hf:BeIR/nfcorpus + hf:BeIR/nfcorpus-qrels",
+    ),
+    "fiqa": DatasetInfo(
+        key="beir/fiqa",
+        name="FiQA-2018 (BEIR)",
+        homepage="https://sites.google.com/view/fiqa/",
+        license="cc-by-sa-4.0 (claim of the BEIR packaging, see ADR 001)",
+        source="hf:BeIR/fiqa + hf:BeIR/fiqa-qrels",
     ),
 }
 
