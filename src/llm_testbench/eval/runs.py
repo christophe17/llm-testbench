@@ -12,6 +12,7 @@ A run on a truncated dataset, on fixtures or on simulated embeddings says so
 """
 
 import datetime as dt
+import json
 import subprocess
 from collections.abc import Sequence
 from pathlib import Path
@@ -172,7 +173,17 @@ def save_run(run: RetrievalRun, results_dir: Path) -> Path:
         raise ValueError(f"run {run.run_id} is not publishable (sample mode): not archived")
     path = results_dir / "runs" / run.suite / f"{run.arm}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(run.model_dump_json(indent=1) + "\n", encoding="utf-8")
+    # The summary indented, then one line per query: a rerun shows in `git diff` as the
+    # numbers that moved and the queries that changed, not as six thousand lines.
+    record = run.model_dump(mode="json")
+    queries = record.pop("queries")
+    summary = json.dumps(record, indent=1, ensure_ascii=False)
+    lines = ",\n".join(
+        "  " + json.dumps(query, ensure_ascii=False, separators=(",", ":")) for query in queries
+    )
+    path.write_text(
+        summary.removesuffix("\n}") + f',\n "queries": [\n{lines}\n ]\n}}\n', encoding="utf-8"
+    )
     return path
 
 

@@ -667,3 +667,52 @@ are not part of this commit. No diagram yet for the harness: it comes with noteb
 
 **Next**: step 3 — generation metrics, SQuAD 2.0 and HotpotQA loaders, the judge and its
 calibration, which needs Christophe's 50 hand labels.
+
+## 2026-11-05 — A commit deleted the local database: pre-commit, unstaged changes, a running Tilt
+
+**Trigger**: seconds after the commit of the retrieval harness, the background run of the
+suite died on `server closed the connection unexpectedly`. `kubectl get ns` no longer listed
+`llm-testbench`.
+
+**Found**: `git commit` and `git push` both run pre-commit, and pre-commit stashes every
+unstaged change before the hooks and restores it after. The working tree held another
+session's uncommitted `Tiltfile`, which moves the namespace object into the `postgres`
+resource, and `tilt up` had been running since the day before. Tilt saw its Tiltfile go back
+to the committed version and return, twice (commit, then push), and deleted the namespace on
+the way: the Postgres pod and its volume, every index, the run history, the API pods. The
+commit itself had been built to leave the working tree alone (index written with
+`git update-index`); the hooks were the part that did not.
+
+**Lost**: the three SciFact indexes and the NFCorpus index built that afternoon (about $0.10
+of embeddings), the `eval_runs` history of the day, and the QASPER index of notebook 2
+(`qasper-nb2-oai-small`; notebook 2 rebuilds it at its next run, under one cent). **Not
+lost**: every number. The archived runs under `data/results/runs/` were already committed,
+which is what decision 6 of ADR 011 is for; it took four hours to be needed.
+
+**Done**: `tilt trigger postgres`, then `api-secrets` and `api`: the namespace, the database
+and the API are back (the API stays not ready until its index exists, as designed). The
+whole suite was rerun, which rebuilt the indexes and re-measured the latencies on a machine
+doing nothing else. Archived runs now hold one line per query, so that a rerun shows in
+`git diff` as what moved.
+
+**Rule from now on**: with unstaged changes in the working tree, a commit is built, checked,
+committed and pushed from a clean worktree, whose hooks have nothing to stash; the main
+working tree only sees its branch move.
+
+**Left open, for whoever owns the Tilt work**: with that Tiltfile change, anyone who checks
+out the commit that carries it while `tilt up` runs on the previous version gets the same
+teardown. A namespace that holds the only copy of the local data should not be an object a
+Tiltfile edit can delete.
+
+**Re-measured after the rebuild** (same day, machine idle, one query at a time from the
+laptop). Reproductions unchanged to the fourth decimal on exact search (BM25 0.6863, bge-base
+0.7404; text-embedding-3-small 0.7323 where the first build gave 0.7318: the API does not
+return bit-identical vectors twice). **The same HNSW index built twice does not score the
+same**: the phase 1 system as built went from 0.7304 to 0.7269 nDCG@10 (recall@100 0.912 to
+0.908), while exact search on the same vectors stayed at 0.7346. As built, against BM25:
++0.041 [+0.004, +0.076], still significant; against exact search: -0.055 [-0.082, -0.030] on
+recall@100. NFCorpus: bge-base against BM25 +0.053 [+0.034, +0.073]. Latency, p50: BM25
+0.2 ms; the dense arms on the OpenAI model 230 to 340 ms, of which about 220 ms is the API
+call that embeds the question; the search itself 34 ms with HNSW defaults, 95 ms with
+`ef_search = 400`, 138 ms exact, on 10,460 chunks; bge-base in process 20 ms to embed and
+42 ms of exact search. Verifying an index that is up to date: 0 to 2 seconds.

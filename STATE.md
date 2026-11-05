@@ -77,8 +77,12 @@ course; the testbench proves nothing until phase 1 is studied and run.
    contamination probes, golden set of 50 to 80 questions. **Christophe**: full review of
    the generated questions, two to three hours.
 3. Notebooks 1 to 4, the diagram of the harness, the phase closing.
-4. Re-measure the latency columns of the archived runs on an idle machine; finish the FiQA
-   arms.
+4. Finish the FiQA arms (57,638 documents; running on 2026-11-05).
+
+**Local database recreated on 2026-11-05** (`JOURNAL.md`: a commit made Tilt delete the
+namespace). The suite rebuilt its indexes; the QASPER index of notebook 2
+(`qasper-nb2-oai-small`) is rebuilt by notebook 2 at its next full run; the `eval_runs`
+history restarts from the rerun. Commits are now made from a clean worktree.
 
 ## Remaining in phase 1 (Christophe's actions)
 
@@ -120,12 +124,15 @@ bootstrap interval; `data/results/runs/retrieval-baseline/`, table in `JOURNAL.m
   text-embedding-3-small **0.732** (0.731 through `mteb`). NFCorpus, graded judgments: BM25
   0.321 (paper: 0.325), bge-base-en-v1.5 0.374 (model card: 0.374).
 - **Phase 1 system as built** (text-embedding-3-small, chunks 1000/200, HNSW defaults):
-  **0.730** [0.687, 0.771], recall@100 0.912; against BM25 +0.044 [+0.009, +0.079].
+  **0.727** [0.684, 0.767], recall@100 0.908; against BM25 +0.041 [+0.004, +0.076].
 - Same index searched exactly, or with `ef_search = 400`: 0.735, recall@100 0.963. The HNSW
-  default list of 40 candidates costs five points of recall@100 (significant) and nothing
-  measurable on nDCG@10.
+  default list of 40 candidates costs 5.5 points of recall@100 (significant) and nothing
+  significant on nDCG@10. Two builds of the same HNSW index scored 0.730 and 0.727.
 - On 300 queries an nDCG@10 is known to about ±0.04: bge-base against text-embedding-3-small
-  (+0.009) and chunks against whole documents (+0.003) are not significant differences.
+  (+0.008) and chunks against whole documents (+0.002) are not significant differences.
+- Latency, p50, one query at a time from the laptop: BM25 0.2 ms; dense on the OpenAI model
+  230 ms, of which 220 ms is the API call embedding the question and 34 ms the HNSW search
+  (95 ms with `ef_search = 400`, 138 ms exact); bge-base in process 20 ms + 42 ms exact.
 
 Earlier, through `mteb` (phase 1): all-MiniLM-L6-v2 0.645.
 

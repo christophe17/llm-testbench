@@ -114,6 +114,9 @@ async def test_a_full_run_is_archived_and_a_sample_run_is_not(
     path = save_run(run, tmp_path)
     assert path == tmp_path / "runs" / "unit" / "scripted.json"
     assert load_run(path) == run
+    # One line per query, after the indented summary.
+    text = path.read_text(encoding="utf-8")
+    assert text.count('\n  {"query_id"') == len(run.queries)
 
     sampled = BeirLoader("scifact", settings=offline_settings).load("test", max_queries=2)
     sample_run = await run_retrieval(sampled, retriever, suite="unit", arm="s", resamples=50)
