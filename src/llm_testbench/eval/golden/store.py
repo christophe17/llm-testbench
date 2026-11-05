@@ -93,8 +93,8 @@ def freeze(
         f"{summary}\n\n"
         f"- {len(questions)} questions: {by_category}.\n"
         f"- Against the previous version: {added} added, {removed} removed, {changed} changed.\n"
-        f"- {sum(1 for question in questions if question.edited)} rewritten by the reviewer; "
-        f"{len(reviews) - len(questions)} drafts rejected.\n"
+        f"- Rewritten by the reviewer: {sum(1 for question in questions if question.edited)}; "
+        f"drafts rejected: {len(reviews) - len(questions)}.\n"
     )
     changelog = directory / CHANGELOG
     header = "# Changelog of the in-house golden set\n\nNewest first.\n\n"

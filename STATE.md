@@ -12,8 +12,9 @@ end to end on HotpotQA and QASPER, closed book on three datasets, and **the cali
 waits for Christophe's 50 labels** (`make eval-annotate`). Step 4 is built up to the
 review: the in-house corpus is selected and downloaded, 83 golden questions are drafted
 and checked, and **the golden set waits for Christophe's review** (`make golden-review`).
-Notebooks 2 to 4 remain. Budget: hard cap $10, $4.81 spent (`data/results/spend.jsonl`).
-Decisions in ADR 011 to ADR 014.
+The four notebooks of the phase exist and run in CI; two of them have an empty place for
+the numbers those two tasks will produce. Budget: hard cap $10, $4.81 spent
+(`data/results/spend.jsonl`). Decisions in ADR 011 to ADR 014.
 
 **Phase 1 — Production skeleton: built** (2026-09-03), merged into `main` on
 2026-10-16 with PR #2 (PR #3). Since then, everything happens on `main`, with no branch or PR
@@ -83,8 +84,11 @@ course; the testbench proves nothing until phase 1 is studied and run.
   end-to-end answer records whether its gold passages were retrieved, and failures are
   split between the search and the generator. HotpotQA as a pool of 1,000 questions and
   9,789 paragraphs; QASPER answers and evidence, searched inside the question's paper.
-  Bias probes of the judge (`make eval-bias`), to run after the calibration. Notebook 1
-  (`notebooks/phase-2/01_measuring_a_rag.ipynb`).
+  Bias probes of the judge (`make eval-bias`), to run after the calibration.
+- **Notebooks** (`notebooks/phase-2/`): 01 measuring a RAG (30 cells), 02 LLM-as-judge
+  (20), 03 contamination (16), 04 building a golden set (23). Live cells on fixtures with
+  scripted models, numbers read from the archived runs; reading order in
+  `docs/reading-order.md`.
 - **Two defects of phase 1 found by the end-to-end runs and fixed**: ingestion did not
   refresh the planner's statistics after a load (a search of 22 seconds on a fresh index,
   5 ms after `ANALYZE`); the output cap of an answer was sized for its visible text while
@@ -111,7 +115,12 @@ course; the testbench proves nothing until phase 1 is studied and run.
    download); then `make golden-freeze VERSION=v1 SUMMARY="..."`. The arms that run the
    golden set on the naive text and on the reference text follow, and need the corpus
    (`make corpus-download`, 20 minutes, 1.1 GB).
-3. Notebooks 2 to 4, the diagram of the harness, the phase closing.
+3. After 1 and 2: the judged baseline, the golden set's arms, the numbers of notebooks 2
+   and 4, the README, the phase closing and its debrief.
+4. Three class diagrams of phase 2 are written in `docs/diagrams/` (11 to 13) and pass
+   `tests/test_diagrams.py`; they are not committed, because the directory itself is not
+   yet (it belongs to work in progress in another session). Not rendered: only checked
+   against the code.
 
 **Local database recreated on 2026-11-05** (`JOURNAL.md`: a commit made Tilt delete the
 namespace). The suite rebuilt its indexes; the QASPER index of notebook 2

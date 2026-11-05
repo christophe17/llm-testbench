@@ -6,7 +6,14 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from llm_testbench.eval.corpus.arxiv import CC_BY_4, HTML_URL, PDF_URL, ArxivClient, parse_records
+from llm_testbench.eval.corpus.arxiv import (
+    CC_BY_4,
+    HTML_URL,
+    PDF_URL,
+    ArxivClient,
+    offline_fetch,
+    parse_records,
+)
 from llm_testbench.eval.corpus.build import Corpus, build_corpus, download_corpus, is_candidate
 from llm_testbench.eval.corpus.manifest import CorpusConfig, Manifest, ModelFreshness
 from llm_testbench.eval.corpus.reference import reference_document
@@ -194,3 +201,16 @@ def test_the_versioned_selection_is_valid() -> None:
     assert selection.license == CC_BY_4
     assert selection.freshness_floor > max(m.available_by for m in selection.models.values())
     assert {"claude-sonnet-5-5", "gpt-5.6-luna"} <= set(selection.models)
+
+
+def test_the_offline_stand_in_serves_the_fixture_files(tmp_path: Path) -> None:
+    fetch = offline_fetch(ARXIV)
+    manifest = build_corpus(config(), ArxivClient(fetch=fetch, sleep=lambda _s: None), tmp_path)
+    # Same selection as on the scripted network: one paper kept, with its real little PDF.
+    assert [entry.doc_id for entry in manifest.documents] == ["2610.00001v1"]
+    corpus = Corpus(manifest, tmp_path)
+    pages = corpus.extracted(manifest.documents[0])
+    assert [section.title for section in pages.sections] == ["Page 1", "Page 2"]
+    # The PDF holds the footnote where the page drew it: after the last line, mark glued on.
+    assert pages.sections[0].text.endswith("1Code at example.org.")
+    assert fetch("https://example.org/elsewhere") is None

@@ -25,6 +25,7 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from collections.abc import Callable, Iterator
 from email.utils import parsedate_to_datetime
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
@@ -152,6 +153,27 @@ class ArxivClient:
 
     def pdf(self, arxiv_id: str, version: int = 1) -> bytes | None:
         return self._get(PDF_URL.format(arxiv_id=arxiv_id, version=version))
+
+
+def offline_fetch(directory: Path) -> Fetch:
+    """arXiv read from a directory of files instead of the network: what the tests and the
+    notebook's live cells use (``tests/fixtures/arxiv``). ``oai_page.xml`` is the first page
+    of records, ``oai_page_2.xml`` the one a resumption token leads to; a paper is
+    ``<id>v<n>.html`` and ``<id>v<n>.pdf``. A file that is not there is a 404."""
+
+    def fetch(url: str) -> bytes | None:
+        if url.startswith(OAI_URL):
+            name = "oai_page_2.xml" if "resumptionToken=" in url else "oai_page.xml"
+        elif url.startswith(HTML_URL.partition("{")[0]):
+            name = url.rpartition("/")[2] + ".html"
+        elif url.startswith(PDF_URL.partition("{")[0]):
+            name = url.rpartition("/")[2] + ".pdf"
+        else:
+            return None
+        path = directory / name
+        return path.read_bytes() if path.is_file() else None
+
+    return fetch
 
 
 def _http_get(url: str) -> bytes | None:

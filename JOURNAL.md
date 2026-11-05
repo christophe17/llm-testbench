@@ -949,3 +949,42 @@ completion probe of contamination (continue a passage, measure the overlap), dro
 the closed-book probe, which gave a clear answer for a quarter of the price.
 
 **Next**: notebooks 2 to 4; then the calibration and the review, which are Christophe's.
+
+## 2026-11-05 — Phase 2: the three other notebooks
+
+**Done**: notebooks 2 (LLM-as-judge, 20 cells), 3 (contamination, 16 cells) and 4 (building
+a golden set, 23 cells) in `notebooks/phase-2/`, same contract as notebook 1: nothing
+implemented in them, links to `src/` with line anchors, live cells on fixtures with
+scripted models, numbers read from the archived runs, guided experiments in the
+configuration cell. An offline stand-in for arXiv (`offline_fetch`) and a two-page PDF
+fixture, so that notebook 4 runs the corpus selection, both texts of a document, the
+drafting, the two checks, the review and the freeze on one fixture paper. Three class
+diagrams (retrieval evaluation, answers and judge, corpus and golden set), checked against
+the code by `tests/test_diagrams.py`. `docs/reading-order.md` lists the phase.
+
+**What the notebooks say that the tables did not**:
+- Notebook 3: on the 47 HotpotQA questions the model does not answer alone, the system is
+  right 40% of the time and the gold context 77%. The headline numbers (57 against 85)
+  understate the room for improvement by half, and overstate the baseline.
+- Notebook 2: a judge that says "yes" without reading agrees with the labels 60% and 80%
+  of the time on five toy items, at a kappa of zero. With 48 "yes" in 50, one disagreement
+  takes kappa from 1.00 to 0.66; with 25, to 0.96.
+- Notebook 4: a row of a table quoted from the reference text ("Dense | 0.74") does not
+  exist in the PDF's text. The golden set will measure that on purpose.
+
+**Incidents / surprises**:
+- Three sentences I had written from memory did not survive the outputs: the two guessable
+  drafts are both arithmetic (I had described one as a release order), the drafter read 37%
+  of a median paper (I had written 38), and a kappa experiment I proposed gives +0.38 where
+  I announced a negative value. Each was caught by reading the executed cell next to the
+  prose, which is the only review a notebook gets before its reader.
+- Rendering the diagrams (`npx mermaid-cli`) was not permitted in this session: they are
+  checked against the code, not seen.
+- The diagrams sit in `docs/diagrams/`, which is another session's uncommitted work; they
+  are left uncommitted with it.
+
+**Not done**: the numbers of notebook 2 (they wait for the 50 labels) and of notebook 4's
+frozen set (they wait for the review); the judged baseline; the golden set's arms; the
+README; the phase closing.
+
+**Next**: Christophe's two tasks, in either order: `make eval-annotate`, `make golden-review`.

@@ -42,11 +42,25 @@ before phase 3:
 
 ## Phase 2 — Evaluation ⏳
 
-1. Roadmap — [phase-2.md](roadmap/phase-2.md)
-2. Notebook — `phase-2/01_*`: measuring a RAG, why end-to-end metrics hide the real problem
-3. Notebook — `phase-2/02_*`: LLM-as-judge, calibrate it or do not use it
-4. Notebook — `phase-2/03_*`: contamination, why your good scores may be lying
-5. Notebook — `phase-2/04_*`: building a golden set from nothing, at small scale
+The four notebooks exist and run; two of them wait for something only a person can give
+(50 labels for the judge, the review of the golden set). They need the local database of
+phase 1 (`make tilt-db`), nothing in the cloud, and no API key: their live cells run on
+fixtures, their numbers are read from the full runs archived under `data/results/`.
+
+1. Roadmap — [phase-2.md](roadmap/phase-2.md), then the decisions:
+   [ADR 011](adr/011-evaluation-harness.md) (the retrieval harness),
+   [ADR 012](adr/012-judge-and-calibration.md) (the judge, the spend cap),
+   [ADR 013](adr/013-end-to-end-runs.md) (end to end),
+   [ADR 014](adr/014-in-house-corpus-and-golden-set.md) (the corpus, the golden set)
+2. ✅ Notebook — [01 measuring a RAG](../notebooks/phase-2/01_measuring_a_rag.ipynb): why an
+   end-to-end score hides the real problem. Start here: the three others lean on it
+3. ✅ Notebook — [02 LLM-as-judge](../notebooks/phase-2/02_llm_as_judge.ipynb): calibrate it
+   or do not use it. The method runs end to end on toy answers; the real numbers appear
+   after `make eval-annotate` (one hour, yours) and `make eval-calibrate`
+4. ✅ Notebook — [03 contamination](../notebooks/phase-2/03_contamination.ipynb): why your
+   good scores may be lying. It changes how the numbers of notebook 1 are read
+5. ✅ Notebook — [04 building a golden set](../notebooks/phase-2/04_golden_set.ipynb): from
+   scratch, small. Then the review itself: `make golden-review` (two to three hours, yours)
 
 ## Phase 3 — Advanced RAG ⏳
 
