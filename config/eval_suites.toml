@@ -14,6 +14,11 @@
 # `references` are scores to compare ours with: published ones, or measured here with
 # another tool. Each carries its source. The first one is the gap shown in the report.
 
+# Hard cap, in dollars, on what the harness spends, all runs together
+# (data/results/spend.jsonl). Decision of 2026-11-05.
+[budget]
+cap_usd = 10.0
+
 [suites.retrieval-baseline]
 description = "Phase 2 baseline: the harness validated against published scores, then the phase 1 system as built."
 
@@ -179,3 +184,29 @@ embedding_model = "openai/text-embedding-3-small"
 chunk_size = 60
 chunk_overlap = 0
 search = "exact"
+
+[[suites.gate.generation]]
+name = "squad-gold"
+dataset = "squad_v2"
+repeats = 2
+repeat_examples = 2
+
+# --- Generation on gold context -----------------------------------------------------------
+# The generator receives the passages a perfect retriever would return: what goes wrong
+# here is not retrieval. Lean sizes (decision of 2026-11-05): 100 questions, half of them
+# unanswerable, and 50 of them asked three times to see what changes between runs.
+#
+#   generator        backend/model (default: the registry's generator)
+#   max_examples     size of the seeded subsample (half answerable, half unanswerable)
+#   repeats, repeat_examples   ask the first `repeat_examples` questions `repeats` times
+
+[suites.generation-baseline]
+description = "Phase 2 baseline of the generator on gold context: refusals, citations, reference answers."
+
+[[suites.generation-baseline.generation]]
+name = "squad-gold-sonnet"
+dataset = "squad_v2"
+max_examples = 100
+seed = 0
+repeats = 3
+repeat_examples = 50

@@ -21,7 +21,11 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
+from llm_testbench.eval.generation import GenerationRun
 from llm_testbench.eval.runs import RetrievalRun, git_state
+
+GatedRun = RetrievalRun | GenerationRun
+"""Anything with an arm name and metrics that have a mean."""
 
 GATE_SUITE = "gate"
 BASELINE_PATH = Path("data") / "results" / "gate" / "baseline.json"
@@ -41,7 +45,7 @@ class GateBaseline(BaseModel):
     """arm -> metric -> mean, as measured in sample mode when the baseline was recorded."""
 
     @classmethod
-    def from_runs(cls, runs: Iterable[RetrievalRun]) -> "GateBaseline":
+    def from_runs(cls, runs: Iterable[GatedRun]) -> "GateBaseline":
         return cls(
             generated_at=dt.datetime.now(dt.UTC),
             git_sha=git_state()[0],
@@ -77,7 +81,7 @@ class GateFinding(BaseModel):
 
 
 def check_gate(
-    runs: Sequence[RetrievalRun],
+    runs: Sequence[GatedRun],
     baseline: GateBaseline,
     *,
     max_drop: float = 0.0,

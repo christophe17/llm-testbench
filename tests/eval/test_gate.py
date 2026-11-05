@@ -107,7 +107,7 @@ async def test_the_gate_runs_without_a_database_and_says_what_it_skipped(
         update={"database_url": "postgresql://nobody:x@127.0.0.1:1/none"}
     )
     runs, skipped = await run_gate(unreachable, require_db=False)
-    assert [run.arm for run in runs] == ["scifact-bm25", "nfcorpus-bm25"]
+    assert [run.arm for run in runs] == ["scifact-bm25", "nfcorpus-bm25", "squad-gold"]
     assert skipped == [
         "scifact-dense-whole-exact",
         "scifact-dense-chunks-hnsw",

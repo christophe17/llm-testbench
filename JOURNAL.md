@@ -716,3 +716,60 @@ recall@100. NFCorpus: bge-base against BM25 +0.053 [+0.034, +0.073]. Latency, p5
 call that embeds the question; the search itself 34 ms with HNSW defaults, 95 ms with
 `ef_search = 400`, 138 ms exact, on 10,460 chunks; bge-base in process 20 ms to embed and
 42 ms of exact search. Verifying an index that is up to date: 0 to 2 seconds.
+
+## 2026-11-05 — Phase 2, step 3, first half: generation measured without a judge, a judge ready to calibrate
+
+**Trigger**: the budget. "$35 is too expensive for me": the lean option was chosen, about $5
+under a hard cap of $10, with arXiv papers (CC BY 4.0) confirmed as the in-house corpus
+(`docs/decisions.md`, ADR 012).
+
+**Done**: a QA dataset type and the SQuAD 2.0 loader (seeded subsample, half unanswerable);
+the generation runner on gold passages, through the API's own prompt and parser
+(`eval/generation.py`); the metrics that need no judge (`eval/metrics/generation.py`); the
+judge (`eval/judge.py`, two rubrics as versioned prompts, yes or no, reasons first);
+Cohen's kappa (`eval/agreement.py`); the calibration set and its terminal annotation tool
+(`eval/calibration.py`, `eval/annotate.py`, `make eval-calibration-set`, `eval-annotate`,
+`eval-calibrate`); a spend ledger with a cap (`eval/spend.py`, `data/results/spend.jsonl`);
+generation arms in the suites and in the gate. Structured outputs now report the cost of
+every attempt, repairs included.
+
+**Measured** (SQuAD 2.0 validation, 100 questions drawn with seed 0, half unanswerable,
+`anthropic/claude-sonnet-5-5` on the gold paragraph, archived in
+`data/results/runs/generation-baseline/`):
+
+| Metric | Rate | 95% interval | On |
+|---|---|---|---|
+| Correct refusal | 0.74 | 0.62 – 0.86 | 50 unanswerable questions |
+| Over-refusal | 0.04 | 0.00 – 0.10 | 50 answerable questions |
+| Contains the reference answer | 0.92 | 0.84 – 0.98 | 50 answerable questions |
+| Answer F1 (SQuAD) | 0.22 | 0.18 – 0.26 | 50 answerable questions |
+| Cites an excerpt | 1.00 | — | 61 answers given |
+| Invents a citation | 0.00 | — | 61 answers given |
+
+Asked three times, 50 questions: the refusal flips on 8% of them, the wording changes on
+52%. Latency p50 1.6 s, p95 3.6 s. Cost $0.42 for 200 calls; $0.61 spent in all.
+
+**Incidents / surprises**:
+- **One unanswerable question in four gets an answer, and every one of those answers
+  carries a citation.** "Cites an excerpt" is at 100% and "invents a citation" at 0%: by
+  the two citation metrics the system is perfect, on the very answers that should not
+  exist. A citation says where the model looked, not that the excerpt says it. That gap is
+  what the groundedness judge is for.
+- **SQuAD's F1 says 0.22 where the reference answer is in the text 92% of the time.** The
+  generator answers in a sentence, the reference is two words. A harness that copied the
+  dataset's own metric would report a broken generator.
+- **The cost estimate was off by two.** I assumed 40 output tokens per answer; the model
+  wrote 122 on average, and an output token costs five times an input token. "Answer
+  concisely" in the prompt does not buy short answers. The ledger caught it at $0.42, not
+  after the fact.
+- **The same question, asked three times, is refused once and answered twice on 8% of the
+  questions.** With 50 questions per rate, that noise is of the order of what one prompt
+  change would be credited with.
+
+**Not done**: the judged baseline, which waits for the calibration, which waits for
+Christophe's 50 labels; QASPER and HotpotQA generation arms; end-to-end runs; the bias
+experiments (self-preference needs a second generator, not paid for until the judge is
+shown usable); the notebooks and the diagram.
+
+**Next**: Christophe runs `make eval-annotate` (50 items, two keys each, resumable), then
+`make eval-calibrate`.

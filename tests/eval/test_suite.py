@@ -45,7 +45,7 @@ def test_the_versioned_suites_are_valid_and_buildable(suites: Suites) -> None:
 
 
 def test_the_baseline_arms_read_the_index_the_api_serves(suites: Suites) -> None:
-    arm = suites.get("retrieval-baseline").select(["scifact-oai-chunks-hnsw"])[0]
+    ((arm,), _) = suites.get("retrieval-baseline").select(["scifact-oai-chunks-hnsw"])
     defaults = Settings()
     assert arm.keys() == (defaults.index_key, defaults.source_key)
     assert (arm.chunk_size, arm.chunk_overlap) == (1_000, 200)

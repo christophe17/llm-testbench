@@ -1,7 +1,7 @@
 {
  "suite": "gate",
- "generated_at": "2026-11-05T15:35:07.542392Z",
- "git_sha": "57201fd",
+ "generated_at": "2026-11-05T16:50:57.131919Z",
+ "git_sha": "5f8e4ba",
  "scores": {
   "scifact-bm25": {
    "ndcg_at_10": 0.5377157309218195,
@@ -37,6 +37,14 @@
    "recall_at_100": 1.0,
    "precision_at_10": 0.15000000000000002,
    "mrr_at_10": 1.0
+  },
+  "squad-gold": {
+   "answer_f1": 0.0,
+   "cited": 1.0,
+   "contains_answer": 0.0,
+   "correct_refusal": 0.0,
+   "invented_citation": 0.0,
+   "over_refusal": 0.0
   }
  }
 }

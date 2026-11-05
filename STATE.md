@@ -6,9 +6,11 @@
 ## Current phase
 
 **Phase 2 — Evaluation: in progress** since `GO PHASE 2` (2026-11-05). Steps 1 (retrieval
-harness) and 2 (gate, comparison, HTML report) are built and measured; steps 3 (generation
-metrics, judge and calibration) and 4 (in-house corpus, contamination, golden set) remain,
-with the four notebooks. Detail below, decisions in ADR 011.
+harness) and 2 (gate, comparison, HTML report) are built and measured. Step 3 is half
+built: generation on gold context is measured on SQuAD 2.0, the judge and the annotation
+tool exist, and **the calibration waits for Christophe's 50 labels** (`make eval-annotate`).
+Step 4 (in-house corpus, contamination, golden set) and the four notebooks remain. Budget:
+lean option, hard cap $10 (`data/results/spend.jsonl`). Decisions in ADR 011 and ADR 012.
 
 **Phase 1 — Production skeleton: built** (2026-09-03), merged into `main` on
 2026-10-16 with PR #2 (PR #3). Since then, everything happens on `main`, with no branch or PR
@@ -67,12 +69,18 @@ course; the testbench proves nothing until phase 1 is studied and run.
 - Ingestion reads the state of an index in two queries: an up-to-date index is verified in
   seconds.
 
+- **Generation and judge** (ADR 012): QA dataset type and SQuAD 2.0 loader; generation on
+  gold passages through the API's own prompt and parser, scored without a judge (correct
+  refusal, over-refusal, citations, reference answer) and asked several times to measure
+  what changes between runs; the judge (two rubrics, yes or no, reasons first); the
+  calibration set, the terminal annotation tool, Cohen's kappa; a spend ledger with a cap.
+
 ## Remaining in phase 2
 
-1. **Step 3**: SQuAD 2.0 and HotpotQA loaders, generation metrics (groundedness, relevance,
-   citation accuracy, correct refusal and over-refusal), the judge with its rubrics, the
-   annotation CLI, calibration (Cohen's kappa) and the bias experiments, N runs.
-   **Christophe**: 50 examples to label by hand, about one hour, once the CLI exists.
+1. **Step 3, rest**. **Christophe: label the 50 calibration items**, `make eval-annotate`,
+   about one hour, resumable. Then `make eval-calibrate` (about $0.40) gives the kappa of
+   both judges, and the judged baseline follows. Still to build: QASPER and HotpotQA
+   generation arms, end-to-end runs (retrieval then generation), the bias experiments.
 2. **Step 4**: in-house corpus (download script and manifest), naive text extractor,
    contamination probes, golden set of 50 to 80 questions. **Christophe**: full review of
    the generated questions, two to three hours.
@@ -136,12 +144,19 @@ bootstrap interval; `data/results/runs/retrieval-baseline/`, table in `JOURNAL.m
 
 Earlier, through `mteb` (phase 1): all-MiniLM-L6-v2 0.645.
 
+Generation on gold context (SQuAD 2.0, 100 questions, half unanswerable,
+`claude-sonnet-5-5`; `data/results/runs/generation-baseline/`): correct refusal **0.74**
+[0.62, 0.86], over-refusal **0.04** [0.00, 0.10], reference answer present 0.92, an excerpt
+cited in 100% of the answers given and none invented, including on the 26% of unanswerable
+questions that were answered. Asked three times, the refusal flips on 8% of 50 questions.
+Spent: $0.61 of the $10 cap.
+
 ## Decisions awaiting a call
 
-- **Phase 2, proposed with the plan and applied at steps 3 and 4 unless overridden**
-  (`docs/decisions.md`, 2026-11-05): judge `openai/gpt-5.6-terra`; in-house corpus = arXiv
-  papers under CC BY 4.0 (alternatives: US Federal Register, SEC EDGAR filings); Ragas as
-  the third-party evaluator measured; about $35 for the full baseline, hard cap $60.
+- **Phase 2**: Ragas as the one third-party evaluator measured on the calibration items
+  was proposed with the plan and not answered; it costs a few cents and a dependency in
+  the `bench` group. Decided on 2026-11-05: lean budget under a $10 cap, judge
+  `gpt-5.6-luna`, arXiv CC BY 4.0 corpus (`docs/decisions.md`).
 - **AWS bootstrap to be applied by Christophe** following `docs/infra/00-bootstrap.md`
   (existing AWS account, eu-west-3 region, no budget and no state bucket to date — the
   `eks-foundations-terraform-chris` bucket belongs to another project, we do not touch it).

@@ -86,6 +86,19 @@ eval-gate: ## Regression gate (pre-push hook, CI): fails when a sample-mode scor
 eval-gate-update: ## Records the current sample-mode scores as the gate baseline (database required)
 	uv run python -m llm_testbench.eval.cli gate --update
 
+# The judge against a human (phase 2.3), in three steps. The items are drawn from the
+# archived generation run (make eval SUITE=generation-baseline); the labels are yours.
+JUDGES ?= openai/gpt-5.6-luna openai/gpt-5.6-terra
+
+eval-calibration-set: ## Draws the 50 calibration items from the archived generation run → data/golden/judge_calibration/
+	uv run python -m llm_testbench.eval.cli calibration-set
+
+eval-annotate: ## Labels the calibration items by hand in the terminal (resumable; nothing is sent anywhere)
+	uv run python -m llm_testbench.eval.cli annotate
+
+eval-calibrate: ## Judges (JUDGES) against the human labels: agreement and Cohen's kappa — paid, under the spend cap
+	uv run python -m llm_testbench.eval.cli calibrate $(foreach judge,$(JUDGES),--judge $(judge))
+
 # ---------------------------------------------------------------- local cluster
 
 k3d-up: ## Creates the k3d cluster and deploys Postgres/pgvector
@@ -190,4 +203,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (run only once, AWS account re
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update eval-calibration-set eval-annotate eval-calibrate k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply

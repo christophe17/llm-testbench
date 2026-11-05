@@ -21,18 +21,29 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from llm_testbench.config import Settings, get_settings
+from llm_testbench.eval.generation import GenerationRun, run_generation
 from llm_testbench.eval.loaders import BeirLoader
 from llm_testbench.eval.loaders.beir import BEIR_DATASETS
+from llm_testbench.eval.loaders.squad import SquadV2Loader
 from llm_testbench.eval.metrics import DEFAULT_METRICS
+from llm_testbench.eval.qa import QADataset
 from llm_testbench.eval.runner import run_retrieval
 from llm_testbench.eval.runs import IndexBuild, Reference, RetrievalRun
+from llm_testbench.eval.spend import SpendLedger
 from llm_testbench.eval.types import RetrievalDataset
+from llm_testbench.generation.answer import AnswerBuilder
 from llm_testbench.ingest.chunking import NO_SPLIT, RecursiveChunker
 from llm_testbench.ingest.pipeline import IngestionPipeline
 from llm_testbench.ingest.store import IndexSpec, PgVectorStore
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.governance import DataClass
-from llm_testbench.llm.testing import HashingEmbedder
+from llm_testbench.llm.prompts import PromptRegistry
+from llm_testbench.llm.testing import (
+    HashingEmbedder,
+    Step,
+    anthropic_message,
+    scripted_anthropic_provider,
+)
 from llm_testbench.llm.types import ModelRef
 from llm_testbench.retrieval import BM25Retriever, DenseRetriever, SearchMode
 
@@ -108,33 +119,72 @@ class ArmConfig(BaseModel):
         return index_key[:63], source_key
 
 
+class GenerationArmConfig(BaseModel):
+    """A generator under measurement on a QA dataset, fed the gold passages."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    name: str = Field(pattern=_SLUG)
+    dataset: Literal["squad_v2"]
+    split: str = "validation"
+    max_examples: int | None = Field(default=None, ge=2)
+    """Size of the random subsample (half answerable, half not); ``None`` = the whole split."""
+    seed: int = 0
+    generator: str | None = None
+    """``backend/model``; the registry's default generator when left out."""
+    repeats: int = Field(default=1, ge=1)
+    repeat_examples: int = Field(default=0, ge=0)
+    """Ask the first ``repeat_examples`` questions ``repeats`` times: non-determinism."""
+    max_output_tokens: int = Field(default=512, ge=1)
+
+
 class SuiteConfig(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     description: str = ""
     metrics: tuple[str, ...] = DEFAULT_METRICS
-    arms: tuple[ArmConfig, ...] = Field(min_length=1)
+    arms: tuple[ArmConfig, ...] = ()
+    generation: tuple[GenerationArmConfig, ...] = ()
 
     @model_validator(mode="after")
     def _arm_names_are_unique(self) -> "SuiteConfig":
-        names = [arm.name for arm in self.arms]
+        names = self.arm_names()
+        if not names:
+            raise ValueError("a suite needs at least one arm")
         if len(set(names)) != len(names):
             raise ValueError("two arms of a suite share a name")
         return self
 
-    def select(self, names: list[str] | None) -> tuple[ArmConfig, ...]:
+    def arm_names(self) -> list[str]:
+        return [arm.name for arm in self.arms] + [arm.name for arm in self.generation]
+
+    def select(
+        self, names: list[str] | None
+    ) -> tuple[tuple[ArmConfig, ...], tuple[GenerationArmConfig, ...]]:
+        """(retrieval arms, generation arms) to run: all of them, or the named ones."""
         if not names:
-            return self.arms
-        known = {arm.name: arm for arm in self.arms}
+            return self.arms, self.generation
+        known = set(self.arm_names())
         missing = [name for name in names if name not in known]
         if missing:
             raise KeyError(f"unknown arm(s) {missing} (known: {sorted(known)})")
-        return tuple(known[name] for name in names)
+        return (
+            tuple(arm for arm in self.arms if arm.name in names),
+            tuple(arm for arm in self.generation if arm.name in names),
+        )
+
+
+class Budget(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    cap_usd: float = Field(default=10.0, gt=0)
+    """Hard cap on what the harness spends, all runs together (``eval/spend.py``)."""
 
 
 class Suites(BaseModel):
     model_config = ConfigDict(frozen=True)
 
+    budget: Budget = Budget()
     suites: dict[str, SuiteConfig]
 
     @classmethod
@@ -273,3 +323,49 @@ async def run_arm(
     finally:
         if settings.sample:
             await drop_sample_index(spec, store)
+
+
+def load_qa_dataset(arm: GenerationArmConfig, settings: Settings) -> QADataset:
+    return SquadV2Loader(settings).load(arm.split, max_examples=arm.max_examples, seed=arm.seed)
+
+
+SIMULATED_ANSWER = "The answer is in the excerpt [1]."
+
+
+async def run_generation_arm(
+    suite_name: str,
+    arm: GenerationArmConfig,
+    *,
+    settings: Settings,
+    client: LLMClient,
+    ledger: SpendLedger | None,
+) -> GenerationRun:
+    dataset = load_qa_dataset(arm, settings)
+    model = ModelRef.parse(arm.generator) if arm.generator else client.registry.defaults.generator
+    sample_mode = settings.sample or settings.fixtures_dir is not None
+    if settings.sample:
+        # No model in CI: the real provider code on a scripted network, one fixed answer.
+        provider, _ = scripted_anthropic_provider(
+            [
+                Step(
+                    json_body=anthropic_message(
+                        SIMULATED_ANSWER, input_tokens=300, output_tokens=12
+                    )
+                )
+            ],
+            backend=model.backend,
+        )
+        client.register_provider(model.backend, provider)
+    return await run_generation(
+        dataset,
+        client=client,
+        builder=AnswerBuilder(PromptRegistry.from_settings(settings)),
+        model=model,
+        suite=suite_name,
+        arm=arm.name,
+        repeats=arm.repeats,
+        repeat_examples=arm.repeat_examples,
+        max_output_tokens=arm.max_output_tokens,
+        ledger=None if sample_mode else ledger,
+        sample_mode=sample_mode,
+    )

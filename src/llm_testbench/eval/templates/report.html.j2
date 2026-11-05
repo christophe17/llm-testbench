@@ -41,11 +41,11 @@
   g.rowmark:hover .hit, g.rowmark:focus .hit { fill: var(--hover); }
   g.rowmark:focus { outline: none; }
   table { border-collapse: collapse; width: 100%; font-size: 13px; }
-  th, td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--grid);
+  th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--grid);
            white-space: nowrap; font-variant-numeric: tabular-nums; }
   th { color: var(--ink-2); font-weight: 600; }
-  th:first-child, td:first-child, td.text, th.text { text-align: left; }
-  td.text { white-space: normal; min-width: 200px; }
+  th:first-child, td:first-child, td.text, th.text, td.index, th.index { text-align: left; }
+  td.text { white-space: normal; min-width: 150px; }
   .good { color: var(--good); } .bad { color: var(--bad); }
   details { margin-top: 12px; font-size: 13px; color: var(--ink-2); }
   details pre { white-space: pre-wrap; margin: 6px 0 0; font-size: 12px; }
@@ -121,7 +121,7 @@
       <thead><tr>
         <th>arm</th><th>nDCG@10</th><th>95% interval</th><th class="text">reference (gap)</th>
         <th>recall@10</th><th>recall@100</th><th>MRR@10</th><th>p50 ms</th><th>p95 ms</th>
-        <th>query cost</th><th class="text">index</th>
+        <th>query cost</th><th class="index">index built</th>
       </tr></thead>
       <tbody>
       {% for run in section.runs %}
@@ -138,11 +138,10 @@
         <td>{{ '%.1f' | format(run.latency_ms.p50) }}</td>
         <td>{{ '%.1f' | format(run.latency_ms.p95) }}</td>
         <td>{{ 'unknown' if run.cost_usd is none else '$%.4f' | format(run.cost_usd) }}</td>
-        <td class="text">{% if not run.index %}—{% elif run.retriever.retriever == "bm25" %}{{ run.index.documents }}
-          documents, in memory, built in {{ '%.1f' | format(run.index.seconds) }} s{% elif run.index.chunks_embedded %}{{ run.index.chunks }}
-          chunks, {{ run.index.chunks_embedded }} embedded for
-          {{ 'an unknown cost' if run.index.cost_usd is none else '$%.3f' | format(run.index.cost_usd) }}
-          in {{ '%.0f' | format(run.index.seconds) }} s{% else %}{{ run.index.chunks }} chunks, index
+        <td class="index">{% if not run.index %}—{% elif run.retriever.retriever == "bm25" %}{{ run.index.documents }}
+          docs, in memory{% elif run.index.chunks_embedded %}{{ run.index.chunks }} chunks,
+          {{ 'cost unknown' if run.index.cost_usd is none else '$%.3f' | format(run.index.cost_usd) }},
+          {{ '%.0f' | format(run.index.seconds) }} s{% else %}{{ run.index.chunks }} chunks,
           reused{% endif %}</td>
       </tr>
       {% endfor %}

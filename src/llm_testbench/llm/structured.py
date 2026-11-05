@@ -52,6 +52,8 @@ class StructuredResult[T: BaseModel]:
     attempts: int
     repairs: tuple[str, ...]
     """The validation errors encountered before getting there, in order."""
+    cost_usd: float | None = None
+    """Cost of every attempt, repairs included; ``None`` if one of them has no known price."""
 
 
 class StructuredOutputs:
@@ -79,15 +81,23 @@ class StructuredOutputs:
     ) -> StructuredResult[T]:
         current = self.prepare(request, schema)
         repairs: list[str] = []
+        cost: float | None = 0.0
         for attempt in range(1, self.max_repairs + 2):
             completion = await self._client.complete(current)
+            cost = (
+                None if cost is None or completion.cost_usd is None else cost + completion.cost_usd
+            )
             try:
                 value = schema.model_validate_json(extract_json(completion.text))
             except ValidationError as error:
                 message = str(error)
             else:
                 return StructuredResult(
-                    value=value, completion=completion, attempts=attempt, repairs=tuple(repairs)
+                    value=value,
+                    completion=completion,
+                    attempts=attempt,
+                    repairs=tuple(repairs),
+                    cost_usd=cost,
                 )
             repairs.append(message)
             if attempt > self.max_repairs:
