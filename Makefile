@@ -11,7 +11,7 @@ NOTEBOOKS ?= notebooks
 DATABASE_URL ?= postgresql://testbench:testbench-local-only@localhost:5432/testbench
 
 help: ## Lists the available targets
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
 
 setup: ## Installs the environment (deps + pre-commit hooks + Jupyter kernel)
 	uv sync
@@ -36,7 +36,7 @@ test: ## Offline tests (network tests are excluded)
 test-network: ## Network tests only (downloads the real datasets)
 	uv run python -m pytest -m network
 
-test-db: ## Postgres/pgvector tests (k3d cluster + port-forward required)
+test-db: ## Postgres/pgvector tests (make tilt-db required)
 	LLM_TESTBENCH_DATABASE_URL=$(DATABASE_URL) uv run python -m pytest -m db
 
 notebooks-ci: ## Runs the notebooks in offline sample mode (like the CI)
@@ -132,15 +132,23 @@ golden-status: ## Where the golden set stands: drafts, reviews, frozen questions
 
 # ---------------------------------------------------------------- local cluster
 
-k3d-up: ## Creates the k3d cluster and deploys Postgres/pgvector
-	k3d cluster create --config infra/k3d/config.yaml || true
-	kubectl apply -k infra/k8s/local
+# The cluster only: what runs in it is deployed by Tilt (make tilt-db / make tilt-up),
+# the only owner of infra/k8s/local. A kubectl apply on top of Tilt strips its labels
+# and restarts Postgres.
+k3d-create: ## Creates the k3d cluster (once)
+	k3d cluster create --config infra/k3d/config.yaml
+
+k3d-up: ## Starts the existing k3d cluster (e.g. after a Docker restart)
+	k3d cluster start $(K3D_CLUSTER)
 
 k3d-down: ## Destroys the k3d cluster
 	k3d cluster delete $(K3D_CLUSTER)
 
 tilt-up: ## Dev loop with hot reload (requires the k3d cluster)
 	tilt up
+
+tilt-db: ## Postgres/pgvector only, on localhost:5432, without building the API
+	tilt up postgres pgvector-init
 
 # Credentials only: the LLM_TESTBENCH_* lines of .env are the laptop's settings (localhost
 # database, localhost Langfuse). In the pod they come from the chart's ConfigMap, and the
@@ -159,8 +167,16 @@ helm-lint: ## Validates the Helm chart with the local and dev values
 	helm lint infra/helm/llm-testbench-api -f infra/helm/llm-testbench-api/values-dev.yaml
 	helm template api infra/helm/llm-testbench-api -f infra/helm/llm-testbench-api/values-local.yaml > /dev/null
 
-pg-port-forward: ## Exposes the cluster's Postgres on localhost:5432
+pg-port-forward: ## Exposes the cluster's Postgres on localhost:5432 when Tilt is not running
 	kubectl -n llm-testbench port-forward svc/postgres 5432:5432
+
+# Two ways into the same database, on the port-forward above. DATABASE_URL (top of
+# this file) is the dev constant; override it to reach another database (RDS later).
+psql: ## The psql REPL on the local database (make tilt-db or make pg-port-forward first)
+	psql "$(DATABASE_URL)"
+
+db-ui: ## Harlequin, the SQL IDE in the terminal, on the same database (.harlequin.toml)
+	LLM_TESTBENCH_DATABASE_URL=$(DATABASE_URL) uv run harlequin
 
 # ---------------------------------------------------------------- local observability
 
@@ -234,4 +250,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (run only once, AWS account re
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update corpus-build corpus-download corpus-verify golden-draft golden-probe golden-review golden-freeze golden-status eval-calibration-set eval-annotate eval-calibrate eval-bias k3d-up k3d-down tilt-up k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply
+	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update corpus-build corpus-download corpus-verify golden-draft golden-probe golden-review golden-freeze golden-status eval-calibration-set eval-annotate eval-calibrate eval-bias k3d-create k3d-up k3d-down tilt-up tilt-db k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward psql db-ui infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply

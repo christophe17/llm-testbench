@@ -44,7 +44,8 @@ Every default value in `values.yaml` answers a classic incident.
   30 × 2 s gives 60 s to the Postgres pool and the schema; without it, an impatient liveness
   probe would kill a pod mid-startup, in a loop.
 - **`podSecurityContext` / `securityContext`** — non-root, no privilege escalation,
-  read-only filesystem (hence the `/tmp` volume as an `emptyDir`), all
+  read-only filesystem (hence the `/tmp` volume as an `emptyDir`; turned off in the local
+  values only, for the Tilt sync: guide 01b, step 8), all
   Linux capabilities dropped, default seccomp profile. This is the "restricted" level of the
   Pod Security Standards.
 

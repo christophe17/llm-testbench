@@ -14,6 +14,7 @@ testbench is in `CLAUDE.md` §4 (ADR 009).
 |---|---|---|---|
 | 00 | [Bootstrap](00-bootstrap.md) | Terraform state bucket, budget alert, GitHub OIDC role | ~€0/month |
 | 01 | [Local dev k3d](01-local-dev-k3d.md) | local cluster, Postgres/pgvector, Tilt | €0 |
+| 01b | [Tilt crash course](01b-tilt-crash-course.md) | what Tilt does, step by step, from `tilt up` to a running pod | €0 |
 | 02 | [VPC network](02-network-vpc.md) | subnets, routing, NAT or endpoints | ~$0.05/h + traffic |
 | 03 | [EKS](03-eks.md) | control plane, Graviton nodes, access, pod identities | ~$0.18/h |
 | 04 | [RDS pgvector](04-rds-pgvector.md) | managed database, extension, access from the cluster | ~$0.02/h |

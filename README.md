@@ -27,7 +27,8 @@ evaluated models: contamination is treated as a measurement topic (phase 2), not
 make setup          # uv sync + pre-commit hooks
 make check          # lint + typecheck + offline tests
 make notebooks-ci   # notebooks in sample mode (like the CI)
-make k3d-up         # local k3d cluster + Postgres/pgvector
+make k3d-create     # local k3d cluster (once; make k3d-up after a Docker restart)
+make tilt-db        # Postgres/pgvector in the cluster (make tilt-up: + the API)
 ```
 
 ## Structure

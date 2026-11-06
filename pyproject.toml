@@ -41,6 +41,8 @@ dev = [
     "jupyter>=1.0",
     "pytest-asyncio>=1.4.0",
     "httpx>=0.28.1",
+    "harlequin>=2.16.2",
+    "harlequin-postgres>=1.5.2",
 ]
 
 [build-system]

@@ -1,0 +1,14 @@
+# Harlequin, the SQL IDE in the terminal: `make db-ui` (infra guide 01).
+# One profile, "local": the k3d Postgres forwarded on localhost:5432 by
+# `make tilt-db` or `make pg-port-forward`. The DSN is the dev constant of the
+# Makefile and .env.example, not a secret. LLM_TESTBENCH_DATABASE_URL, when
+# set, overrides it: `make db-ui DATABASE_URL=...` reaches another database
+# (RDS later) without a second profile and without a password in this file.
+default_profile = "local"
+
+[profiles.local]
+adapter = "postgres"
+conn_str = ["${LLM_TESTBENCH_DATABASE_URL:-postgresql://testbench:testbench-local-only@localhost:5432/testbench}"]
+# Rows fetched per query, applied by Harlequin, not by Postgres: a guard
+# against `SELECT * FROM chunks` pulling every embedding as text.
+limit = 1000

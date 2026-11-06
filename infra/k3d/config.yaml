@@ -1,5 +1,5 @@
 # Local dev cluster — macOS Apple Silicon, arm64 images only.
-# `make k3d-up` / `make k3d-down`. Sized to the bare minimum of phase 0:
+# `make k3d-create` / `make k3d-up` / `make k3d-down`. Sized to the bare minimum of phase 0:
 # a single node, a local registry for the phase 1 application images.
 apiVersion: k3d.io/v1alpha5
 kind: Simple

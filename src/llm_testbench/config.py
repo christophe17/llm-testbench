@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------ API and storage
 
     database_url: str | None = None
-    """Postgres + pgvector. Locally: ``make pg-port-forward`` then
+    """Postgres + pgvector. Locally: ``make tilt-db`` (forwards port 5432) then
     ``postgresql://testbench:testbench-local-only@localhost:5432/testbench``."""
 
     chat_model: str | None = None

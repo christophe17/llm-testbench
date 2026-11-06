@@ -47,32 +47,44 @@ changes), the code next. The second starts again from a minimal Python image, wi
 or a compiler, copies the venv, and runs as a non-root user (`uid 10001`). The base images
 exist in arm64 and amd64: the same recipe produces the Mac image and the cloud one.
 
-**[`Tiltfile`](../../Tiltfile)** — four resources: Postgres and its job (kustomize), a
+**[`Tiltfile`](../../Tiltfile)** — the only owner of what runs in the cluster: nothing applies
+`infra/k8s/local/` besides it. Four resources: Postgres and its job (kustomize), a
 `local_resource` that creates the API keys `Secret` from `.env`, the image build with
-`live_update` (syncing `src/`, `prompts/`, `config/` into the container; `uvicorn --reload`
-is not enabled in the image, so a code change requires a pod restart by Tilt, which it does
-on its own), and the API Helm chart with its local values (guide 06).
+`live_update` (syncing `src/`, `prompts/`, `config/` into the container, where
+`uvicorn --reload`, set by the local chart values only, restarts the server process: guide
+01b, step 8), and the API Helm chart with its local values (guide 06). The subtle point is
+`objects=`: Tilt files every object without a pod (namespace, `Secret`, `ConfigMap`) under an
+`uncategorized` resource. The Tiltfile attaches the namespace and the database `Secret` to
+`postgres`, and the API's `ServiceAccount` and `ConfigMap` to `api`, so that
+`tilt up postgres pgvector-init` deploys everything Postgres needs, and that nothing is
+applied to the namespace before it exists.
 
-**[`Makefile`](../../Makefile)** — `k3d-up`, `k3d-down`, `pg-port-forward`,
-`k8s-secrets`, `docker-build`, `helm-lint`, `tilt-up`, `ingest-scifact`, `api`.
+**[`Makefile`](../../Makefile)** — `k3d-create` (create the cluster, once), `k3d-up`
+(start it again when it is stopped), `k3d-down` (destroy it), `pg-port-forward`, `psql`,
+`db-ui`, `k8s-secrets`, `docker-build`, `helm-lint`, `tilt-up`, `ingest-scifact`, `api`.
 
 ## Run
 
 **1. The cluster and the database.**
 
 ```bash
-make k3d-up
+make k3d-create                       # once; afterwards, make k3d-up
 kubectl config current-context        # must print k3d-llm-testbench
+make tilt-db                          # in a second terminal: Postgres and its job only
 kubectl -n llm-testbench get pods     # postgres-0 Running, pgvector-init Completed
 ```
 
 The 2026-08-26 journal entry tells of a `kubectl apply` that went to an old cluster: **check the
-context** before any `apply`, it is the cheapest reflex there is.
+context** before Tilt deploys anything, it is the cheapest reflex there is.
+
+`make tilt-db` runs `tilt up postgres pgvector-init`: Tilt starts only the resources named,
+without building the API image, and forwards Postgres to `localhost:5432` for as long as it
+runs. `Ctrl-C` stops Tilt and the port-forward; the pods keep running
+(`make pg-port-forward` then gives you access back without Tilt).
 
 **2. Check pgvector from your machine.**
 
 ```bash
-make pg-port-forward &      # leaves a port-forward in the background
 LLM_TESTBENCH_DATABASE_URL=postgresql://testbench:testbench-local-only@localhost:5432/testbench \
   uv run python -c "import psycopg; c=psycopg.connect('$LLM_TESTBENCH_DATABASE_URL'); \
   print(c.execute(\"select extversion from pg_extension where extname='vector'\").fetchone())"
@@ -80,6 +92,27 @@ make test-db                 # the 6 storage tests against the real database
 ```
 
 Expected: `('0.8.6',)` then `6 passed`.
+
+**2b. Look inside the database.** Two doors onto the same port-forward, both built on the
+`DATABASE_URL` of the Makefile:
+
+```bash
+make psql                    # the psql REPL: \dt, \d <table>, EXPLAIN ANALYZE
+make db-ui                   # Harlequin: catalog tree, editor with completion, results grid
+```
+
+Harlequin is a SQL IDE in the terminal (a TUI): the middle ground between a desktop client,
+whose connections live outside the repo, and a web UI, which would need a deployment. It is a
+dev dependency of the project, so `make setup` installs it, and it reads its connection from
+[`.harlequin.toml`](../../.harlequin.toml) at the repo root: one `local` profile whose DSN is
+the dev constant of the Makefile, overridden by `LLM_TESTBENCH_DATABASE_URL` when that variable
+is set. This is why `make db-ui DATABASE_URL=...` reaches another database (RDS, later) with
+no second profile and no password in a versioned file. Keys: `F6` the catalog, `F2` the editor,
+`Ctrl-Enter` runs the query, `Ctrl-E` exports the result, `F1` the full list, `Ctrl-Q` quits.
+The profile's `limit = 1000` is applied by Harlequin, not by Postgres: a `SELECT *` on a vector
+table of phase 1 returns every embedding as text, and the guard keeps the grid usable. Columns
+of type `vector` display as plain text, nothing more. `uv run hsql -P local -c "select 1"` runs
+a query through the same profile without the UI, handy from a script.
 
 **3. The secrets.** Copy `.env.example` to `.env`, fill in your keys, then:
 
@@ -103,7 +136,7 @@ make docker-build
 docker tag llm-testbench-api:dev localhost:5050/llm-testbench-api:dev
 docker push localhost:5050/llm-testbench-api:dev
 helm upgrade --install api infra/helm/llm-testbench-api -n llm-testbench \
-  -f infra/helm/llm-testbench-api/values-local.yaml --set image.tag=dev
+  -f infra/helm/llm-testbench-api/values-local.yaml
 kubectl -n llm-testbench get pods -w
 ```
 
@@ -133,18 +166,30 @@ the trace ID.
 **6. The dev loop.**
 
 ```bash
-make tilt-up
+make tilt-up                 # stop make tilt-db first: one Tilt at a time
 ```
 
 Tilt opens a dashboard (`http://localhost:10350`): it builds the image, pushes it to the
 local registry, deploys the chart, exposes `8000`. Edit a file in `src/`: Tilt syncs it into
-the container and restarts the pod. `Ctrl-C` then `tilt down` to remove the API (Postgres
-stays).
+the container and restarts the pod. `Ctrl-C` stops Tilt; the pods keep running. `tilt down`
+deletes everything the Tiltfile deploys, **Postgres included**: only the namespace (Tilt
+never deletes namespaces by default) and the PVC remain, so the data comes back with the
+next `make tilt-db`.
 
 ## Pitfalls
 
 - **The wrong kubectl context.** `k3d cluster create` changes the current context, a
   leftover cluster may be lying around. `kubectl config current-context`, always.
+- **A stopped cluster after a Docker restart.** The k3d nodes are containers: when Docker
+  Desktop restarts, they stay `Exited` and `k3d cluster list` shows `0/1` servers. The
+  cluster still exists, so `make k3d-create` fails, and `kubectl` gets `connection refused`
+  on the API server port. `make k3d-up` starts it again (`k3d cluster start`), and the pods
+  come back on their own; the Postgres volume lives in the node container and survives a
+  stop, but not a `k3d-down`.
+- **Two owners for the same manifests.** A `kubectl apply -k infra/k8s/local` while Tilt
+  manages these objects removes the labels Tilt sets on them: the `StatefulSet`'s pod
+  template changes, and Postgres restarts. Tilt is the only owner; the Makefile has no
+  `apply` of these manifests.
 - **The port-forward drops** as soon as the pod restarts (Tilt restarts it, a
   `kubectl port-forward` launched by hand does not). If `curl` fails for no reason, restart
   it.
@@ -198,7 +243,8 @@ names for the same registry (host and cluster), which you need to know.
 <details><summary><b>4. What exactly does Tilt sync, and when does it rebuild the image?</b></summary>
 
 `live_update` copies the modified files (here `src/`, `prompts/`, `config/`) into the
-running container. Any change outside these paths (Dockerfile, `pyproject.toml`,
+running container. It restarts nothing: `uvicorn --reload`, set by the local values,
+restarts the server process. Any change outside these paths (Dockerfile, `pyproject.toml`,
 `uv.lock`) triggers a full rebuild.
 </details>
 
@@ -206,8 +252,9 @@ running container. Any change outside these paths (Dockerfile, `pyproject.toml`,
 
 - **No local Ingress**: port-forward is enough for a single developer; Ingress is a cloud
   question (guide 03).
-- **No `uvicorn --reload` in the image**: the image is the production one; reloading is
-  Tilt's job (pod restart), not the image's.
+- **No `uvicorn --reload` in the image**: the image is the production one. The reload is
+  set by the local chart values (`args`), which also make the root filesystem writable for
+  the sync; the cloud values keep neither (guide 01b, step 8).
 - **No Langfuse here**: guide 07, once the API is in place.
 - **No automated integration tests against the cluster**: CI stays offline (ADR 003); the
   local cluster is checked by hand, with this guide.

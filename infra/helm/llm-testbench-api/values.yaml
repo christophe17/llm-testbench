@@ -6,6 +6,10 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+# Replaces the image's CMD when set. Empty in production: the image's own command runs.
+# The local values set it to `uvicorn --reload` for the Tilt loop (guide 01b, step 8).
+args: []
+
 replicaCount: 2
 
 # Non-secret environment variables (LLM_TESTBENCH_ prefix on the application side).

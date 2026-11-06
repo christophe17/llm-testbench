@@ -3,6 +3,25 @@ image:
   repository: llm-testbench-registry:5050/llm-testbench-api
   tag: dev
   pullPolicy: Always
+# Tilt loop (guide 01b, step 8): live_update copies src/, prompts/ and config/ into the
+# running container, and uvicorn --reload restarts the server process on each change. By
+# default uvicorn reloads on *.py only: the includes cover the prompts (.md) and the config
+# (.toml).
+args:
+  - uvicorn
+  - llm_testbench.app.main:app
+  - --host=0.0.0.0
+  - --port=8000
+  - --reload
+  - --reload-dir=/app/src
+  - --reload-dir=/app/prompts
+  - --reload-dir=/app/config
+  - --reload-include=*.md
+  - --reload-include=*.toml
+# The sync writes into /app, which a read-only root filesystem refuses. Production keeps it
+# read-only (values.yaml).
+securityContext:
+  readOnlyRootFilesystem: false
 replicaCount: 1
 autoscaling:
   enabled: false
