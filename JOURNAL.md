@@ -592,6 +592,43 @@ no API model, no e5 run.
 parenthesized three-line assignment, which breaks the "edit one flag" contract of the config
 cell — keep config comments short. In zsh, `status` is read-only: `rc=$?`.
 
+## 2026-11-05 — The API arm of the embedding bench had never run: adapter fixed
+
+**Trigger**: notebook 2, part 5, with `RUN_API_BENCH = True` and both keys:
+`TypeError: RetrievalEvaluator expects a SearchInterface, Encoder, or CrossEncoder, got
+ClientEncoder`. The archived report holds two local models; the API path of `run_scifact` had
+been written on 2026-09-03 and never executed to the end.
+
+**Found**, in the order they would have surfaced:
+1. `mteb` 2.20.5 checks its encoder protocol with `isinstance` on a `runtime_checkable`
+   protocol of four members: `encode`, `similarity`, `similarity_pairwise`, `mteb_model_meta`.
+   `ClientEncoder` had two. Notebook 2b said two were enough; that sentence was wrong.
+2. `ClientEncoder` called `asyncio.run` per batch. In a notebook it cannot start (the kernel
+   runs a loop). From the CLI it opens and closes one loop per batch, and the provider's HTTP
+   connections stay bound to the closed one.
+3. Measured against a local OpenAI-compatible stub with keep-alive: one `LLMClient` used on two
+   loops pays a failed first attempt at every switch (`attempts: 2` in the span), hidden by the
+   retry policy. A connection pool belongs to the loop that opened it.
+
+**Done**: `similarity` and `similarity_pairwise` delegate to `mteb`'s own `cos_sim`, so the API
+model is ranked by the same code as the open ones. `BackgroundLoop`: one event loop in a daemon
+thread for the encoder's lifetime, closed by `run_scifact`. `run_scifact` builds one
+`LLMClient` per API model unless one is injected (tests); the CLI no longer builds it, and
+notebook 2's cell no longer passes the notebook's client. Three tests, one of which runs in CI
+without `mteb` (`BackgroundLoop` from inside a running loop). Notebook 2b, part 3.4 and
+glossary: the protocol as it is checked, and why the loop. Source anchors of notebooks 2 and 2b
+updated.
+
+**Measured** (offline, fake embedder, then the stub server): `run_scifact` on the API path
+runs to the end from a plain script and from inside a running loop; with the bench owning its
+client, every call is at one attempt on both sides.
+
+**Not done**: the real run, ~2 min, ~$0.03: notebook 2 with its kernel restarted writes
+`data/results/embeddings_scifact_api.json`; `make bench-embeddings` reruns the three models
+into `embeddings_scifact.json`. Notebooks 2 and
+2b were not re-executed: their working copies hold Christophe's full-mode outputs, and notebook
+2 two exploration cells, one with an unused import that `make lint` reports.
+
 ## 2026-11-05 — Phase 2 opened: the retrieval harness reproduces three published scores
 
 **Trigger**: `GO PHASE 2`. Plan and consistency audit accepted the same day; the audit's

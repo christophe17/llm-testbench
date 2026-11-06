@@ -14,8 +14,9 @@ import argparse
 import asyncio
 import datetime as dt
 import sys
+import threading
 import time
-from collections.abc import Iterable
+from collections.abc import Coroutine, Iterable
 from pathlib import Path
 from typing import Any, cast
 
@@ -92,12 +93,48 @@ class BenchmarkReport(BaseModel):
         return "\n".join(rows)
 
 
+class BackgroundLoop:
+    """One event loop in a daemon thread: the synchronous door to an asynchronous client.
+
+    ``mteb`` calls ``encode`` synchronously; ``LLMClient.embed`` is a coroutine. ``asyncio.run``
+    per batch breaks twice: it refuses to start in a thread where a loop already runs (a
+    Jupyter kernel), and it closes its loop on return, which strands the provider's HTTP
+    connections on a dead loop. One loop for the encoder's lifetime, in its own thread,
+    answers both.
+    """
+
+    def __init__(self) -> None:
+        self._loop = asyncio.new_event_loop()
+        self._thread = threading.Thread(
+            target=self._loop.run_forever, name="client-encoder-loop", daemon=True
+        )
+        self._thread.start()
+
+    def run[T](self, coro: Coroutine[Any, Any, T]) -> T:
+        """Block the calling thread until ``coro`` has run on the loop; raises what it raises."""
+        return asyncio.run_coroutine_threadsafe(coro, self._loop).result()
+
+    def close(self) -> None:
+        self._loop.call_soon_threadsafe(self._loop.stop)
+        self._thread.join()
+        self._loop.close()
+
+
 class ClientEncoder:
     """Adapter: the ``mteb`` encoder protocol on top of ``LLMClient.embed``.
 
     Each batch goes through the facade: governance checked (data class ``public``: these
     are public datasets), cost computed, span emitted. The total cost is accumulated for
     the report — it is the "how much does indexing SciFact with this model cost" line.
+
+    The protocol is checked at run time by ``isinstance``: ``encode``, ``similarity``,
+    ``similarity_pairwise`` and ``mteb_model_meta`` must all be there, or ``mteb`` rejects the
+    object before the first batch.
+
+    ``client`` is driven from the encoder's own loop. An HTTP connection pool belongs to the
+    loop that opened it: a client also used on another loop (a notebook's) would see the first
+    call after each switch fail on a stale connection and be retried. Give the encoder a
+    client that lives nowhere else.
     """
 
     def __init__(
@@ -115,6 +152,7 @@ class ClientEncoder:
         self.cost_usd: float | None = 0.0
         self.calls = 0
         self.mteb_model_meta = self._model_meta(model, dimensions)
+        self._loop = BackgroundLoop()
 
     @staticmethod
     def _model_meta(model: str, dimensions: int | None) -> Any:
@@ -147,7 +185,7 @@ class ClientEncoder:
             data_class=self._data_class,
             dimensions=self._dimensions,
         )
-        result = asyncio.run(self._client.embed(request))
+        result = self._loop.run(self._client.embed(request))
         self.calls += 1
         if self.cost_usd is not None:
             self.cost_usd = None if result.cost_usd is None else self.cost_usd + result.cost_usd
@@ -157,6 +195,21 @@ class ClientEncoder:
         """``inputs`` is a DataLoader of ``{"text": [...], ...}`` batches (mteb protocol)."""
         batches = [self._embed_texts(list(batch["text"])) for batch in inputs]
         return np.concatenate(batches, axis=0) if batches else np.zeros((0, 0), dtype=np.float32)
+
+    def similarity(self, embeddings1: Any, embeddings2: Any) -> Any:
+        """Every query against every document: ``mteb``'s own cosine, as for the open models."""
+        from mteb.similarity_functions import cos_sim
+
+        return cos_sim(embeddings1, embeddings2)
+
+    def similarity_pairwise(self, embeddings1: Any, embeddings2: Any) -> Any:
+        """Row ``i`` against row ``i``; unused by retrieval, required by the protocol."""
+        from mteb.similarity_functions import pairwise_cos_sim
+
+        return pairwise_cos_sim(embeddings1, embeddings2)
+
+    def close(self) -> None:
+        self._loop.close()
 
 
 def _score(task_result: Any, split: str = "test") -> dict[str, float]:
@@ -174,8 +227,10 @@ def run_scifact(
 ) -> BenchmarkReport:
     """Evaluate each model on SciFact (test, 300 queries, 5,183 documents).
 
-    A ``backend/model`` name (e.g. ``openai/text-embedding-3-small``) goes through ``client``;
-    any other name is an ``mteb`` model (Hugging Face), loaded locally.
+    A ``backend/model`` name (e.g. ``openai/text-embedding-3-small``) goes through an
+    ``LLMClient``; any other name is an ``mteb`` model (Hugging Face), loaded locally.
+    ``client`` is an injection point (tests): left out, each API model gets a client of its
+    own, used on the encoder's loop and nowhere else (see :class:`ClientEncoder`).
     """
     import mteb
 
@@ -185,18 +240,23 @@ def run_scifact(
         started = time.perf_counter()
         is_api = "/" in name and name.split("/", 1)[0] in {"openai", "openrouter", "local"}
         if is_api:
-            if client is None:
-                raise ValueError(f"{name!r} requires an LLMClient (API model)")
-            encoder = ClientEncoder(client, name, dimensions=api_dimensions)
+            encoder = ClientEncoder(
+                client if client is not None else LLMClient.from_settings(),
+                name,
+                dimensions=api_dimensions,
+            )
             # cast: the mteb encoder protocol is typed more finely than our adapter, and mteb
             # is absent from environments without the `bench` group (CI).
-            result = mteb.evaluate(
-                cast(Any, encoder),
-                [task],
-                encode_kwargs={"batch_size": batch_size},
-                show_progress_bar=False,
-                overwrite_strategy="always",
-            )
+            try:
+                result = mteb.evaluate(
+                    cast(Any, encoder),
+                    [task],
+                    encode_kwargs={"batch_size": batch_size},
+                    show_progress_bar=False,
+                    overwrite_strategy="always",
+                )
+            finally:
+                encoder.close()
             cost, backend, dims = encoder.cost_usd, encoder._model.backend, api_dimensions
         else:
             model = mteb.get_model(name, device=device)
@@ -255,10 +315,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--device", default=None, help="cpu, mps, cuda (local models)")
     parser.add_argument("--batch-size", type=int, default=64)
     args = parser.parse_args(argv)
-    api_backends = {"openai", "openrouter", "local"}
-    needs_client = any(m.split("/", 1)[0] in api_backends for m in args.models if "/" in m)
-    client = LLMClient.from_settings() if needs_client else None
-    report = run_scifact(args.models, client=client, device=args.device, batch_size=args.batch_size)
+    report = run_scifact(args.models, device=args.device, batch_size=args.batch_size)
     save_report(report, args.output)
     sys.stdout.write(report.table() + f"\n→ {args.output}\n")
     return 0
