@@ -47,6 +47,17 @@ notebooks-full: ## Runs the notebooks in full mode (downloads the real datasets)
 
 check: lint typecheck test ## Everything the CI checks, except the notebooks
 
+# ---------------------------------------------------------------- documentation
+
+# The diagrams in docs/diagrams/ are drawn by hand, one per concept, and checked against the
+# code by tests/test_diagrams.py. pyreverse is only the author's raw inventory of what exists:
+# its output is unreadable for a reader, so it is not versioned (build/ is ignored).
+uml-inventory: ## Raw class inventory of src/ (pyreverse, SVG via Graphviz) in build/uml/, for whoever updates docs/diagrams/
+	@mkdir -p build/uml
+	@for p in app eval generation ingest llm obs sources; do \
+		uv run --with pylint pyreverse -o svg -p $$p -d build/uml src/llm_testbench/$$p > /dev/null; \
+	done; ls build/uml
+
 # ---------------------------------------------------------------- application
 
 api: ## Runs the API locally (hot reload) — .env required
@@ -250,4 +261,4 @@ bootstrap-apply: ## Terraform bootstrap — apply (run only once, AWS account re
 	cd infra/terraform/bootstrap && terraform init && terraform apply
 
 .PHONY: help setup lint format typecheck test test-network notebooks-ci notebooks-full \
-	test-db check api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update corpus-build corpus-download corpus-verify golden-draft golden-probe golden-review golden-freeze golden-status eval-calibration-set eval-annotate eval-calibrate eval-bias k3d-create k3d-up k3d-down tilt-up tilt-db k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward psql db-ui infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply
+	test-db check uml-inventory api ingest-scifact ingest-qasper bench-embeddings eval eval-report eval-compare eval-gate eval-gate-update corpus-build corpus-download corpus-verify golden-draft golden-probe golden-review golden-freeze golden-status eval-calibration-set eval-annotate eval-calibrate eval-bias k3d-create k3d-up k3d-down tilt-up tilt-db k8s-secrets docker-build helm-lint langfuse-up langfuse-down langfuse-port-forward pg-port-forward psql db-ui infra-init infra-plan infra-up infra-down infra-validate kubeconfig deploy deploy-trigger cluster-addons bootstrap-plan bootstrap-apply

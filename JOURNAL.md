@@ -556,6 +556,33 @@ embedder received and the retitle path. ADR 007 and `docs/decisions.md` amended.
 execution, and the file is being edited by another session. The SciFact re-ingestion and the
 before/after retrieval number wait for the phase 2 harness (nDCG@10 on our index, not mteb's).
 
+## 2026-11-02 — Generated UML rejected, curated diagrams with a drift test
+
+**Trigger**: "is there a tool that generates visuals of the classes from the code?". pyreverse
+(pylint) was tried on `src/`: one Mermaid diagram per subpackage, 63 classes for `llm`, modules
+drawn as empty boxes, flat module names colliding across subpackages (`eval/types`,
+`llm/types`), and no edge between the providers and the `LLMProvider` protocol, since
+structural typing is invisible to an inheritance scan. Verdict at first read: unreadable, not
+professional. No VS Code extension does better in 2026; the polished generated view is
+PyCharm Professional's, and it would still be an inventory.
+
+**Done**: `docs/diagrams/`, eleven hand-drawn Mermaid class diagrams, one per concept, 7 to 12
+classes each, with a README on the notation and an index; `tests/test_diagrams.py` parses every
+block and checks the drawn classes, the listed members, the relation endpoints and the source
+paths against the AST of `src/` (13 tests, offline); links from the guided reading of notebooks
+01 and 02 and from `docs/reading-order.md`; `make uml-inventory` keeps pyreverse as the author's
+raw inventory in the ignored `build/`. All eleven blocks parsed and rendered with Mermaid 11.4.1
+before being kept. Decision line in `docs/decisions.md`.
+
+**Incidents / surprises**: pylint 4 draws fewer relations than pylint 3.3 (composition becomes
+a plain association), one more reason not to depend on a generator's output. `uv add` and
+`uv remove` resync `.venv` exactly and uninstalled the `bench` group (torch, transformers);
+restored with `uv sync --group bench`. `uv pip` without an activated venv inspects the Anaconda
+Python, not `.venv`.
+
+**Next**: one diagram per new concept at each phase, written before the notebook's guided
+reading; the test keeps them honest.
+
 ## 2026-11-04 — Side notebook 2b: MTEB crash course
 
 **Trigger**: "a side notebook, a kind of crash course for MTEB, just to understand what's needed

@@ -96,8 +96,10 @@ Real code, tested, typed, deployable.
 1. **The notebook implements NOTHING.** It `import`s from `src/` and runs the project's real
    code. If you rewrite a simplified version in the notebook, you have failed: I must
    learn the code that runs, not a parallel toy.
-2. To show the code, use `inspect.getsource()` on the real functions and classes, or
-   display file excerpts with their path, then explain block by block.
+2. **The notebook does not print the code.** To point at it, a markdown cell links to the
+   function or class in `src/` — a relative link with a line anchor, checked by
+   `tests/test_notebook_source_links.py` — and the prose explains it block by block; I read
+   the code itself in the editor (decision of 2026-11-03).
 3. Mandatory structure:
    - **The problem**: what we are trying to solve, why the naive solution is not enough.
    - **The options**: 2 or 3 possible approaches, why this one.

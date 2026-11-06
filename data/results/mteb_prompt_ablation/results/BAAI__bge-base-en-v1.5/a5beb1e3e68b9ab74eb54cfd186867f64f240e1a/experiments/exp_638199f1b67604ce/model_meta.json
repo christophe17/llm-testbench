@@ -33,12 +33,12 @@
     "similarity_fn_name": "cosine",
     "use_instructions": true,
     "training_datasets": [
-        "NQ",
         "AmazonReviewsClassification",
-        "DuRetrieval",
-        "MLQARetrieval",
+        "NQHardNegatives",
         "NQ-NL",
-        "NQHardNegatives"
+        "NQ",
+        "DuRetrieval",
+        "MLQARetrieval"
     ],
     "adapted_from": null,
     "superseded_by": null,

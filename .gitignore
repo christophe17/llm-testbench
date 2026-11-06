@@ -31,3 +31,6 @@ infra/terraform/bootstrap/.terraform.lock.hcl
 
 # Terraform: tfvars files contain personal values (alert e-mail...)
 *.tfvars
+
+# pyreverse inventory (make uml-inventory)
+build/

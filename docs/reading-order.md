@@ -1,8 +1,10 @@
 # Testbench reading order
 
 > What to read, phase by phase, in order: the roadmap file, the notebooks, and the infra guides
-> at the point where a run needs them. The `src/` modules are not listed: each notebook shows
-> the ones it uses (`inspect.getsource`). What is done or not is in `STATE.md`.
+> at the point where a run needs them. The `src/` modules are not listed: each notebook links
+> to the functions and classes it uses (file and line), and the class diagrams of `src/`, one
+> per concept, are in [diagrams/README.md](diagrams/README.md). What is done or not is in
+> `STATE.md`.
 >
 > Legend: ✅ exists · ⏳ to come, name given by the roadmap.
 

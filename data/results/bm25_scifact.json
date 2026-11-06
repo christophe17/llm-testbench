@@ -1,7 +1,7 @@
 {
   "task": "SciFact",
   "metric": "ndcg_at_10",
-  "generated_at": "2026-11-04T14:22:40.847014Z",
+  "generated_at": "2026-11-05T13:55:30.545489Z",
   "sampled": false,
   "scores": [
     {
@@ -10,7 +10,7 @@
       "recall_at_10": 0.81867,
       "map_at_10": 0.63872,
       "dimensions": null,
-      "elapsed_s": 6.0518107920652255,
+      "elapsed_s": 7.217532707960345,
       "cost_usd": null,
       "published_ndcg_at_10": 0.665,
       "published_source": "Thakur et al. 2021, BEIR, table 2 — Anserini BM25, not bm25s",
