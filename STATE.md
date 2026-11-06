@@ -139,7 +139,8 @@ history restarts from the rerun. Commits are now made from a clean worktree.
    `gh variable set AWS_DEPLOY_ROLE_ARN --body "$(cd infra/terraform/bootstrap && terraform output -raw github_deploy_role_arn)"`,
    then guides 02→05: `make infra-up`, `make cluster-addons`, secrets, `make deploy` or
    `make deploy-trigger` (guide 09) — the API on EKS (≈ $6/day while running, `make infra-down`
-   in the evening).
+   in the evening). Scheduled as one block before `GO PHASE 3` (`docs/reading-order.md`,
+   2026-11-06); guide 00 can be applied any day before.
 4. **GPU quota** (phase 6, ADR 009: days to weeks). The two requests for 8 vCPU
    (one g6.2xlarge or two g6.xlarge) were sent on 2026-10-20, account 749020018778,
    eu-west-3, status `CASE_OPENED`: AWS opened one support case per request, and the

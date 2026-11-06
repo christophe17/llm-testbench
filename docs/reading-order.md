@@ -21,26 +21,20 @@ Start with the overview: [roadmap/README.md](roadmap/README.md).
 1. Roadmap — [phase-1.md](roadmap/phase-1.md)
 2. Notebook — [01 robust LLM call](../notebooks/phase-1/01_robust_llm_call.ipynb): nothing to
    install, sample mode
-3. Infra guide — [01 local dev k3d](infra/01-local-dev-k3d.md): `make k3d-up`, the pgvector
-   database notebook 2 needs
+3. Infra guide — [01 local dev k3d](infra/01-local-dev-k3d.md): `make k3d-create` + `make tilt-db`, the pgvector
+   database notebook 2 needs; its companion [01b Tilt crash course](infra/01b-tilt-crash-course.md)
+   explains what Tilt does behind those two commands
 4. Notebook — [02 from document to index](../notebooks/phase-1/02_document_to_index.ipynb)
    - Side notebook — [02b MTEB crash course](../notebooks/phase-1/02b_mteb_crash_course.ipynb):
      the benchmark and the library behind notebook 2's table, and what the roadmap takes from
      them; optional, `mteb` installed (`uv sync --group bench`)
-5. Infra guide — [07 observability](infra/07-observability.md): `make langfuse-up`, where the
-   traces of notebooks 1 and 2 go
+5. Infra guide — [06 Helm chart](infra/06-helm-chart-api.md): the API's chart (probes, HPA,
+   PDB, resources), rendered and deployed on the local cluster
+6. Infra guide — [07 observability](infra/07-observability.md): `make langfuse-up`, self-hosted
+   Langfuse receiving the API's traces; no notebook of phases 1 and 2 needs it
 
-Then the cloud (AWS, ≈ $6/day while running). Can wait until the end of phase 2, must be done
-before phase 3:
-
-6. Infra guide — [00 bootstrap](infra/00-bootstrap.md)
-7. Infra guide — [08 costs](infra/08-costs.md), before turning anything on
-8. Infra guide — [02 network](infra/02-network-vpc.md)
-9. Infra guide — [03 EKS](infra/03-eks.md)
-10. Infra guide — [04 RDS pgvector](infra/04-rds-pgvector.md)
-11. Infra guide — [05 secrets](infra/05-secrets.md)
-12. Infra guide — [06 Helm chart](infra/06-helm-chart-api.md)
-13. Infra guide — [09 GitHub OIDC deployment](infra/09-github-oidc-deployment.md)
+The cloud guides written in this phase (00, 02 to 05, 08, 09) are listed at the head of
+phase 3, the first phase that runs something on AWS.
 
 ## Phase 2 — Evaluation ⏳
 
@@ -66,15 +60,25 @@ fixtures, their numbers are read from the full runs archived under `data/results
 
 ## Phase 3 — Advanced RAG ⏳
 
-Requires the phase 1 cloud guides.
+First the cloud (AWS, ≈ $6/day while running), as one block before `GO PHASE 3`. These guides
+were written in phase 1; phases 1 and 2 run nothing on AWS, and phase 3 is the first that does
+(Bedrock Knowledge Bases in notebook 4, the orchestrator on the cluster). Guide 00 costs about
+€0 a month and creates the budget alert: it can be applied any day before.
 
-1. Roadmap — [phase-3.md](roadmap/phase-3.md)
-2. Notebook — `phase-3/01_*`: why hybrid search saves acronyms and jargon
-3. Notebook — `phase-3/02_*`: the duel of chunking strategies on raw documents
-4. Notebook — `phase-3/03_*`: query transformation, when it helps, when it costs for nothing
-5. Notebook — `phase-3/04_*`: our pipeline against LlamaIndex and Bedrock Knowledge Bases
-6. Infra guide — ⏳ the orchestrator on the cluster
-7. Notebook — `phase-3/05_*`: the experiment matrix, regenerating a hundred indexes
+1. ✅ Infra guide — [00 bootstrap](infra/00-bootstrap.md)
+2. ✅ Infra guide — [08 costs](infra/08-costs.md), before turning anything on
+3. ✅ Infra guide — [02 network](infra/02-network-vpc.md)
+4. ✅ Infra guide — [03 EKS](infra/03-eks.md)
+5. ✅ Infra guide — [04 RDS pgvector](infra/04-rds-pgvector.md)
+6. ✅ Infra guide — [05 secrets](infra/05-secrets.md)
+7. ✅ Infra guide — [09 GitHub OIDC deployment](infra/09-github-oidc-deployment.md)
+8. Roadmap — [phase-3.md](roadmap/phase-3.md)
+9. Notebook — `phase-3/01_*`: why hybrid search saves acronyms and jargon
+10. Notebook — `phase-3/02_*`: the duel of chunking strategies on raw documents
+11. Notebook — `phase-3/03_*`: query transformation, when it helps, when it costs for nothing
+12. Notebook — `phase-3/04_*`: our pipeline against LlamaIndex and Bedrock Knowledge Bases
+13. Infra guide — ⏳ the orchestrator on the cluster
+14. Notebook — `phase-3/05_*`: the experiment matrix, regenerating a hundred indexes
 
 ## Phase 4 — Multi-source agents ⏳
 
