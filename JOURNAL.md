@@ -1052,3 +1052,25 @@ frozen set (they wait for the review); the judged baseline; the golden set's arm
 README; the phase closing.
 
 **Next**: Christophe's two tasks, in either order: `make eval-annotate`, `make golden-review`.
+
+## 2026-11-10 — Phase 2, notebook 1: arm, run and suite defined before they are used
+
+**Done**: Christophe opened notebook 1 and asked what an arm and a suite are, and what the
+notebook expects him to know. Both words were used from the configuration cell on; "arm"
+was defined in part 4.1, "suite" nowhere. The opening cell now says what phase 1 built in
+four definitions (chunk, embedding model, index, generator), what to take away, and how
+the cells run. A section closes part 1, before the configuration cell: dataset, metric,
+arm, run and suite on one example (keywords against meaning on SciFact), the suites of the
+phase with the question each answers, and how to read the name of an arm. A live cell
+after the imports prints the suites of `config/eval_suites.toml`, one arm as the file
+declares it and the run archived for it (`SHOW_SUITE`, `SHOW_ARM`). The glossary gains
+harness, baseline, fixtures, dataset, metric and suite. 33 cells.
+
+**Incidents / surprises**:
+- Part 4.3 held five `{L("module", "name")}` placeholders that the generation script of
+  2026-11-05 never rendered into links, visible as such in the committed notebook. The
+  link test could not see them: it checks the links that exist, not the ones that are
+  missing. Replaced by real links, which the test now covers.
+
+**Not done**: notebooks 2 to 4 use "arm" and "suite" without redefining them; they lean
+on notebook 1, as `docs/reading-order.md` says.
