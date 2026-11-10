@@ -7,7 +7,12 @@ import pytest
 from llm_testbench.config import Settings
 from llm_testbench.eval.loaders import BeirLoader
 from llm_testbench.eval.runner import run_retrieval
-from llm_testbench.eval.runs import Reference, format_runs, load_run, save_run
+from llm_testbench.eval.runs import (
+    Reference,
+    format_retrieval_runs,
+    load_retrieval_run,
+    save_retrieval_run,
+)
 from llm_testbench.eval.types import RetrievalDataset
 from llm_testbench.retrieval import Description, Retrieval, RetrievedDocument
 
@@ -86,7 +91,7 @@ async def test_an_unknown_cost_makes_the_run_cost_unknown(dataset: RetrievalData
         resamples=50,
     )
     assert run.cost_usd is None
-    assert "unknown" in format_runs([run])
+    assert "unknown" in format_retrieval_runs([run])
 
 
 async def test_reference_gap_and_table(dataset: RetrievalDataset) -> None:
@@ -100,7 +105,7 @@ async def test_reference_gap_and_table(dataset: RetrievalDataset) -> None:
         resamples=50,
     )
     assert run.gap(reference) == pytest.approx(0.0)
-    table = format_runs([run])
+    table = format_retrieval_runs([run])
     assert "scripted" in table
     assert "0.500 paper (+0.000)" in table
 
@@ -111,9 +116,9 @@ async def test_a_full_run_is_archived_and_a_sample_run_is_not(
     retriever = ScriptedRetriever(rankings(dataset))
     run = await run_retrieval(dataset, retriever, suite="unit", arm="scripted", resamples=50)
     assert run.publishable
-    path = save_run(run, tmp_path)
+    path = save_retrieval_run(run, tmp_path)
     assert path == tmp_path / "runs" / "unit" / "scripted.json"
-    assert load_run(path) == run
+    assert load_retrieval_run(path) == run
     # One line per query, after the indented summary.
     text = path.read_text(encoding="utf-8")
     assert text.count('\n  {"query_id"') == len(run.queries)
@@ -121,9 +126,9 @@ async def test_a_full_run_is_archived_and_a_sample_run_is_not(
     sampled = BeirLoader("scifact", settings=offline_settings).load("test", max_queries=2)
     sample_run = await run_retrieval(sampled, retriever, suite="unit", arm="s", resamples=50)
     assert not sample_run.publishable
-    assert "NOT PUBLISHABLE" in format_runs([sample_run])
+    assert "NOT PUBLISHABLE" in format_retrieval_runs([sample_run])
     with pytest.raises(ValueError, match="not publishable"):
-        save_run(sample_run, tmp_path)
+        save_retrieval_run(sample_run, tmp_path)
 
     on_fixtures = await run_retrieval(
         dataset, retriever, suite="unit", arm="s", sample_mode=True, resamples=50

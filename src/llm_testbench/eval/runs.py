@@ -136,7 +136,7 @@ def git_state(root: Path | None = None) -> tuple[str | None, bool | None]:
     return sha or None, bool(status)
 
 
-def format_runs(runs: Sequence[RetrievalRun]) -> str:
+def format_retrieval_runs(runs: Sequence[RetrievalRun]) -> str:
     """The comparison table of a suite, as the CLI and the notebooks print it."""
     header = (
         f"{'arm':<30} {'dataset':<14} {'nDCG@10':>8} {'95% interval':>15} {'R@100':>6} "
@@ -165,7 +165,7 @@ def format_runs(runs: Sequence[RetrievalRun]) -> str:
     return "\n".join(rows)
 
 
-def save_run(run: RetrievalRun, results_dir: Path) -> Path:
+def save_retrieval_run(run: RetrievalRun, results_dir: Path) -> Path:
     """Archive a run as ``<results_dir>/runs/<suite>/<arm>.json``: one file per arm, the
     latest full run, versioned with the code. Its history is the file's git history (and the
     ``eval_runs`` table, while the database lives)."""
@@ -187,5 +187,5 @@ def save_run(run: RetrievalRun, results_dir: Path) -> Path:
     return path
 
 
-def load_run(path: Path) -> RetrievalRun:
+def load_retrieval_run(path: Path) -> RetrievalRun:
     return RetrievalRun.model_validate_json(path.read_text(encoding="utf-8"))

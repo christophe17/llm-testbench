@@ -47,16 +47,21 @@ from llm_testbench.eval.gate import (
 )
 from llm_testbench.eval.generation import (
     GenerationRun,
-    format_generation,
-    load_generation,
-    save_generation,
+    format_generation_run,
+    load_generation_run,
+    save_generation_run,
 )
 from llm_testbench.eval.judge import Judge
 from llm_testbench.eval.loaders.squad import SquadV2Loader
 from llm_testbench.eval.qa import QADataset
 from llm_testbench.eval.report import write_report
 from llm_testbench.eval.run_store import RunStore
-from llm_testbench.eval.runs import RetrievalRun, format_runs, load_run, save_run
+from llm_testbench.eval.runs import (
+    RetrievalRun,
+    format_retrieval_runs,
+    load_retrieval_run,
+    save_retrieval_run,
+)
 from llm_testbench.eval.spend import LEDGER_PATH, SpendLedger
 from llm_testbench.eval.suite import Suites, run_generation_arm, run_retrieval_arm
 from llm_testbench.ingest.store import PgVectorStore
@@ -80,7 +85,7 @@ def spend_ledger(settings: Settings) -> SpendLedger | None:
     return SpendLedger(find_repo_root() / LEDGER_PATH, cap)
 
 
-async def run_suite(
+async def run_retrieval_suite(
     suite_name: str,
     arm_names: list[str] | None,
     *,
@@ -127,8 +132,8 @@ async def run_suite(
             if results_dir is not None and run.publishable:
                 previous = archive_path(results_dir, suite_name, arm.name)
                 if echo and previous.is_file():
-                    sys.stderr.write(f"  {against_archive(run, load_run(previous))}\n")
-                save_run(run, results_dir)
+                    sys.stderr.write(f"  {against_archive(run, load_retrieval_run(previous))}\n")
+                save_retrieval_run(run, results_dir)
     finally:
         if store is not None:
             await store.close()
@@ -168,7 +173,7 @@ async def run_generation_suite(
             )
             runs.append(run)
             if results_dir is not None and run.publishable:
-                save_generation(run, results_dir)
+                save_generation_run(run, results_dir)
     finally:
         if store is not None:
             await store.close()
@@ -213,7 +218,7 @@ async def run_gate(settings: Settings, *, require_db: bool) -> tuple[list[GatedR
         sample = sample.model_copy(update={"database_url": None})
     names = [name for name in suite.arm_names() if name not in skipped]
     runs: list[GatedRun] = []
-    runs += await run_suite(
+    runs += await run_retrieval_suite(
         GATE_SUITE, names, settings=sample, results_dir=None, record_history=False, echo=False
     )
     runs += await run_generation_suite(
@@ -228,7 +233,7 @@ async def run_everything(
     """Retrieval arms then generation arms, on ONE event loop: an HTTP client belongs to
     the loop that opened it, and a second ``asyncio.run`` would leave the first one's
     connections to be closed on a loop that no longer exists."""
-    retrieval = await run_suite(suite, arms, settings=settings, results_dir=results_dir)
+    retrieval = await run_retrieval_suite(suite, arms, settings=settings, results_dir=results_dir)
     generation = await run_generation_suite(suite, arms, settings=settings, results_dir=results_dir)
     return retrieval, generation
 
@@ -239,11 +244,11 @@ def _run_command(args: argparse.Namespace, settings: Settings) -> int:
         run_everything(args.suite, args.arm, settings=settings, results_dir=results_dir)
     )
     if retrieval:
-        sys.stdout.write(format_runs(retrieval) + "\n")
+        sys.stdout.write(format_retrieval_runs(retrieval) + "\n")
         if not settings.database_url:
             sys.stderr.write("no LLM_TESTBENCH_DATABASE_URL: runs not saved to the history\n")
     for run in generation:
-        sys.stdout.write(format_generation(run) + "\n\n")
+        sys.stdout.write(format_generation_run(run) + "\n\n")
     ledger = spend_ledger(settings)
     if ledger is not None:
         sys.stderr.write(f"spent so far: ${ledger.spent_usd:.2f} of ${ledger.cap_usd:.2f}\n")
@@ -255,9 +260,9 @@ def _compare_command(args: argparse.Namespace) -> int:
     for arm in (args.candidate, args.baseline):
         if not archive_path(results_dir, args.suite, arm).is_file():
             raise SystemExit(f"no archived run for arm {arm!r}: make eval ARMS={arm}")
-    candidate = load_run(archive_path(results_dir, args.suite, args.candidate))
-    baseline = load_run(archive_path(results_dir, args.suite, args.baseline))
-    sys.stdout.write(format_runs([baseline, candidate]) + "\n")
+    candidate = load_retrieval_run(archive_path(results_dir, args.suite, args.candidate))
+    baseline = load_retrieval_run(archive_path(results_dir, args.suite, args.baseline))
+    sys.stdout.write(format_retrieval_runs([baseline, candidate]) + "\n")
     difference = compare_runs(candidate, baseline, args.metric)
     sys.stdout.write(
         f"{args.candidate} against {args.baseline}, {len(candidate.queries)} queries: "
@@ -296,7 +301,7 @@ def _calibration_source(args: argparse.Namespace, settings: Settings) -> Generat
     path = archive_path(find_repo_root() / "data" / "results", args.suite, args.arm)
     if not path.is_file():
         raise SystemExit(f"no archived generation run at {path}: make eval SUITE={args.suite}")
-    return load_generation(path)
+    return load_generation_run(path)
 
 
 def _calibration_dataset(run: GenerationRun, settings: Settings) -> QADataset:

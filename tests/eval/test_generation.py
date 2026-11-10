@@ -28,10 +28,10 @@ from llm_testbench.eval.context import Context, NoContext
 from llm_testbench.eval.generation import (
     GenerationRun,
     attribution,
-    format_generation,
-    load_generation,
+    format_generation_run,
+    load_generation_run,
     run_generation,
-    save_generation,
+    save_generation_run,
 )
 from llm_testbench.eval.judge import Judge, Rubric, render_material
 from llm_testbench.eval.loaders.hotpotqa import HotpotQALoader
@@ -110,7 +110,7 @@ async def test_rates_are_computed_on_the_examples_they_apply_to(
     # 4 calls of 400 input and 20 output tokens at $2 and $10 per million.
     assert run.cost_usd == pytest.approx(4 * (400 * 2 + 20 * 10) / 1e6)
     assert run.stability is None
-    table = format_generation(run)
+    table = format_generation_run(run)
     assert "correct refusal (unanswerable)" in table
     assert "0.500" in table
 
@@ -179,7 +179,7 @@ async def test_end_to_end_charges_a_failure_to_the_search_or_to_the_generator(
     assert run.cost_usd == pytest.approx(3 * ((400 * 2 + 20 * 10) / 1e6 + 0.001))
     assert run.answers[0].retrieval_ms == 12.0
     assert run.answers[0].retrieved == ("Ada Lovelace", "Charles Babbage")
-    assert "found but wrong 1" in format_generation(run)
+    assert "found but wrong 1" in format_generation_run(run)
 
 
 async def test_gold_context_leaves_out_the_questions_without_a_gold_passage(
@@ -226,7 +226,7 @@ async def test_an_answer_cut_by_the_output_cap_is_counted_not_hidden(
     assert run.max_output_tokens == 64
     # An empty answer is not a refusal: the unanswerable question counts as answered.
     assert run.metrics["correct_refusal"].mean == 0.0
-    assert "cut by the output cap" in format_generation(run)
+    assert "cut by the output cap" in format_generation_run(run)
     sent = client.provider_for("anthropic", client.registry.get("anthropic"))
     assert sent.calls[0].max_output_tokens == 64  # type: ignore[attr-defined]
 
@@ -265,12 +265,12 @@ async def test_archive_round_trip_and_sample_mode(
     offline_settings: Settings, dataset: QADataset, tmp_path: Path
 ) -> None:
     run = await generate(offline_settings, dataset, ANSWERS)
-    path = save_generation(run, tmp_path)
-    assert load_generation(path) == run
+    path = save_generation_run(run, tmp_path)
+    assert load_generation_run(path) == run
     assert path.read_text(encoding="utf-8").count('\n  {"example_id"') == 4
     sample = await generate(offline_settings, dataset, ANSWERS, sample_mode=True)
     with pytest.raises(ValueError, match="not publishable"):
-        save_generation(sample, tmp_path)
+        save_generation_run(sample, tmp_path)
 
 
 async def test_the_cap_stops_the_run_and_the_money_spent_is_recorded(

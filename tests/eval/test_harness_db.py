@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from llm_testbench.config import Settings
-from llm_testbench.eval.cli import run_suite
+from llm_testbench.eval.cli import run_retrieval_suite
 from llm_testbench.eval.run_store import RunStore
 from llm_testbench.eval.suite import RetrievalArmConfig, SuiteConfig, run_retrieval_arm
 from llm_testbench.ingest.chunking import RecursiveChunker
@@ -112,7 +112,7 @@ async def test_cli_runs_the_versioned_suite_in_sample_mode(
 ) -> None:
     """Every arm of ``config/eval_suites.toml`` runs end to end on fixtures: the suite file
     cannot rot. Nothing is archived, since nothing here is a number."""
-    runs = await run_suite(
+    runs = await run_retrieval_suite(
         "retrieval-baseline",
         ["scifact-bm25", "scifact-bge-whole-exact", "nfcorpus-oai-chunks-hnsw"],
         settings=sample_settings,

@@ -21,7 +21,7 @@ from typing import Any
 from jinja2 import Environment, StrictUndefined
 
 from llm_testbench.eval.compare import compare_runs
-from llm_testbench.eval.runs import HEADLINE_METRIC, RetrievalRun, load_run
+from llm_testbench.eval.runs import HEADLINE_METRIC, RetrievalRun, load_retrieval_run
 from llm_testbench.eval.suite import SuiteConfig
 
 TEMPLATE = "report.html.j2"
@@ -164,7 +164,7 @@ def render_report(
 
 def load_archived_runs(results_dir: Path, suite_name: str) -> list[RetrievalRun]:
     directory = results_dir / "runs" / suite_name
-    return [load_run(path) for path in sorted(directory.glob("*.json"))]
+    return [load_retrieval_run(path) for path in sorted(directory.glob("*.json"))]
 
 
 def write_report(

@@ -1100,3 +1100,22 @@ arm. Earlier entries of this journal use the old meaning.
 `load_run`, `save_run` and `format_runs` are about retrieval runs only, next to
 `load_generation`, `save_generation` and `format_generation`. Renaming them changes the
 code cells of notebooks 1 to 3, which then have to be executed again.
+
+## 2026-11-10 — The runs and the command line follow: one prefix per kind
+
+**Done**: the two places the previous entry left, at Christophe's request. `run_suite` →
+`run_retrieval_suite`, next to `run_generation_suite`. `format_runs`, `save_run`, `load_run`
+→ `format_retrieval_runs`, `save_retrieval_run`, `load_retrieval_run`. And, so that both
+sides read the same, `format_generation`, `save_generation`, `load_generation` →
+`format_generation_run`, `save_generation_run`, `load_generation_run`. The table in the
+docstring of `eval/suite.py` lists them all. Notebooks 1 to 3 executed again in sample mode.
+
+**Checked**: Christophe asked whether this meant paying a second time for the generation
+runs. No. An archived run is data: it records the name of its arm and of its suite, not
+the name of a function, and the notebooks read it as before. `data/results/` is unchanged
+and `spend.jsonl` has the same checksum before and after.
+
+**Not done**: what exists for retrieval only keeps its name, having no twin to be confused
+with: `compare_runs`, `against_archive`, the HTML report (`render_report`,
+`load_archived_runs`, `write_report`) and `RunStore`. They take the prefix the day
+generation gets a comparison, a report or a history of its own.

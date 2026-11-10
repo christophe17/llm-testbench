@@ -347,7 +347,7 @@ def attribution(run: GenerationRun) -> Attribution | None:
     )
 
 
-def format_generation(run: GenerationRun) -> str:
+def format_generation_run(run: GenerationRun) -> str:
     cost = "unknown" if run.cost_usd is None else f"${run.cost_usd:.4f}"
     flag = "" if run.publishable else "  [NOT PUBLISHABLE: sample mode]"
     asked = len(run.scored())
@@ -385,7 +385,7 @@ def format_generation(run: GenerationRun) -> str:
     return "\n".join(lines)
 
 
-def save_generation(run: GenerationRun, results_dir: Path) -> Path:
+def save_generation_run(run: GenerationRun, results_dir: Path) -> Path:
     """Same archive as the retrieval runs: the summary indented, one line per answer."""
     if not run.publishable:
         raise ValueError(f"run {run.run_id} is not publishable (sample mode): not archived")
@@ -403,5 +403,5 @@ def save_generation(run: GenerationRun, results_dir: Path) -> Path:
     return path
 
 
-def load_generation(path: Path) -> GenerationRun:
+def load_generation_run(path: Path) -> GenerationRun:
     return GenerationRun.model_validate_json(path.read_text(encoding="utf-8"))

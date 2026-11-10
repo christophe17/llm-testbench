@@ -9,7 +9,8 @@ An **arm** is one system under measurement. There are two kinds:
   passages handed to the generator come from (the gold ones, a search, nothing), and the
   index that search reads.
 
-Every name of this module says which kind it is about:
+Every name says which kind it is about, in this module and in the ones around it
+(``eval/runs.py``, ``eval/generation.py``, ``eval/cli.py``):
 
                         retrieval arm                  generation arm
     block of the file   [[suites.<suite>.retrieval]]   [[suites.<suite>.generation]]
@@ -18,6 +19,10 @@ Every name of this module says which kind it is about:
     dataset loader      load_retrieval_dataset         load_qa_dataset
     what runs it        run_retrieval_arm              run_generation_arm
     what comes out      RetrievalRun                   GenerationRun
+    archived by         save_retrieval_run             save_generation_run
+    read back by        load_retrieval_run             load_generation_run
+    printed by          format_retrieval_runs          format_generation_run
+    all of a suite's    run_retrieval_suite            run_generation_suite
 
 ``ArmConfig``, with no kind in its name, is what the two share: a name, a dataset and the
 description of the index an arm reads when it reads one. ``ensure_index`` builds that index
