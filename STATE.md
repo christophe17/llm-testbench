@@ -86,9 +86,10 @@ course; the testbench proves nothing until phase 1 is studied and run.
   9,789 paragraphs; QASPER answers and evidence, searched inside the question's paper.
   Bias probes of the judge (`make eval-bias`), to run after the calibration.
 - **Notebooks** (`notebooks/phase-2/`): 01 measuring a RAG (33 cells), 02 LLM-as-judge
-  (20), 03 contamination (16), 04 building a golden set (23). Live cells on fixtures with
+  (20), 03 contamination (18), 04 building a golden set (23). Live cells on fixtures with
   scripted models, numbers read from the archived runs; reading order in
-  `docs/reading-order.md`.
+  `docs/reading-order.md`. Each opens with "Before you start" and defines every notion
+  before using it, the words of the earlier notebooks included (2026-11-10).
 - **Two defects of phase 1 found by the end-to-end runs and fixed**: ingestion did not
   refresh the planner's statistics after a load (a search of 22 seconds on a fresh index,
   5 ms after `ANALYZE`); the output cap of an answer was sized for its visible text while

@@ -1119,3 +1119,43 @@ and `spend.jsonl` has the same checksum before and after.
 with: `compare_runs`, `against_archive`, the HTML report (`render_report`,
 `load_archived_runs`, `write_report`) and `RunStore`. They take the prefix the day
 generation gets a comparison, a report or a history of its own.
+
+## 2026-11-10 — Phase 2, notebooks 2 to 4: every notion defined before it is used
+
+**Done**: reading `config/eval_suites.toml`, Christophe asked why one arm had no
+`index_key`, then asked that notions be explained in the notebooks as he had asked for
+notebook 1, and that the three other notebooks of the phase be reworked the same way. The
+entry on notebook 1 had left them leaning on it ("Not done"); they no longer do. Each of
+the three now opens with "Before you start": what you need to know (the words of the
+earlier notebooks restated in one line each), what to take away, how the cells run. Then:
+
+- **02, the judge**: claim, item, label, verdict and calibration are defined in part 1
+  ("calibration" was in the title and in the glossary only). The versioned prompt, the
+  system prompt, the structured reply, the fingerprint, natural and swapped items, blind,
+  bias, probe, token and output cap are defined where they first appear.
+- **03, contamination**: training, probe, training cutoff, runner, sentinel, seed, the
+  regression gate, freshness floor, manifest, draft, kind and finish reason. A live cell
+  prints three arms as the file declares them, the closed-book arm and the two it is
+  crossed with: same dataset, same size, same seed. A paragraph says how to read the table
+  the runner prints: what `n` is, which rows mean nothing closed book, what
+  `[NOT PUBLISHABLE: sample mode]` marks. 18 cells (16 before).
+- **04, the golden set**: corpus, arXiv, fresh, parsing, the two texts, draft, drafter,
+  review and kind are introduced before the configuration cell, which uses them. CC BY
+  4.0, LaTeX, record, category, displayed formula, gold passage, structured outputs and
+  poisoned documents are defined where they appear.
+
+The three glossaries also list the words inherited from the earlier notebooks.
+
+The question that started it is answered where it was asked. The header of
+`config/eval_suites.toml` and notebook 1 (the cell on the real files) now say how the name
+of an index is derived when an arm does not pin one (`<dataset>-<chunking>-<model>`), that
+`search` and `ef_search` are not part of it, and why only the SciFact "chunks" arms pin
+theirs.
+
+**Checked**: no number and no archived run changed. Notebook 3 was executed again in sample
+mode; the only output that moved is a latency. Notebooks 2 and 4 changed in prose and in
+comments of their configuration cells; both were executed into a scratch folder to check
+that they still run. Ruff, the source-link test (two new links: `GenerationArmConfig`,
+`ArmConfig.keys`), the suite tests.
+
+**Not done**: the notebooks of phases 0 and 1 were not reread against this rule.

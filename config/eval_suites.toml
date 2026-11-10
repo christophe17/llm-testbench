@@ -18,6 +18,13 @@
 #   ef_search        pgvector's candidate list for hnsw (server default: 40; at most 1000)
 #   index_key + source_key   pin an existing index instead of deriving its name
 #
+# The name of the index a dense arm reads. Left out, which is the usual case, it is derived
+# from the arm as <dataset>-<chunking>-<model>: `nfcorpus-oai-chunks-hnsw` reads
+# `nfcorpus-r1000-200-text-embedding-3-small`, built at its first run. `search` and
+# `ef_search` are not part of the name: arms that differ only there read the same index.
+# Only the SciFact "chunks" arms pin one, the index the API serves, built in phase 1 under
+# an older name; without the pin they would build a copy of it and measure the copy.
+#
 # `references` are scores to compare ours with: published ones, or measured here with
 # another tool. Each carries its source. The first one is the gap shown in the report.
 
