@@ -8,7 +8,7 @@ from llm_testbench.eval.loaders import BeirLoader
 from llm_testbench.eval.report import render_report, write_report
 from llm_testbench.eval.runner import run_retrieval
 from llm_testbench.eval.runs import Reference, RetrievalRun, save_run
-from llm_testbench.eval.suite import ArmConfig, SuiteConfig
+from llm_testbench.eval.suite import RetrievalArmConfig, SuiteConfig
 from tests.eval.test_runner import ScriptedRetriever, rankings
 
 
@@ -35,10 +35,10 @@ async def runs(offline_settings: Settings) -> list[RetrievalRun]:
 
 def suite() -> SuiteConfig:
     arms = tuple(
-        ArmConfig(name=name, dataset="beir/scifact", retriever="bm25")
+        RetrievalArmConfig(name=name, dataset="beir/scifact", retriever="bm25")
         for name in ("bad", "good", "never-run")
     )
-    return SuiteConfig(description="A suite for the tests.", arms=arms)
+    return SuiteConfig(description="A suite for the tests.", retrieval=arms)
 
 
 def test_report_shows_scores_intervals_references_and_comparisons(

@@ -1074,3 +1074,29 @@ harness, baseline, fixtures, dataset, metric and suite. 33 cells.
 
 **Not done**: notebooks 2 to 4 use "arm" and "suite" without redefining them; they lean
 on notebook 1, as `docs/reading-order.md` says.
+
+## 2026-11-10 — Every name of the arm layer says which kind of arm it is about
+
+**Done**: reading `eval/suite.py` after notebook 1, Christophe asked whether an arm is a
+retrieval arm unless said otherwise. It was. Retrieval arms were built first and took the
+bare names; generation arms came later with a prefix; the base class of both was named
+after the index that half of its subclasses never read. Renamed at his request:
+
+- `ArmConfig` → `RetrievalArmConfig`, and `IndexedArm` → `ArmConfig` (what both kinds share);
+- `run_arm` → `run_retrieval_arm`, `load_dataset` → `load_retrieval_dataset`;
+- `SuiteConfig.arms` → `SuiteConfig.retrieval`, and the key of `config/eval_suites.toml`,
+  `[[suites.<suite>.arms]]` → `[[suites.<suite>.retrieval]]`.
+
+The docstring of the module carries the table of the two kinds, notebook 1 shows the same
+table with links, diagram 11 follows. No behaviour changed: the gate passes on the same
+baseline (75 checks) and no archived run is touched (a run records the name of its arm,
+not a class).
+
+**Careful**: `ArmConfig` now names the base class; before this date it named the retrieval
+arm. Earlier entries of this journal use the old meaning.
+
+**Not done**: the same habit remains in two places outside `suite.py`. In `eval/cli.py`,
+`run_suite` runs the retrieval arms only, next to `run_generation_suite`. In `eval/runs.py`,
+`load_run`, `save_run` and `format_runs` are about retrieval runs only, next to
+`load_generation`, `save_generation` and `format_generation`. Renaming them changes the
+code cells of notebooks 1 to 3, which then have to be executed again.

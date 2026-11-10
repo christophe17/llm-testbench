@@ -58,7 +58,7 @@ from llm_testbench.eval.report import write_report
 from llm_testbench.eval.run_store import RunStore
 from llm_testbench.eval.runs import RetrievalRun, format_runs, load_run, save_run
 from llm_testbench.eval.spend import LEDGER_PATH, SpendLedger
-from llm_testbench.eval.suite import Suites, run_arm, run_generation_arm
+from llm_testbench.eval.suite import Suites, run_generation_arm, run_retrieval_arm
 from llm_testbench.ingest.store import PgVectorStore
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.prompts import PromptRegistry
@@ -114,7 +114,7 @@ async def run_suite(
                 sys.stderr.write(f"→ {arm.name} ({arm.dataset})\n")
             if ledger is not None:
                 ledger.check()
-            run = await run_arm(
+            run = await run_retrieval_arm(
                 suite_name, suite, arm, settings=settings, client=client, store=store
             )
             runs.append(run)
@@ -208,7 +208,7 @@ async def run_gate(settings: Settings, *, require_db: bool) -> tuple[list[GatedR
             raise SystemExit("evaluation gate: a database is required here and none answers")
         # A laptop with its cluster down still gets the arms that need no database; a
         # hook that fails whenever the cluster is off is a hook that gets bypassed.
-        skipped = [arm.name for arm in suite.arms if arm.retriever == "dense"]
+        skipped = [arm.name for arm in suite.retrieval if arm.retriever == "dense"]
         skipped += [arm.name for arm in suite.generation if arm.context == "retrieved"]
         sample = sample.model_copy(update={"database_url": None})
     names = [name for name in suite.arm_names() if name not in skipped]

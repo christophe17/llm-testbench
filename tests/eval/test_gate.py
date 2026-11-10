@@ -10,16 +10,16 @@ from llm_testbench.eval.gate import (
     gate_passes,
 )
 from llm_testbench.eval.runs import MetricSummary, RetrievalRun
-from llm_testbench.eval.suite import ArmConfig, SuiteConfig, run_arm
+from llm_testbench.eval.suite import RetrievalArmConfig, SuiteConfig, run_retrieval_arm
 from llm_testbench.llm.client import LLMClient
 
 
 @pytest.fixture
 async def run(offline_settings: Settings) -> RetrievalRun:
-    arm = ArmConfig(name="scifact-bm25", dataset="beir/scifact", retriever="bm25")
-    return await run_arm(
+    arm = RetrievalArmConfig(name="scifact-bm25", dataset="beir/scifact", retriever="bm25")
+    return await run_retrieval_arm(
         "gate",
-        SuiteConfig(arms=(arm,), metrics=("ndcg_at_10", "recall_at_10")),
+        SuiteConfig(retrieval=(arm,), metrics=("ndcg_at_10", "recall_at_10")),
         arm,
         settings=offline_settings,
         client=LLMClient.from_settings(offline_settings),

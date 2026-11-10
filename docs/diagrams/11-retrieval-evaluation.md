@@ -1,6 +1,6 @@
 # Measuring retrieval
 
-One system under measurement (an *arm*) is a retriever asked every query of a dataset; what
+A *retrieval arm* is a retriever asked every query of a dataset; what
 comes out is a run: each metric with its interval, and the score of every query.
 
 ```mermaid
@@ -35,7 +35,7 @@ classDiagram
   class PgVectorStore {
     +search_documents(spec, vector, k, exact, ef_search, candidates) list~DocumentHit~
   }
-  class ArmConfig {
+  class RetrievalArmConfig {
     +name : str
     +dataset : str
     +retriever : bm25 or dense
@@ -87,8 +87,8 @@ classDiagram
   Retriever ..> Retrieval : retrieve() returns
   Retrieval *-- RetrievedDocument : documents, each document once
   DenseRetriever --> PgVectorStore : exact search or HNSW
-  ArmConfig ..> Retriever : run_arm() builds the retriever and its index
-  ArmConfig *-- Reference : references, the published scores
+  RetrievalArmConfig ..> Retriever : run_retrieval_arm() builds the retriever and its index
+  RetrievalArmConfig *-- Reference : references, the published scores
   RetrievalRun *-- MetricSummary : metrics, mean and 95% interval
   RetrievalRun *-- QueryResult : queries, one score per query
   RetrievalRun --> IndexBuild : index, what it took to have it
@@ -100,7 +100,8 @@ classDiagram
 - **A retriever answers with documents**, never with chunks: the datasets judge documents.
   `DenseRetriever` folds chunks into documents in SQL (`search_documents`), and records
   how the index was read (`exact` or `hnsw`, `ef_search`) in `describe()`.
-- **`ArmConfig` is a line of `config/eval_suites.toml`**; `run_arm` (a function of
+- **`RetrievalArmConfig` is one `[[suites.<suite>.retrieval]]` block of
+  `config/eval_suites.toml`**; `run_retrieval_arm` (a function of
   `eval/suite.py`, not drawn) builds the index the arm reads, then calls `run_retrieval`
   (`eval/runner.py`), which returns the `RetrievalRun`.
 - **A run keeps the score of every query**: that is what lets two runs be compared query by

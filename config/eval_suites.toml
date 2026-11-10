@@ -1,8 +1,15 @@
 # Evaluation suites of the harness (phase 2): what `make eval` runs.
 #
-# An arm = one system under measurement: a dataset, a retriever and, for a dense retriever,
-# the index it reads (chunking, embedding model, how the index is searched). The index is
-# built on demand by the ingestion pipeline; one that exists costs nothing.
+# A suite is a named group of arms; an arm is one system under measurement. Two kinds of
+# arms, each under its own key of the suite:
+#
+#   [[suites.<suite>.retrieval]]    a retrieval arm: a search measured on a retrieval dataset
+#   [[suites.<suite>.generation]]   a generation arm: the generator measured on a QA dataset
+#                                   (settings listed above the suites that have some)
+#
+# A retrieval arm = a dataset, a retriever and, for a dense retriever, the index it reads
+# (chunking, embedding model, how the index is searched). The index is built on demand by
+# the ingestion pipeline; one that exists costs nothing.
 #
 #   retriever        "bm25" | "dense"
 #   embedding_model  backend/model (dense)
@@ -24,7 +31,7 @@ description = "Phase 2 baseline: the harness validated against published scores,
 
 # --- SciFact: validate the harness ----------------------------------------------------
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "scifact-bm25"
 dataset = "beir/scifact"
 retriever = "bm25"
@@ -33,7 +40,7 @@ references = [
     { label = "BM25 Anserini", value = 0.665, source = "Thakur et al. 2021, BEIR, table 2" },
 ]
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "scifact-bge-whole-exact"
 dataset = "beir/scifact"
 retriever = "dense"
@@ -44,7 +51,7 @@ references = [
     { label = "model card (MTEB)", value = 0.7404, source = "HF model card of BAAI/bge-base-en-v1.5, read on 2026-11-05" },
 ]
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "scifact-oai-whole-exact"
 dataset = "beir/scifact"
 retriever = "dense"
@@ -57,7 +64,7 @@ references = [
 
 # --- SciFact: the phase 1 system as built ---------------------------------------------
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "scifact-oai-chunks-exact"
 dataset = "beir/scifact"
 retriever = "dense"
@@ -66,7 +73,7 @@ index_key = "scifact-recursive-oai-small"
 source_key = "docs:scifact"
 search = "exact"
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "scifact-oai-chunks-hnsw"
 dataset = "beir/scifact"
 retriever = "dense"
@@ -75,7 +82,7 @@ index_key = "scifact-recursive-oai-small"
 source_key = "docs:scifact"
 search = "hnsw"
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "scifact-oai-chunks-hnsw-400"
 dataset = "beir/scifact"
 retriever = "dense"
@@ -87,7 +94,7 @@ ef_search = 400
 
 # --- NFCorpus: graded judgments (0 to 2), the linear-gain check ------------------------
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "nfcorpus-bm25"
 dataset = "beir/nfcorpus"
 retriever = "bm25"
@@ -95,7 +102,7 @@ references = [
     { label = "BM25 Anserini", value = 0.325, source = "Thakur et al. 2021, BEIR, table 2" },
 ]
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "nfcorpus-bge-whole-exact"
 dataset = "beir/nfcorpus"
 retriever = "dense"
@@ -106,7 +113,7 @@ references = [
     { label = "model card (MTEB)", value = 0.3739, source = "HF model card of BAAI/bge-base-en-v1.5, read on 2026-11-05" },
 ]
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "nfcorpus-oai-chunks-hnsw"
 dataset = "beir/nfcorpus"
 retriever = "dense"
@@ -115,7 +122,7 @@ search = "hnsw"
 
 # --- FiQA: a corpus eleven times larger (57,638 documents) ----------------------------
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "fiqa-bm25"
 dataset = "beir/fiqa"
 retriever = "bm25"
@@ -123,7 +130,7 @@ references = [
     { label = "BM25 Anserini", value = 0.236, source = "Thakur et al. 2021, BEIR, table 2" },
 ]
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "fiqa-bge-whole-exact"
 dataset = "beir/fiqa"
 retriever = "dense"
@@ -134,7 +141,7 @@ references = [
     { label = "model card (MTEB)", value = 0.4065, source = "HF model card of BAAI/bge-base-en-v1.5, read on 2026-11-05" },
 ]
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "fiqa-oai-chunks-hnsw"
 dataset = "beir/fiqa"
 retriever = "dense"
@@ -142,14 +149,14 @@ embedding_model = "openai/text-embedding-3-small"
 search = "hnsw"
 
 # The same index, searched two other ways: what the HNSW defaults cost on 78,417 chunks.
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "fiqa-oai-chunks-exact"
 dataset = "beir/fiqa"
 retriever = "dense"
 embedding_model = "openai/text-embedding-3-small"
 search = "exact"
 
-[[suites.retrieval-baseline.arms]]
+[[suites.retrieval-baseline.retrieval]]
 name = "fiqa-oai-chunks-hnsw-400"
 dataset = "beir/fiqa"
 retriever = "dense"
@@ -175,13 +182,13 @@ ef_search = 400
 description = "The phase 1 system end to end, next to the same questions on the gold context."
 metrics = ["recall_at_5", "recall_at_10", "ndcg_at_10", "mrr_at_10"]
 
-[[suites.end-to-end.arms]]
+[[suites.end-to-end.retrieval]]
 name = "hotpotqa-bm25"
 dataset = "hotpotqa/pool-1000"
 split = "validation"
 retriever = "bm25"
 
-[[suites.end-to-end.arms]]
+[[suites.end-to-end.retrieval]]
 name = "hotpotqa-oai-chunks-hnsw"
 dataset = "hotpotqa/pool-1000"
 split = "validation"
@@ -259,17 +266,17 @@ prompt = "closed_book"
 [suites.gate]
 description = "Regression gate in sample mode: every code path of the harness on fixtures."
 
-[[suites.gate.arms]]
+[[suites.gate.retrieval]]
 name = "scifact-bm25"
 dataset = "beir/scifact"
 retriever = "bm25"
 
-[[suites.gate.arms]]
+[[suites.gate.retrieval]]
 name = "nfcorpus-bm25"
 dataset = "beir/nfcorpus"
 retriever = "bm25"
 
-[[suites.gate.arms]]
+[[suites.gate.retrieval]]
 name = "scifact-dense-whole-exact"
 dataset = "beir/scifact"
 retriever = "dense"
@@ -277,7 +284,7 @@ embedding_model = "openai/text-embedding-3-small"
 chunk_size = 0
 search = "exact"
 
-[[suites.gate.arms]]
+[[suites.gate.retrieval]]
 name = "scifact-dense-chunks-hnsw"
 dataset = "beir/scifact"
 retriever = "dense"
@@ -286,7 +293,7 @@ chunk_size = 120
 chunk_overlap = 30
 search = "hnsw"
 
-[[suites.gate.arms]]
+[[suites.gate.retrieval]]
 name = "nfcorpus-dense-chunks-exact"
 dataset = "beir/nfcorpus"
 retriever = "dense"
@@ -295,7 +302,7 @@ chunk_size = 60
 chunk_overlap = 0
 search = "exact"
 
-[[suites.gate.arms]]
+[[suites.gate.retrieval]]
 name = "hotpotqa-bm25"
 dataset = "hotpotqa/pool-1000"
 split = "validation"

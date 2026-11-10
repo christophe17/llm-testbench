@@ -9,7 +9,7 @@ import pytest
 from llm_testbench.config import Settings
 from llm_testbench.eval.cli import run_suite
 from llm_testbench.eval.run_store import RunStore
-from llm_testbench.eval.suite import ArmConfig, SuiteConfig, run_arm
+from llm_testbench.eval.suite import RetrievalArmConfig, SuiteConfig, run_retrieval_arm
 from llm_testbench.ingest.chunking import RecursiveChunker
 from llm_testbench.ingest.parsing import parse_sections
 from llm_testbench.ingest.pipeline import IngestionPipeline
@@ -43,7 +43,7 @@ async def test_dense_arm_in_sample_mode_builds_measures_and_cleans_up(
     sample_settings: Settings,
 ) -> None:
     # A dataset name of its own: the sample index must not collide with a parallel run.
-    arm = ArmConfig(
+    arm = RetrievalArmConfig(
         name="dense",
         dataset="beir/scifact",
         retriever="dense",
@@ -54,9 +54,9 @@ async def test_dense_arm_in_sample_mode_builds_measures_and_cleans_up(
     index_key, source_key = arm.keys(sample=True)
     assert DATABASE_URL is not None
     async with PgVectorStore.from_url(DATABASE_URL, max_size=2) as store:
-        run = await run_arm(
+        run = await run_retrieval_arm(
             "unit",
-            SuiteConfig(arms=(arm,)),
+            SuiteConfig(retrieval=(arm,)),
             arm,
             settings=sample_settings,
             client=LLMClient.from_settings(sample_settings),
@@ -82,11 +82,11 @@ async def test_run_history_round_trip(sample_settings: Settings) -> None:
     history = RunStore(DATABASE_URL)
     await history.ensure_schema()
     await history.ensure_schema()  # idempotent
-    arm = ArmConfig(name="bm25", dataset="beir/scifact", retriever="bm25")
+    arm = RetrievalArmConfig(name="bm25", dataset="beir/scifact", retriever="bm25")
     suite_name = f"unit-{uuid.uuid4().hex[:8]}"
-    run = await run_arm(
+    run = await run_retrieval_arm(
         suite_name,
-        SuiteConfig(arms=(arm,)),
+        SuiteConfig(retrieval=(arm,)),
         arm,
         settings=sample_settings,
         client=LLMClient.from_settings(sample_settings),

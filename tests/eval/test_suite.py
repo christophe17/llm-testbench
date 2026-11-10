@@ -6,7 +6,13 @@ import pytest
 from pydantic import ValidationError
 
 from llm_testbench.config import Settings
-from llm_testbench.eval.suite import ArmConfig, SuiteConfig, Suites, load_dataset, run_arm
+from llm_testbench.eval.suite import (
+    RetrievalArmConfig,
+    SuiteConfig,
+    Suites,
+    load_retrieval_dataset,
+    run_retrieval_arm,
+)
 from llm_testbench.llm.client import LLMClient
 from llm_testbench.llm.registry import Registry
 
@@ -18,7 +24,7 @@ def suites() -> Suites:
     return Suites.load(REPO_ROOT / "config" / "eval_suites.toml")
 
 
-def dense(**overrides: object) -> ArmConfig:
+def dense(**overrides: object) -> RetrievalArmConfig:
     values: dict[str, object] = {
         "name": "arm",
         "dataset": "beir/scifact",
@@ -26,7 +32,7 @@ def dense(**overrides: object) -> ArmConfig:
         "embedding_model": "hf/BAAI/bge-base-en-v1.5",
     }
     values.update(overrides)
-    return ArmConfig.model_validate(values)
+    return RetrievalArmConfig.model_validate(values)
 
 
 def test_the_versioned_suites_are_valid_and_buildable(suites: Suites) -> None:
@@ -34,8 +40,12 @@ def test_the_versioned_suites_are_valid_and_buildable(suites: Suites) -> None:
     a typo in the suite file fails here, not after ten minutes of embedding."""
     registry = Registry.load(REPO_ROOT / "config" / "llm_backends.toml")
     baseline = suites.get("retrieval-baseline")
-    assert {arm.dataset for arm in baseline.arms} == {"beir/scifact", "beir/nfcorpus", "beir/fiqa"}
-    for arm in baseline.arms:
+    assert {arm.dataset for arm in baseline.retrieval} == {
+        "beir/scifact",
+        "beir/nfcorpus",
+        "beir/fiqa",
+    }
+    for arm in baseline.retrieval:
         if arm.retriever == "dense":
             assert arm.embedding_model is not None
             registry.resolve(arm.embedding_model)
@@ -72,14 +82,14 @@ def test_sample_keys_never_collide_with_real_indexes() -> None:
 
 def test_invalid_arms_are_refused() -> None:
     with pytest.raises(ValidationError, match="needs embedding_model"):
-        ArmConfig(name="arm", dataset="beir/scifact", retriever="dense")
+        RetrievalArmConfig(name="arm", dataset="beir/scifact", retriever="dense")
     with pytest.raises(ValidationError, match="together"):
         dense(index_key="only-one")
     with pytest.raises(ValidationError):
         dense(chunk_sise=10)  # a typo in the suite file is an error, not a silent default
-    arm = ArmConfig(name="arm", dataset="beir/scifact", retriever="bm25")
+    arm = RetrievalArmConfig(name="arm", dataset="beir/scifact", retriever="bm25")
     with pytest.raises(ValidationError, match="share a name"):
-        SuiteConfig(arms=(arm, arm))
+        SuiteConfig(retrieval=(arm, arm))
 
 
 def test_unknown_suite_arm_and_dataset(suites: Suites, offline_settings: Settings) -> None:
@@ -87,15 +97,15 @@ def test_unknown_suite_arm_and_dataset(suites: Suites, offline_settings: Setting
         suites.get("nope")
     with pytest.raises(KeyError, match="unknown arm"):
         suites.get("retrieval-baseline").select(["nope"])
-    arm = ArmConfig(name="arm", dataset="beir/trec-covid", retriever="bm25")
+    arm = RetrievalArmConfig(name="arm", dataset="beir/trec-covid", retriever="bm25")
     with pytest.raises(ValueError, match="no loader"):
-        load_dataset(arm, offline_settings)
+        load_retrieval_dataset(arm, offline_settings)
 
 
 async def test_bm25_arm_runs_offline_on_fixtures(offline_settings: Settings) -> None:
-    arm = ArmConfig(name="scifact-bm25", dataset="beir/scifact", retriever="bm25")
-    suite = SuiteConfig(arms=(arm,))
-    run = await run_arm(
+    arm = RetrievalArmConfig(name="scifact-bm25", dataset="beir/scifact", retriever="bm25")
+    suite = SuiteConfig(retrieval=(arm,))
+    run = await run_retrieval_arm(
         "unit",
         suite,
         arm,
@@ -116,9 +126,9 @@ async def test_bm25_arm_runs_offline_on_fixtures(offline_settings: Settings) -> 
 async def test_a_dense_arm_without_a_database_is_refused(offline_settings: Settings) -> None:
     arm = dense()
     with pytest.raises(ValueError, match="database is required"):
-        await run_arm(
+        await run_retrieval_arm(
             "unit",
-            SuiteConfig(arms=(arm,)),
+            SuiteConfig(retrieval=(arm,)),
             arm,
             settings=offline_settings,
             client=LLMClient.from_settings(offline_settings),
@@ -127,8 +137,8 @@ async def test_a_dense_arm_without_a_database_is_refused(offline_settings: Setti
 
 
 def test_nfcorpus_fixture_has_graded_judgments(offline_settings: Settings) -> None:
-    arm = ArmConfig(name="arm", dataset="beir/nfcorpus", retriever="bm25")
-    dataset = load_dataset(arm, offline_settings)
+    arm = RetrievalArmConfig(name="arm", dataset="beir/nfcorpus", retriever="bm25")
+    dataset = load_retrieval_dataset(arm, offline_settings)
     assert dataset.qrels["PLAIN-2"] == {"MED-10": 2, "MED-14": 1}
     assert [query.query_id for query in dataset.queries] == ["PLAIN-2", "PLAIN-12"]
     documents = dataset.parsed_documents()

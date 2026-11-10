@@ -134,7 +134,7 @@ def render_report(
     generated_at: dt.datetime | None = None,
 ) -> str:
     """The report of the given runs, grouped by dataset in the order of the suite."""
-    order = {arm.name: position for position, arm in enumerate(suite.arms)}
+    order = {arm.name: position for position, arm in enumerate(suite.retrieval)}
     ordered = sorted(runs, key=lambda run: order.get(run.arm, len(order)))
     sections: dict[str, list[RetrievalRun]] = {}
     for run in ordered:
@@ -148,7 +148,7 @@ def render_report(
         description=suite.description,
         generated_at=generated_at or dt.datetime.now(dt.UTC),
         headline=HEADLINE_METRIC,
-        missing=[arm.name for arm in suite.arms if arm.name not in {run.arm for run in runs}],
+        missing=[arm.name for arm in suite.retrieval if arm.name not in {run.arm for run in runs}],
         sections=[
             {
                 "dataset": dataset,
