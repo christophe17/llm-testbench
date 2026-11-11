@@ -5,7 +5,7 @@ differences (:func:`llm_testbench.eval.stats.paired_bootstrap`): when the interv
 difference excludes zero, the candidate is better (or worse) beyond the luck of the sample.
 """
 
-from llm_testbench.eval.runs import HEADLINE_METRIC, RetrievalRun
+from llm_testbench.eval.retrieval import HEADLINE_METRIC, RetrievalRun
 from llm_testbench.eval.stats import DEFAULT_RESAMPLES, PairedDifference, paired_bootstrap
 
 

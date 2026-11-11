@@ -1159,3 +1159,31 @@ that they still run. Ruff, the source-link test (two new links: `GenerationArmCo
 `ArmConfig.keys`), the suite tests.
 
 **Not done**: the notebooks of phases 0 and 1 were not reread against this rule.
+
+## 2026-11-11 — One module per kind of run: `eval/retrieval.py` next to `eval/generation.py`
+
+**Done**: Christophe, with `run_generation` open in the editor: "don't you think there's
+inconsistency? run_retrieval in file called runner.py, run_generation in file called
+generation.py". The two passes of 2026-11-10 renamed identifiers and configuration keys, not
+files: the modules built first, for retrieval, kept the bare names, and retrieval was spread
+over two files where generation has one. Two options were put to him, merging or renaming
+`runner.py` alone; he took the merge.
+
+- `eval/runner.py` and the retrieval part of `eval/runs.py` → `eval/retrieval.py`: the
+  record (`RetrievalRun`, `MetricSummary`, `Reference`, `QueryResult`, `HEADLINE_METRIC`),
+  then `run_retrieval`, then `format_retrieval_runs`, `save_retrieval_run` and
+  `load_retrieval_run`, in the order `eval/generation.py` has.
+- `eval/runs.py` keeps what both kinds of run record: `IndexBuild` and `git_state`.
+- `tests/eval/test_runner.py` → `tests/eval/test_retrieval.py`, next to `test_generation.py`.
+- Followed: the imports of `suite`, `cli`, `gate`, `compare`, `report`, `run_store` and of
+  four test files; in notebook 1 of phase 2, the import cell, five source links and one row
+  of the table of pieces; two mentions in diagram 11.
+
+**Checked**: no behaviour change, the code moved as it was. Ruff, mypy, the offline suite,
+the source-link and diagram tests. Notebook 1 executed in sample mode by nbmake, which does
+not rewrite it, with no database: its committed outputs name no module and are unchanged.
+
+**Not done**: `eval/types.py` holds the retrieval datasets only, next to `eval/qa.py`: the
+same defect, raised with Christophe and not decided. `compare.py`, `report.py` and
+`run_store.py` keep their bare names, as on 2026-11-10. Earlier entries of this journal name
+`eval/runner.py` and what `eval/runs.py` used to hold.

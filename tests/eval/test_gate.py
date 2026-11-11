@@ -9,7 +9,7 @@ from llm_testbench.eval.gate import (
     format_findings,
     gate_passes,
 )
-from llm_testbench.eval.runs import MetricSummary, RetrievalRun
+from llm_testbench.eval.retrieval import MetricSummary, RetrievalRun
 from llm_testbench.eval.suite import RetrievalArmConfig, SuiteConfig, run_retrieval_arm
 from llm_testbench.llm.client import LLMClient
 

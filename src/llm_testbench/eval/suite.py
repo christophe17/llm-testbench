@@ -10,7 +10,7 @@ An **arm** is one system under measurement. There are two kinds:
   index that search reads.
 
 Every name says which kind it is about, in this module and in the ones around it
-(``eval/runs.py``, ``eval/generation.py``, ``eval/cli.py``):
+(``eval/retrieval.py``, ``eval/generation.py``, ``eval/cli.py``):
 
                         retrieval arm                  generation arm
     block of the file   [[suites.<suite>.retrieval]]   [[suites.<suite>.generation]]
@@ -57,8 +57,8 @@ from llm_testbench.eval.loaders.qasper import QasperLoader
 from llm_testbench.eval.loaders.squad import SquadV2Loader
 from llm_testbench.eval.metrics import DEFAULT_METRICS
 from llm_testbench.eval.qa import QADataset
-from llm_testbench.eval.runner import run_retrieval
-from llm_testbench.eval.runs import IndexBuild, Reference, RetrievalRun
+from llm_testbench.eval.retrieval import Reference, RetrievalRun, run_retrieval
+from llm_testbench.eval.runs import IndexBuild
 from llm_testbench.eval.spend import SpendLedger
 from llm_testbench.eval.types import RetrievalDataset
 from llm_testbench.generation.answer import MAX_OUTPUT_TOKENS, AnswerBuilder

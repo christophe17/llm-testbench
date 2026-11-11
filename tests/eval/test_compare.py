@@ -3,8 +3,8 @@ import pytest
 from llm_testbench.config import Settings
 from llm_testbench.eval.compare import compare_runs, describe_difference
 from llm_testbench.eval.loaders import BeirLoader
-from llm_testbench.eval.runner import run_retrieval
-from tests.eval.test_runner import ScriptedRetriever, rankings
+from llm_testbench.eval.retrieval import run_retrieval
+from tests.eval.test_retrieval import ScriptedRetriever, rankings
 
 
 async def test_two_runs_are_compared_query_by_query(offline_settings: Settings) -> None:

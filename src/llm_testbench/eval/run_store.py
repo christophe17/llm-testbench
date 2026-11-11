@@ -12,7 +12,7 @@ from typing import Any
 from psycopg import AsyncConnection
 from psycopg.rows import dict_row
 
-from llm_testbench.eval.runs import QueryResult, RetrievalRun
+from llm_testbench.eval.retrieval import QueryResult, RetrievalRun
 
 SCHEMA_FILE = "001_runs.sql"
 

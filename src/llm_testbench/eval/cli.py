@@ -55,13 +55,13 @@ from llm_testbench.eval.judge import Judge
 from llm_testbench.eval.loaders.squad import SquadV2Loader
 from llm_testbench.eval.qa import QADataset
 from llm_testbench.eval.report import write_report
-from llm_testbench.eval.run_store import RunStore
-from llm_testbench.eval.runs import (
+from llm_testbench.eval.retrieval import (
     RetrievalRun,
     format_retrieval_runs,
     load_retrieval_run,
     save_retrieval_run,
 )
+from llm_testbench.eval.run_store import RunStore
 from llm_testbench.eval.spend import LEDGER_PATH, SpendLedger
 from llm_testbench.eval.suite import Suites, run_generation_arm, run_retrieval_arm
 from llm_testbench.ingest.store import PgVectorStore

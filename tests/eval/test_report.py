@@ -6,10 +6,14 @@ import pytest
 from llm_testbench.config import Settings
 from llm_testbench.eval.loaders import BeirLoader
 from llm_testbench.eval.report import render_report, write_report
-from llm_testbench.eval.runner import run_retrieval
-from llm_testbench.eval.runs import Reference, RetrievalRun, save_retrieval_run
+from llm_testbench.eval.retrieval import (
+    Reference,
+    RetrievalRun,
+    run_retrieval,
+    save_retrieval_run,
+)
 from llm_testbench.eval.suite import RetrievalArmConfig, SuiteConfig
-from tests.eval.test_runner import ScriptedRetriever, rankings
+from tests.eval.test_retrieval import ScriptedRetriever, rankings
 
 
 @pytest.fixture

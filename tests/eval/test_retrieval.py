@@ -6,11 +6,11 @@ import pytest
 
 from llm_testbench.config import Settings
 from llm_testbench.eval.loaders import BeirLoader
-from llm_testbench.eval.runner import run_retrieval
-from llm_testbench.eval.runs import (
+from llm_testbench.eval.retrieval import (
     Reference,
     format_retrieval_runs,
     load_retrieval_run,
+    run_retrieval,
     save_retrieval_run,
 )
 from llm_testbench.eval.types import RetrievalDataset

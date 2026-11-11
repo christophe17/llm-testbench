@@ -21,7 +21,7 @@ from typing import Any
 from jinja2 import Environment, StrictUndefined
 
 from llm_testbench.eval.compare import compare_runs
-from llm_testbench.eval.runs import HEADLINE_METRIC, RetrievalRun, load_retrieval_run
+from llm_testbench.eval.retrieval import HEADLINE_METRIC, RetrievalRun, load_retrieval_run
 from llm_testbench.eval.suite import SuiteConfig
 
 TEMPLATE = "report.html.j2"

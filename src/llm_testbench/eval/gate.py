@@ -22,7 +22,8 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 from llm_testbench.eval.generation import GenerationRun
-from llm_testbench.eval.runs import RetrievalRun, git_state
+from llm_testbench.eval.retrieval import RetrievalRun
+from llm_testbench.eval.runs import git_state
 
 GatedRun = RetrievalRun | GenerationRun
 """Anything with an arm name and metrics that have a mean."""
